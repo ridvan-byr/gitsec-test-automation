@@ -1,0 +1,3900 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GitSec Test Otomasyonu</title>
+  <script>
+    (function() {
+      const savedTheme = localStorage.getItem('gitsec_theme') || 'system';
+      const html = document.documentElement;
+      if (savedTheme === 'dark') {
+        html.classList.add('dark');
+        html.classList.remove('light');
+      } else if (savedTheme === 'light') {
+        html.classList.add('light');
+        html.classList.remove('dark');
+      } else {
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (prefersDark) {
+          html.classList.add('dark');
+          html.classList.remove('light');
+        } else {
+          html.classList.add('light');
+          html.classList.remove('dark');
+        }
+      }
+    })();
+  </script>
+  <link rel="icon" href="https://dev.dashboard.gitsec.io/icon-192.png" type="image/png"/>
+  <!-- Modern Tipografi (Google Fonts Inter & Outfit) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --bg-dark: #05070f;         /* Deep Obsidian Black */
+      --bg-gradient: radial-gradient(circle at 10% 10%, rgba(37, 99, 235, 0.12) 0%, transparent 40%),
+                     radial-gradient(circle at 90% 90%, rgba(16, 185, 129, 0.08) 0%, transparent 50%),
+                     radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.05) 0%, transparent 60%);
+      --panel-bg: rgba(13, 17, 30, 0.7); /* Ultra Clear Glassmorphic Base */
+      --panel-bg-solid: #0d111e;
+      --panel-border: rgba(255, 255, 255, 0.07); /* Ice Border */
+      --panel-border-glow: rgba(59, 130, 246, 0.3);
+      --gitsec-blue: #3b82f6;     /* Neon Blue */
+      --gitsec-blue-hover: #1d4ed8;
+      --gitsec-blue-glow: rgba(59, 130, 246, 0.45);
+      --gitsec-green: #10b981;    /* Vibrant Emerald */
+      --gitsec-green-hover: #047857;
+      --gitsec-green-glow: rgba(16, 185, 129, 0.4);
+      --gitsec-red: #f43f5e;      /* Vibrant Rose/Red */
+      --gitsec-red-glow: rgba(244, 63, 94, 0.4);
+      --gitsec-yellow: #f59e0b;   /* Electric Amber */
+      --gitsec-yellow-glow: rgba(245, 158, 11, 0.4);
+      --text-main: #f8fafc;       /* Crisp Slate White */
+      --text-muted: #94a3b8;      /* Cool Slate Gray */
+      --text-dark: #475569;       /* Dark Steel Gray */
+      --font-sans: 'Inter', 'Outfit', system-ui, -apple-system, sans-serif;
+      --font-mono: 'Fira Code', 'Courier New', monospace;
+      --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      --transition-spring: all 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+      
+      /* Theme specific components default (Dark Mode) */
+      --logo-text-color: #ffffff;
+      --header-bg: rgba(8, 10, 20, 0.75);
+      --terminal-container-bg: #020306;
+      --terminal-header-bg: #080a10;
+      --terminal-bg: #030408;
+      --terminal-color: #a1a1aa;
+      --terminal-border: none;
+      --input-bg: rgba(5, 7, 15, 0.85);
+      --input-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5);
+      --input-shadow-focus: inset 0 1px 2px rgba(0, 0, 0, 0.6);
+      --toggle-group-bg: rgba(30, 41, 59, 0.25);
+      --brand-gradient: linear-gradient(135deg, #ffffff 30%, #cbd5e1 100%);
+      --sidebar-bg: linear-gradient(180deg, #090c15 0%, #05070c 100%);
+      --card-bg: rgba(15, 23, 42, 0.45);
+      --card-hover-bg: rgba(15, 23, 42, 0.65);
+      --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+      --card-shadow-hover: 0 12px 30px rgba(0, 0, 0, 0.45), 0 0 15px rgba(59, 130, 246, 0.1);
+    }
+
+    /* Light Theme (Beyaz Tema) Overrides */
+    html.light {
+      --bg-dark: #f1f5f9;
+      --bg-gradient: radial-gradient(circle at 10% 10%, rgba(59, 130, 246, 0.08) 0%, transparent 40%),
+                     radial-gradient(circle at 90% 90%, rgba(16, 185, 129, 0.06) 0%, transparent 50%),
+                     radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.03) 0%, transparent 60%);
+      --panel-bg: rgba(255, 255, 255, 0.7);
+      --panel-bg-solid: #ffffff;
+      --panel-border: rgba(0, 0, 0, 0.08);
+      --panel-border-glow: rgba(59, 130, 246, 0.15);
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --text-dark: #94a3b8;
+      --logo-text-color: #0f172a;
+      --header-bg: rgba(255, 255, 255, 0.8);
+      --terminal-container-bg: #f8fafc;
+      --terminal-header-bg: #e2e8f0;
+      --terminal-bg: #f1f5f9;
+      --terminal-color: #334155;
+      --terminal-border: 1px solid rgba(0, 0, 0, 0.08);
+      --input-bg: rgba(255, 255, 255, 0.85);
+      --input-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.06);
+      --input-shadow-focus: inset 0 1px 2px rgba(0, 0, 0, 0.03);
+      --toggle-group-bg: rgba(0, 0, 0, 0.03);
+      --gitsec-blue-glow: rgba(59, 130, 246, 0.2);
+      --gitsec-green-glow: rgba(16, 185, 129, 0.15);
+      --gitsec-red-glow: rgba(244, 63, 94, 0.15);
+      --gitsec-yellow-glow: rgba(245, 158, 11, 0.15);
+      --brand-gradient: linear-gradient(135deg, #0f172a 30%, #475569 100%);
+      --sidebar-bg: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
+      --card-bg: rgba(255, 255, 255, 0.6);
+      --card-hover-bg: rgba(255, 255, 255, 0.95);
+      --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+      --card-shadow-hover: 0 12px 30px rgba(0, 0, 0, 0.08), 0 0 15px rgba(59, 130, 246, 0.05);
+    }
+
+    /* Light Theme Custom Scrollbar Overrides */
+    html.light .main-workspace::-webkit-scrollbar-thumb,
+    html.light .nav-sidebar::-webkit-scrollbar-thumb,
+    html.light .modal-body::-webkit-scrollbar-thumb,
+    html.light .terminal-screen::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border: 2px solid var(--bg-dark);
+      border-radius: 9999px;
+    }
+    html.light .main-workspace::-webkit-scrollbar-track,
+    html.light .nav-sidebar::-webkit-scrollbar-track,
+    html.light .modal-body::-webkit-scrollbar-track,
+    html.light .terminal-screen::-webkit-scrollbar-track {
+      background: var(--bg-dark);
+      border-left: 1px solid var(--panel-border);
+    }
+    html.light .main-workspace::-webkit-scrollbar-thumb:hover,
+    html.light .nav-sidebar::-webkit-scrollbar-thumb:hover,
+    html.light .modal-body::-webkit-scrollbar-thumb:hover,
+    html.light .terminal-screen::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+
+    /* Option styling to ensure custom select options look beautiful in Light/Dark theme */
+    .gitsec-select option, .gitsec-select-wrapper select option {
+      background: var(--panel-bg-solid);
+      color: var(--text-main);
+    }
+
+    /* Dynamic Theme Overrides for Light Mode Components */
+    html.light .terminal-btn {
+      background: rgba(0, 0, 0, 0.05);
+      border: 1px solid rgba(0, 0, 0, 0.12);
+      color: var(--text-main);
+    }
+    html.light .terminal-btn:hover {
+      background: rgba(59, 130, 246, 0.08);
+      border-color: var(--gitsec-blue);
+      color: var(--text-main);
+    }
+    html.light .terminal-btn.stop {
+      background: rgba(244, 63, 94, 0.1);
+      border-color: rgba(244, 63, 94, 0.4);
+      color: var(--gitsec-red);
+    }
+    html.light .terminal-btn.stop:hover {
+      background: rgba(244, 63, 94, 0.2);
+      border-color: var(--gitsec-red);
+      color: var(--gitsec-red);
+    }
+
+    html.light .btn-toggle-details {
+      background: rgba(0, 0, 0, 0.05);
+      border: 1px solid rgba(0, 0, 0, 0.12);
+      color: var(--text-main);
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    }
+    html.light .btn-toggle-details:hover {
+      background: rgba(59, 130, 246, 0.08);
+      border-color: var(--gitsec-blue);
+      color: var(--gitsec-blue);
+      box-shadow: 0 2px 4px rgba(59, 130, 246, 0.15);
+    }
+
+    html.light .modal-header {
+      background: rgba(0, 0, 0, 0.02);
+    }
+
+    /* Override all hardcoded white/light label colors in the scheduler edit modal */
+    html.light #schedulerModal label,
+    html.light .modal-body label {
+      color: var(--text-main) !important;
+    }
+    html.light .modal-body .field-hint {
+      color: var(--text-muted) !important;
+    }
+
+    html.light .btn-modal-cancel {
+      background: rgba(0, 0, 0, 0.05);
+      border: 1px solid rgba(0, 0, 0, 0.12);
+      color: var(--text-main);
+    }
+    html.light .btn-modal-cancel:hover {
+      background: rgba(244, 63, 94, 0.08);
+      border-color: rgba(244, 63, 94, 0.3);
+      color: var(--gitsec-red);
+    }
+
+    /* Left Navigation Sidebar Light Theme Styles */
+    html.light .sidebar-toggle-floating-btn {
+      background: var(--panel-bg-solid);
+      border-color: rgba(0, 0, 0, 0.12);
+      color: var(--text-main);
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+    }
+    html.light .sidebar-toggle-floating-btn:hover {
+      background: var(--bg-dark);
+      border-color: var(--gitsec-blue);
+      color: var(--gitsec-blue);
+      box-shadow: 0 0 15px rgba(59, 130, 246, 0.25);
+    }
+    html.light .nav-sidebar {
+      background: var(--sidebar-bg);
+      border-right: 1px solid rgba(0, 0, 0, 0.08);
+    }
+    html.light .sidebar-divider {
+      background: linear-gradient(to right, transparent, rgba(0, 0, 0, 0.08), transparent);
+    }
+    html.light .sidebar-footer {
+      background: rgba(0, 0, 0, 0.02);
+      border-top: 1px solid rgba(0, 0, 0, 0.06);
+    }
+    html.light .nav-item {
+      color: var(--text-muted);
+    }
+    html.light .nav-item:hover {
+      background: rgba(0, 0, 0, 0.03);
+      color: var(--text-main);
+    }
+    html.light .nav-item.active {
+      background: rgba(59, 130, 246, 0.08);
+      color: var(--gitsec-blue);
+    }
+    html.light .nav-item.active .nav-icon {
+      color: var(--gitsec-blue);
+    }
+    html.light .nav-section-label {
+      color: var(--text-muted);
+    }
+    html.light .nav-section-label::after {
+      background: linear-gradient(to right, rgba(0, 0, 0, 0.08), transparent);
+    }
+
+    html.light .status-badge {
+      background: rgba(0, 0, 0, 0.03);
+      border-color: rgba(0, 0, 0, 0.08);
+      box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.02);
+      color: var(--text-main);
+    }
+
+    /* Clickable Theme Dropdown Selector Styles */
+    .theme-dropdown-trigger {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--panel-border);
+      padding: 0;
+      border-radius: 0.75rem;
+      cursor: pointer;
+      color: var(--text-muted);
+      transition: var(--transition-smooth);
+      height: 38px;
+      width: 38px;
+      outline: none;
+    }
+    
+    html.light .theme-dropdown-trigger {
+      background: rgba(0, 0, 0, 0.02);
+    }
+
+    .theme-dropdown-trigger:hover, .theme-dropdown-trigger:focus {
+      border-color: var(--gitsec-blue);
+      box-shadow: 0 0 8px var(--gitsec-blue-glow);
+      color: var(--text-main);
+    }
+
+    .theme-dropdown-menu {
+      position: absolute;
+      top: calc(100% + 0.5rem);
+      right: 0;
+      width: 170px;
+      background: var(--panel-bg-solid);
+      border: 1px solid var(--panel-border);
+      border-radius: 0.85rem;
+      padding: 0.35rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 0 10px rgba(59, 130, 246, 0.05);
+      z-index: 150;
+      backdrop-filter: blur(15px);
+      -webkit-backdrop-filter: blur(15px);
+      transform-origin: top right;
+      transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1), transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    html.light .theme-dropdown-menu {
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 0 10px rgba(0, 0, 0, 0.02);
+    }
+
+    .theme-dropdown-menu.hidden {
+      display: none;
+      opacity: 0;
+      transform: scale(0.95) translateY(-5px);
+      pointer-events: none;
+    }
+
+    .theme-menu-item {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 0.55rem 0.75rem;
+      border-radius: 0.5rem;
+      cursor: pointer;
+      font-family: var(--font-sans);
+      font-size: 0.825rem;
+      font-weight: 500;
+      width: 100%;
+      text-align: left;
+      transition: var(--transition-smooth);
+      position: relative;
+      outline: none;
+    }
+
+    .theme-menu-item:hover {
+      background: rgba(59, 130, 246, 0.08);
+      color: var(--text-main);
+    }
+    
+    html.light .theme-menu-item:hover {
+      background: rgba(59, 130, 246, 0.05);
+    }
+
+    .theme-menu-item.active {
+      color: var(--gitsec-blue);
+      background: rgba(59, 130, 246, 0.12);
+      font-weight: 600;
+    }
+    
+    html.light .theme-menu-item.active {
+      background: rgba(59, 130, 246, 0.08);
+    }
+
+    .theme-menu-item .check-indicator {
+      margin-left: auto;
+      color: var(--gitsec-blue);
+      display: none;
+    }
+
+    .theme-menu-item.active .check-indicator {
+      display: block;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      background-image: var(--bg-gradient);
+      background-attachment: fixed;
+      font-family: var(--font-sans);
+      color: var(--text-main);
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* === Glassmorphic Header === */
+    header {
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      background: rgba(8, 10, 20, 0.75);
+      border-bottom: 1px solid var(--panel-border);
+      padding: 1.1rem 2.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 4px 30px rgba(0, 0, 0, 0.4);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+    }
+
+    .brand-logo-svg {
+      height: 2rem;
+      width: auto;
+      display: block;
+      filter: drop-shadow(0 0 10px rgba(59, 130, 246, 0.45));
+      transition: var(--transition-smooth);
+    }
+
+    .brand:hover .brand-logo-svg {
+      transform: scale(1.05) rotate(-2deg);
+      filter: drop-shadow(0 0 15px rgba(59, 130, 246, 0.7));
+    }
+
+    .brand-title {
+      font-family: 'Outfit', var(--font-sans);
+      font-size: 1.4rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      background: var(--brand-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .status-badge {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      background: rgba(30, 41, 59, 0.4);
+      border: 1px solid var(--panel-border);
+      padding: 0.55rem 1.15rem;
+      border-radius: 9999px;
+      font-size: 0.825rem;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      transition: var(--transition-smooth);
+      box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.05);
+    }
+
+    .status-indicator {
+      width: 0.6rem;
+      height: 0.6rem;
+      border-radius: 50%;
+      background: var(--text-muted);
+      box-shadow: 0 0 6px rgba(148, 163, 184, 0.4);
+      transition: var(--transition-smooth);
+    }
+
+    .status-badge.running {
+      background: rgba(245, 158, 11, 0.1);
+      border-color: rgba(245, 158, 11, 0.3);
+      color: var(--gitsec-yellow);
+    }
+
+    .status-badge.running .status-indicator {
+      background: var(--gitsec-yellow);
+      box-shadow: 0 0 12px var(--gitsec-yellow);
+      animation: pulse-indicator 1.2s infinite alternate cubic-bezier(0.4, 0, 0.6, 1);
+    }
+
+    .status-badge.idle {
+      background: rgba(16, 185, 129, 0.08);
+      border-color: rgba(16, 185, 129, 0.25);
+      color: var(--gitsec-green);
+    }
+
+    .status-badge.idle .status-indicator {
+      background: var(--gitsec-green);
+      box-shadow: 0 0 12px var(--gitsec-green);
+    }
+
+    @keyframes pulse-indicator {
+      0% { opacity: 0.5; transform: scale(0.85); }
+      100% { opacity: 1; transform: scale(1.15); }
+    }
+
+    /* === Dashboard Layout === */
+    .dashboard-layout {
+      flex: 1;
+      display: flex;
+      max-width: 100%;
+      margin: 0;
+      width: 100%;
+      height: calc(100vh - 72px);
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* === Premium Sidebar Wrapper === */
+    .sidebar-wrapper {
+      position: relative;
+      width: 280px;
+      height: 100%;
+      flex-shrink: 0;
+      transition: var(--transition-spring);
+      z-index: 50;
+      overflow: visible;
+    }
+
+    .sidebar-wrapper.collapsed {
+      width: 80px;
+    }
+
+    /* Sidebar Panel Content */
+    .sidebar {
+      backdrop-filter: blur(15px);
+      -webkit-backdrop-filter: blur(15px);
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: 0.75rem;
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.75rem;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+    }
+
+    .section-title {
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      border-left: 3px solid var(--gitsec-blue);
+      padding-left: 0.75rem;
+      margin-bottom: 0.25rem;
+    }
+
+    /* Inputs and Select Elements */
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+    }
+
+    .form-group label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      letter-spacing: 0.01em;
+    }
+
+    .form-group input, .gitsec-select {
+      background: var(--input-bg, rgba(5, 7, 15, 0.85));
+      border: 1px solid var(--panel-border);
+      border-radius: 0.5rem;
+      padding: 0.7rem 0.95rem;
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      font-size: 0.825rem;
+      transition: var(--transition-smooth);
+      width: 100%;
+      outline: none;
+      box-shadow: var(--input-shadow, inset 0 2px 4px rgba(0, 0, 0, 0.5));
+    }
+
+    .form-group input:focus, .gitsec-select:focus {
+      border-color: var(--gitsec-blue);
+      box-shadow: var(--input-shadow-focus, inset 0 1px 2px rgba(0, 0, 0, 0.6)), 0 0 10px var(--gitsec-blue-glow);
+    }
+
+    /* Settings Switch and Toggle Group */
+    .toggle-group {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--toggle-group-bg, rgba(30, 41, 59, 0.25));
+      border: 1px solid var(--panel-border);
+      padding: 0.7rem 0.95rem;
+      border-radius: 0.5rem;
+      cursor: pointer;
+      transition: var(--transition-smooth);
+      box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+    }
+
+    .toggle-group:hover {
+      background: rgba(30, 41, 59, 0.45);
+      border-color: rgba(255, 255, 255, 0.12);
+    }
+
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 42px;
+      height: 22px;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #1e293b;
+      transition: var(--transition-smooth);
+      border-radius: 20px;
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4);
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 16px;
+      width: 16px;
+      left: 3px;
+      bottom: 3px;
+      background-color: #ffffff;
+      transition: var(--transition-smooth);
+      border-radius: 50%;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+    }
+
+    input:checked + .slider {
+      background-color: var(--gitsec-blue);
+      box-shadow: 0 0 8px var(--gitsec-blue-glow);
+    }
+
+    input:checked + .slider:before {
+      transform: translateX(20px);
+    }
+
+    /* === Main Workspace Content === */
+    .main-workspace {
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+      padding: 2rem 2.5rem;
+      overflow-y: auto;
+      height: 100%;
+      flex: 1;
+      min-width: 0;
+    }
+
+    /* Premium Custom Scrollbars - Obsidian Deep Dark Theme */
+    .main-workspace::-webkit-scrollbar,
+    .nav-sidebar::-webkit-scrollbar,
+    .modal-body::-webkit-scrollbar,
+    .terminal-screen::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    .main-workspace::-webkit-scrollbar-track,
+    .nav-sidebar::-webkit-scrollbar-track,
+    .modal-body::-webkit-scrollbar-track,
+    .terminal-screen::-webkit-scrollbar-track {
+      background: #020306; /* Solid Obsidian Black Track */
+      border-left: 1px solid var(--panel-border);
+    }
+
+    .nav-sidebar::-webkit-scrollbar-thumb,
+    .modal-body::-webkit-scrollbar-thumb,
+    .terminal-screen::-webkit-scrollbar-thumb {
+      background: #0d111e; /* Deep Dark Glass Black Thumb */
+      border: 2px solid #020306; /* Padding effect inside track */
+      border-radius: 9999px;
+      transition: var(--transition-smooth);
+    }
+
+    /* Elegant Pitch Black/Obsidian Scrollbar for Main Workspace (.env config editor view) */
+    .main-workspace::-webkit-scrollbar-thumb {
+      background: #080b11; /* Pure Obsidian Black Thumb */
+      border: 2px solid #020306; /* Padding effect inside track */
+      border-radius: 9999px;
+      transition: var(--transition-smooth);
+    }
+
+    .nav-sidebar::-webkit-scrollbar-thumb:hover,
+    .modal-body::-webkit-scrollbar-thumb:hover,
+    .terminal-screen::-webkit-scrollbar-thumb:hover {
+      background: var(--gitsec-blue); /* Siber Neon Blue Highlight on Hover */
+    }
+
+    .main-workspace::-webkit-scrollbar-thumb:hover {
+      background: #141923; /* Sleek Premium Charcoal Black Hover - Completely black theme */
+    }
+
+    /* === Test Cards Grid === */
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 1.25rem;
+    }
+
+    /* Premium Glassmorphic Test Card */
+    .test-card {
+      background: var(--card-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: 1rem;
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 1rem;
+      transition: var(--transition-smooth);
+      position: relative;
+      overflow: hidden;
+      box-shadow: var(--card-shadow);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+
+    .test-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 4px;
+      height: 100%;
+      background: transparent;
+      transition: var(--transition-smooth);
+    }
+
+    .test-card:hover {
+      border-color: rgba(59, 130, 246, 0.35);
+      transform: translateY(-4px);
+      box-shadow: var(--card-shadow-hover);
+      background: var(--card-hover-bg);
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+
+    .card-title-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+    }
+
+    .card-tag {
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      background: rgba(59, 130, 246, 0.12);
+      border: 1px solid rgba(59, 130, 246, 0.25);
+      color: #60a5fa;
+      padding: 0.2rem 0.6rem;
+      border-radius: 0.25rem;
+      align-self: flex-start;
+      letter-spacing: 0.05em;
+    }
+
+    .card-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      color: var(--text-main);
+      font-family: 'Outfit', var(--font-sans);
+    }
+
+    .card-status-dot {
+      width: 0.55rem;
+      height: 0.55rem;
+      border-radius: 50%;
+      background: #1e293b;
+      transition: var(--transition-smooth);
+      box-shadow: 0 0 2px rgba(0,0,0,0.5);
+    }
+
+    .card-content {
+      padding: 0.25rem 0;
+      border-top: 1px dashed var(--panel-border);
+      padding-top: 0.95rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+    }
+
+    .card-content p {
+      font-size: 0.825rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    .card-select-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+    }
+
+    .card-select-group label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .card-select-group select {
+      background: var(--input-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: 0.4rem;
+      padding: 0.55rem 0.85rem;
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      font-size: 0.825rem;
+      outline: none;
+      transition: var(--transition-smooth);
+      cursor: pointer;
+      box-shadow: var(--input-shadow);
+    }
+
+    .card-select-group select:focus {
+      border-color: var(--gitsec-blue);
+      box-shadow: var(--input-shadow-focus), 0 0 8px var(--gitsec-blue-glow);
+    }
+
+    /* Dynamic Card Border and Indicators */
+    .test-card.success {
+      border-color: rgba(16, 185, 129, 0.25);
+    }
+    .test-card.success::before {
+      background: var(--gitsec-green);
+    }
+    .test-card.success .card-status-dot {
+      background: var(--gitsec-green);
+      box-shadow: 0 0 10px var(--gitsec-green);
+    }
+
+    .test-card.fail {
+      border-color: rgba(244, 63, 94, 0.25);
+    }
+    .test-card.fail::before {
+      background: var(--gitsec-red);
+    }
+    .test-card.fail .card-status-dot {
+      background: var(--gitsec-red);
+      box-shadow: 0 0 10px var(--gitsec-red);
+    }
+
+    .test-card.running {
+      border-color: rgba(245, 158, 11, 0.35);
+      background: rgba(245, 158, 11, 0.03);
+    }
+    .test-card.running::before {
+      background: var(--gitsec-yellow);
+    }
+    .test-card.running .card-status-dot {
+      background: var(--gitsec-yellow);
+      box-shadow: 0 0 12px var(--gitsec-yellow);
+      animation: spin 2s linear infinite;
+      border: 1px dashed rgba(0,0,0,0.4);
+    }
+
+    @keyframes spin {
+      100% { transform: rotate(360deg); }
+    }
+
+    .card-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-top: 1px solid var(--panel-border);
+      padding-top: 0.95rem;
+      gap: 1rem;
+    }
+
+    .card-meta {
+      font-size: 0.725rem;
+      color: var(--text-dark);
+      font-family: var(--font-mono);
+      font-weight: 500;
+      letter-spacing: -0.01em;
+    }
+
+    /* Premium Sleek Button */
+    .btn-run {
+      background: linear-gradient(135deg, var(--gitsec-blue) 0%, #2563eb 100%);
+      border: none;
+      color: #ffffff;
+      padding: 0.55rem 1.25rem;
+      border-radius: 0.5rem;
+      font-family: var(--font-sans);
+      font-size: 0.825rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      transition: var(--transition-smooth);
+      box-shadow: 0 4px 10px rgba(59, 130, 246, 0.25);
+    }
+
+    .btn-run:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 15px rgba(59, 130, 246, 0.4), 0 0 10px var(--gitsec-blue-glow);
+      filter: brightness(1.1);
+    }
+
+    .btn-run:active:not(:disabled) {
+      transform: translateY(1px);
+    }
+
+    .btn-run:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    .terminal-container {
+      background: var(--terminal-container-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: 0.85rem;
+      display: flex;
+      flex-direction: column;
+      height: 280px;
+      min-height: 140px;
+      flex-shrink: 0;
+      overflow: hidden;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.65), inset 0 1px 1px rgba(255, 255, 255, 0.05);
+      position: relative;
+    }
+
+    .terminal-resizer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 6px;
+      cursor: ns-resize;
+      z-index: 100;
+      background: transparent;
+      transition: background 0.2s, height 0.2s;
+    }
+
+    .terminal-resizer:hover,
+    .terminal-resizer.dragging {
+      background: var(--gitsec-blue);
+      box-shadow: 0 0 10px var(--gitsec-blue-glow);
+      height: 8px;
+    }
+
+    .terminal-header {
+      background: var(--terminal-header-bg);
+      border-bottom: 1px solid var(--panel-border);
+      padding: 0.75rem 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .terminal-title {
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #94a3b8;
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+    }
+
+    /* Elegant window controls */
+    .terminal-title::before {
+      content: '';
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #ef4444; /* Mac red button style */
+      box-shadow: 16px 0 0 #f59e0b, 32px 0 0 #10b981;
+      margin-right: 2.5rem;
+    }
+
+    .terminal-actions {
+      display: flex;
+      gap: 0.45rem;
+    }
+
+    .terminal-btn {
+      background: rgba(30, 41, 59, 0.35);
+      border: 1px solid var(--panel-border);
+      color: var(--text-muted);
+      padding: 0.4rem 0.8rem;
+      border-radius: 0.375rem;
+      font-family: var(--font-sans);
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition-smooth);
+    }
+
+    .terminal-btn:hover {
+      background: rgba(30, 41, 59, 0.7);
+      border-color: var(--gitsec-blue);
+      color: #ffffff;
+    }
+
+    .terminal-btn.stop {
+      background: rgba(244, 63, 94, 0.12);
+      border-color: rgba(244, 63, 94, 0.35);
+      color: #fda4af;
+      animation: stop-pulse 1.8s infinite alternate;
+    }
+
+    @keyframes stop-pulse {
+      0% { box-shadow: 0 0 4px rgba(244, 63, 94, 0.1); }
+      100% { box-shadow: 0 0 12px rgba(244, 63, 94, 0.35); }
+    }
+
+    .terminal-btn.stop:hover {
+      background: rgba(244, 63, 94, 0.25);
+      border-color: var(--gitsec-red);
+      color: #ffffff;
+    }
+
+    .terminal-screen {
+      flex: 1;
+      padding: 1.4rem;
+      overflow-y: auto;
+      font-family: var(--font-mono);
+      font-size: 0.825rem;
+      line-height: 1.65;
+      color: var(--terminal-color);
+      background: var(--terminal-bg);
+      border: var(--terminal-border);
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    /* === Custom Details Accordion Styling === */
+    .btn-toggle-details {
+      background: rgba(30, 41, 59, 0.35);
+      border: 1px solid var(--panel-border);
+      color: var(--text-main);
+      padding: 0.55rem 0.85rem;
+      border-radius: 0.4rem;
+      font-family: var(--font-sans);
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      transition: var(--transition-smooth);
+      margin-bottom: 0.5rem;
+      outline: none;
+    }
+
+    .btn-toggle-details:hover {
+      background: rgba(30, 41, 59, 0.65);
+      border-color: var(--gitsec-blue);
+      box-shadow: 0 0 8px var(--gitsec-blue-glow);
+    }
+
+    .arrow-icon {
+      transition: var(--transition-smooth);
+    }
+
+    .btn-toggle-details.active .arrow-icon {
+      transform: rotate(180deg);
+    }
+
+    .details-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+      background: var(--panel-bg-solid);
+      border: 1px solid var(--panel-border);
+      border-radius: 0.75rem;
+      padding: 1.5rem;
+      margin-top: 0.75rem;
+      transition: var(--transition-smooth);
+    }
+
+    .details-panel.hidden {
+      display: none;
+    }
+
+    /* Premium Custom Select Design System */
+    .gitsec-select-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+      width: 100%;
+    }
+
+    .gitsec-select-wrapper select {
+      padding-left: 2.75rem;
+      padding-right: 2.75rem;
+      appearance: none;
+      -webkit-appearance: none;
+      background: var(--input-bg, rgba(5, 7, 15, 0.85));
+      border: 1px solid var(--panel-border);
+      border-radius: 0.5rem;
+      color: var(--text-main);
+      height: 2.75rem;
+      font-size: 0.875rem;
+      font-family: var(--font-sans);
+      width: 100%;
+      outline: none;
+      cursor: pointer;
+      transition: var(--transition-smooth);
+      box-shadow: var(--input-shadow, inset 0 2px 4px rgba(0, 0, 0, 0.5));
+    }
+
+    .gitsec-select-wrapper select:focus {
+      border-color: var(--gitsec-blue);
+      box-shadow: var(--input-shadow-focus, inset 0 1px 2px rgba(0, 0, 0, 0.6)), 0 0 10px var(--gitsec-blue-glow);
+    }
+
+    .gitsec-select-wrapper.no-left-icon select {
+      padding-left: 1rem;
+    }
+
+    .select-icon-left {
+      position: absolute;
+      left: 1rem;
+      display: flex;
+      align-items: center;
+      pointer-events: none;
+      color: var(--text-muted);
+      z-index: 10;
+    }
+
+    .select-chevron-right {
+      position: absolute;
+      right: 1rem;
+      display: flex;
+      align-items: center;
+      pointer-events: none;
+      color: var(--text-dark);
+      z-index: 10;
+    }
+
+    /* Premium Custom Inputs */
+    .gitsec-input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+      width: 100%;
+    }
+
+    .gitsec-input-wrapper input {
+      background: var(--input-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: 0.5rem;
+      color: var(--text-main);
+      height: 2.75rem;
+      font-size: 0.875rem;
+      font-family: var(--font-sans);
+      width: 100%;
+      outline: none;
+      padding: 0.5rem 1rem;
+      transition: var(--transition-smooth);
+      box-shadow: var(--input-shadow);
+    }
+
+    .gitsec-input-wrapper input:focus {
+      border-color: var(--gitsec-blue);
+      box-shadow: var(--input-shadow-focus), 0 0 10px var(--gitsec-blue-glow);
+    }
+
+    .gitsec-input-wrapper.time-input-wrapper input {
+      padding-right: 2.75rem;
+    }
+
+    .input-icon-right {
+      position: absolute;
+      right: 1rem;
+      display: flex;
+      align-items: center;
+      pointer-events: none;
+      color: var(--text-muted);
+      z-index: 10;
+    }
+
+    .field-hint {
+      font-size: 0.75rem;
+      color: var(--text-dark);
+      margin-top: 0.45rem;
+      line-height: 1.4;
+    }
+
+    /* Days of Week Badge styling */
+    .weekly-days-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.6rem;
+      margin-top: 0.5rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .day-badge {
+      position: relative;
+      display: inline-block;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .day-badge input {
+      position: absolute;
+      opacity: 0;
+      cursor: pointer;
+      height: 0;
+      width: 0;
+    }
+
+    .day-badge-text {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.55rem;
+      padding: 0.5rem 1.1rem;
+      border-radius: 9999px;
+      border: 1px solid var(--panel-border);
+      background: var(--input-bg);
+      color: var(--text-muted);
+      font-size: 0.825rem;
+      font-weight: 600;
+      transition: var(--transition-smooth);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+    }
+
+    .day-badge-text .checkbox-box {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 1rem;
+      height: 1rem;
+      border: 1.5px solid var(--text-dark);
+      border-radius: 0.25rem;
+      background: transparent;
+      transition: var(--transition-smooth);
+    }
+
+    .day-badge-text .checkbox-box .check-icon {
+      width: 0.7rem;
+      height: 0.7rem;
+      color: #ffffff;
+      display: none;
+    }
+
+    .day-badge:hover .day-badge-text {
+      border-color: var(--text-dark);
+      color: var(--text-main);
+      background: var(--toggle-group-bg);
+    }
+
+    .day-badge input:checked + .day-badge-text {
+      border-color: var(--gitsec-blue);
+      background: rgba(59, 130, 246, 0.12);
+      color: var(--gitsec-blue);
+      box-shadow: 0 0 10px rgba(59, 130, 246, 0.15);
+    }
+
+    .day-badge input:checked + .day-badge-text .checkbox-box {
+      border-color: var(--gitsec-blue);
+      background-color: var(--gitsec-blue);
+    }
+
+    .day-badge input:checked + .day-badge-text .checkbox-box .check-icon {
+      display: block;
+    }
+
+    /* Included Items Grid */
+    .included-items-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.85rem;
+      margin-top: 0.65rem;
+    }
+
+    .included-item-card {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      background: var(--input-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: 0.6rem;
+      padding: 0.85rem 1.15rem;
+      cursor: pointer;
+      transition: var(--transition-smooth);
+      position: relative;
+      user-select: none;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .included-item-card:hover:not(.disabled) {
+      border-color: var(--text-dark);
+      background: var(--toggle-group-bg);
+    }
+
+    .included-item-card.checked {
+      border-color: var(--gitsec-blue);
+      background: rgba(59, 130, 246, 0.12);
+      box-shadow: 0 0 10px rgba(59, 130, 246, 0.15);
+    }
+
+    .included-item-card.disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    .included-item-card .checkbox-box {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 1rem;
+      height: 1rem;
+      border: 1.5px solid var(--text-dark);
+      border-radius: 0.25rem;
+      background: transparent;
+      transition: var(--transition-smooth);
+    }
+
+    .included-item-card .checkbox-box .check-icon {
+      width: 0.7rem;
+      height: 0.7rem;
+      color: #ffffff;
+      display: none;
+    }
+
+    .included-item-card.checked .checkbox-box {
+      border-color: var(--gitsec-blue);
+      background-color: var(--gitsec-blue);
+    }
+
+    .included-item-card.checked .checkbox-box .check-icon {
+      display: block;
+    }
+
+    .included-item-card input[type="checkbox"] {
+      position: absolute;
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .included-item-card span {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    .coming-soon-badge {
+      margin-left: auto;
+      font-size: 0.65rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      background: rgba(71, 85, 105, 0.2);
+      color: var(--text-dark);
+      padding: 0.2rem 0.5rem;
+      border-radius: 9999px;
+      border: 1px solid var(--panel-border);
+      letter-spacing: 0.05em;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .w-4 {
+      width: 1rem !important;
+      min-width: 1rem;
+    }
+
+    .h-4 {
+      height: 1rem !important;
+      min-height: 1rem;
+    }
+
+    .text-zinc-400 {
+      color: #71717a !important;
+    }
+
+    /* === Modern Centered Modal Dialog === */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(4, 5, 10, 0.75);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease-in-out;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-container {
+      background: var(--panel-bg-solid);
+      border: 1px solid var(--panel-border);
+      border-radius: 1.25rem;
+      width: 90%;
+      max-width: 580px;
+      max-height: 88vh;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 20px rgba(59, 130, 246, 0.1);
+      transform: scale(0.94);
+      transition: var(--transition-spring);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .modal-overlay.active .modal-container {
+      transform: scale(1);
+    }
+
+    .modal-header {
+      padding: 1.35rem 1.85rem;
+      border-bottom: 1px solid var(--panel-border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(30, 41, 59, 0.2);
+    }
+
+    .modal-header h3 {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--text-main);
+      background: var(--brand-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin: 0;
+      font-family: 'Outfit', var(--font-sans);
+    }
+
+    .btn-close-modal {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 1.8rem;
+      cursor: pointer;
+      line-height: 1;
+      padding: 0.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: var(--transition-smooth);
+    }
+
+    .btn-close-modal:hover {
+      color: var(--text-main);
+      transform: scale(1.15) rotate(90deg);
+    }
+
+    .modal-body {
+      padding: 1.85rem;
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    .modal-body .details-panel {
+      background: none !important;
+      border: none !important;
+      padding: 0 !important;
+      margin-top: 0 !important;
+    }
+
+    .modal-footer {
+      padding: 1.25rem 1.85rem;
+      border-top: 1px solid var(--panel-border);
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.85rem;
+      background: var(--toggle-group-bg);
+    }
+
+    .btn-modal-cancel {
+      background: rgba(30, 41, 59, 0.35);
+      border: 1px solid var(--panel-border);
+      color: var(--text-main);
+      padding: 0.6rem 1.35rem;
+      border-radius: 0.5rem;
+      font-family: var(--font-sans);
+      font-size: 0.825rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition-smooth);
+    }
+
+    .btn-modal-cancel:hover {
+      background: rgba(30, 41, 59, 0.75);
+      border-color: #475569;
+    }
+
+    .btn-modal-save {
+      background: linear-gradient(135deg, var(--gitsec-blue) 0%, #2563eb 100%);
+      border: none;
+      color: #ffffff;
+      padding: 0.6rem 1.35rem;
+      border-radius: 0.5rem;
+      font-family: var(--font-sans);
+      font-size: 0.825rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition-smooth);
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
+    }
+
+    .btn-modal-save:hover {
+      box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4), 0 0 10px var(--gitsec-blue-glow);
+      filter: brightness(1.15);
+    }
+
+    /* === Premium Sidebar Navigation Menu === */
+    .nav-sidebar {
+      background: var(--sidebar-bg);
+      border-right: 1px solid var(--panel-border);
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      height: 100%;
+      width: 100%;
+      overflow-y: auto;
+      overflow-x: hidden;
+      transition: var(--transition-smooth);
+    }
+
+    .nav-sidebar::-webkit-scrollbar {
+      width: 0;
+    }
+
+    /* Minimized Rail animations */
+    .sidebar-wrapper.collapsed .nav-menu {
+      padding: 1.25rem 0.5rem;
+    }
+
+    .sidebar-wrapper.collapsed .nav-item {
+      padding: 0.75rem 0;
+      justify-content: center;
+      gap: 0;
+    }
+
+    .sidebar-wrapper.collapsed .nav-item .nav-label {
+      opacity: 0;
+      max-width: 0;
+      margin-left: 0;
+      pointer-events: none;
+    }
+
+    .sidebar-wrapper.collapsed .nav-item .nav-badge {
+      opacity: 0;
+      max-width: 0;
+      padding: 0;
+      margin-left: 0;
+      pointer-events: none;
+    }
+
+    .sidebar-wrapper.collapsed .nav-section-label {
+      font-size: 0px !important;
+      padding: 0.85rem 0.5rem 0.35rem;
+      justify-content: center;
+      gap: 0;
+    }
+
+    .sidebar-wrapper.collapsed .nav-section-label::after {
+      margin: 0;
+      background: rgba(71, 85, 105, 0.5);
+    }
+
+    .sidebar-wrapper.collapsed .sidebar-footer {
+      justify-content: center;
+      padding: 1rem 0;
+    }
+
+    .sidebar-wrapper.collapsed .sidebar-footer > span {
+      opacity: 0;
+      max-width: 0;
+      padding: 0;
+      margin: 0;
+      pointer-events: none;
+    }
+
+    .sidebar-wrapper.collapsed .system-status .status-text {
+      opacity: 0;
+      max-width: 0;
+      pointer-events: none;
+    }
+
+    .sidebar-wrapper.collapsed .system-status {
+      gap: 0;
+    }
+
+    .nav-menu {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+      padding: 1.25rem 0.85rem;
+    }
+
+    .nav-section-label {
+      font-size: 0.65rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: #475569;
+      padding: 1.2rem 1.1rem 0.6rem;
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      transition: var(--transition-smooth);
+    }
+
+    .nav-section-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(to right, rgba(71, 85, 105, 0.4), transparent);
+    }
+
+    .nav-item {
+      background: transparent;
+      border: none;
+      color: #64748b;
+      padding: 0.75rem 1.1rem;
+      border-radius: 0.65rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      font-family: var(--font-sans);
+      font-size: 0.825rem;
+      font-weight: 600;
+      transition: var(--transition-smooth);
+      width: 100%;
+      text-align: left;
+      outline: none;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .nav-item::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%) scaleY(0);
+      width: 4px;
+      height: 60%;
+      border-radius: 0 4px 4px 0;
+      background: var(--gitsec-blue);
+      transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .nav-item:hover {
+      background: rgba(255, 255, 255, 0.035);
+      color: #cbd5e1;
+    }
+
+    .nav-item.active {
+      background: rgba(59, 130, 246, 0.08);
+      color: #f8fafc;
+      box-shadow: inset 0 1px 1px rgba(255,255,255,0.03);
+    }
+
+    .nav-item.active::before {
+      transform: translateY(-50%) scaleY(1);
+    }
+
+    .nav-item .nav-icon {
+      width: 1.2rem;
+      height: 1.2rem;
+      min-width: 1.2rem;
+      flex-shrink: 0;
+      transition: var(--transition-smooth);
+      color: inherit;
+    }
+
+    .nav-item.active .nav-icon {
+      color: var(--gitsec-blue);
+      filter: drop-shadow(0 0 6px var(--gitsec-blue-glow));
+    }
+
+    .nav-item:hover .nav-icon {
+      color: #e2e8f0;
+    }
+
+    .nav-item .nav-label {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      opacity: 1;
+      max-width: 160px;
+      transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), max-width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .nav-item .nav-badge {
+      margin-left: auto;
+      font-size: 0.65rem;
+      font-weight: 700;
+      font-family: var(--font-mono);
+      background: rgba(59, 130, 246, 0.15);
+      color: #60a5fa;
+      padding: 0.15rem 0.55rem;
+      border-radius: 9999px;
+      line-height: 1.4;
+      opacity: 1;
+      max-width: 45px;
+      transition: var(--transition-smooth);
+      border: 1px solid rgba(59, 130, 246, 0.25);
+    }
+
+    .sidebar-divider {
+      height: 1px;
+      background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.05), transparent);
+      margin: 0.5rem 1.25rem;
+    }
+
+    .sidebar-footer {
+      border-top: 1px solid rgba(255, 255, 255, 0.04);
+      padding: 1.15rem 1.25rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.7rem;
+      color: var(--text-dark);
+      font-family: var(--font-mono);
+      background: rgba(0, 0, 0, 0.25);
+    }
+
+    .sidebar-footer > span {
+      opacity: 1;
+      max-width: 60px;
+      transition: var(--transition-smooth);
+      white-space: nowrap;
+      overflow: hidden;
+      font-weight: 600;
+    }
+
+    .system-status {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      color: var(--gitsec-green);
+      font-weight: 700;
+      font-size: 0.7rem;
+      transition: gap 0.25s ease;
+    }
+
+    .system-status .status-text {
+      opacity: 1;
+      max-width: 90px;
+      transition: var(--transition-smooth);
+      display: inline-block;
+      white-space: nowrap;
+      overflow: hidden;
+    }
+
+    .system-status::before {
+      content: '';
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--gitsec-green);
+      box-shadow: 0 0 8px var(--gitsec-green);
+      animation: statusPulse 1.8s infinite cubic-bezier(0.4, 0, 0.6, 1);
+    }
+
+    @keyframes statusPulse {
+      0%, 100% { opacity: 1; box-shadow: 0 0 8px var(--gitsec-green); }
+      50% { opacity: 0.4; box-shadow: 0 0 3px var(--gitsec-green); }
+    }
+
+    /* === Tab Panels and Layout Animations === */
+    .tab-panel {
+      animation: tabFadeIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      width: 100%;
+    }
+
+    @keyframes tabFadeIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* === Dynamic .env Config Editor Grid === */
+    .env-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 1.5rem;
+      width: 100%;
+    }
+
+    .env-card-wide {
+      grid-column: 1 / -1;
+    }
+
+    /* === Dynamic Responsive Dashboard Layout === */
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 1.25rem;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.25rem;
+    }
+
+    @media (max-width: 1024px) {
+      .dashboard-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .btn-env-save {
+      background: linear-gradient(135deg, var(--gitsec-green) 0%, #059669 100%);
+      border: none;
+      color: #ffffff;
+      padding: 0.75rem 1.6rem;
+      border-radius: 0.5rem;
+      font-family: var(--font-sans);
+      font-size: 0.875rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+      transition: var(--transition-smooth);
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
+      outline: none;
+    }
+
+    .btn-env-save:hover {
+      box-shadow: 0 6px 18px rgba(16, 185, 129, 0.45), 0 0 10px var(--gitsec-green-glow);
+      filter: brightness(1.15);
+    }
+
+    .btn-env-save:active {
+      transform: scale(0.97);
+    }
+
+    /* === Toast Glassmorphic Notification === */
+    .toast-notification {
+      position: fixed;
+      bottom: 2.5rem;
+      right: 2.5rem;
+      background: rgba(12, 16, 30, 0.85);
+      backdrop-filter: blur(15px);
+      -webkit-backdrop-filter: blur(15px);
+      border: 1px solid var(--gitsec-green);
+      color: var(--text-main);
+      padding: 1.15rem 1.75rem;
+      border-radius: 0.75rem;
+      box-shadow: 0 20px 45px rgba(0, 0, 0, 0.7), 0 0 15px rgba(16, 185, 129, 0.1);
+      z-index: 2000;
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      font-family: var(--font-sans);
+      font-size: 0.875rem;
+      font-weight: 600;
+      transition: var(--transition-spring);
+    }
+    
+    .toast-notification.error {
+      border-color: var(--gitsec-red);
+      box-shadow: 0 20px 45px rgba(0, 0, 0, 0.7), 0 0 15px rgba(244, 63, 94, 0.1);
+    }
+
+    .toast-notification.hidden {
+      opacity: 0;
+      transform: translateY(25px) scale(0.92);
+      pointer-events: none;
+    }
+
+    /* Password Input Visibility styling */
+    .password-input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+      width: 100%;
+    }
+
+    .password-input-wrapper input {
+      padding-right: 2.75rem !important;
+    }
+
+    .password-toggle-btn {
+      position: absolute;
+      right: 0.85rem;
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.35rem;
+      transition: var(--transition-smooth);
+      outline: none;
+    }
+
+    .password-toggle-btn:hover {
+      color: var(--text-main);
+      transform: scale(1.1);
+    }
+
+    /* === Sleek Floating Sidebar Toggle Button === */
+    .sidebar-toggle-floating-btn {
+      position: absolute;
+      right: -15px;
+      top: 1.85rem;
+      z-index: 1000;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background: #0f1322;
+      border: 1px solid var(--panel-border);
+      color: var(--text-muted);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+      transition: var(--transition-smooth);
+      outline: none;
+      transform: scale(1);
+    }
+
+    .sidebar-toggle-floating-btn:hover {
+      color: var(--text-main);
+      border-color: var(--gitsec-blue);
+      box-shadow: 0 0 15px rgba(59, 130, 246, 0.45);
+      background: #141930;
+      transform: scale(1.12);
+    }
+
+    /* Collapsed rail adjustments */
+    .sidebar-wrapper.collapsed .sidebar-toggle-floating-btn {
+      right: -15px;
+      background: var(--gitsec-blue);
+      color: #ffffff;
+      border-color: var(--gitsec-blue);
+      box-shadow: 0 0 15px rgba(59, 130, 246, 0.6);
+    }
+
+    .sidebar-wrapper.collapsed .sidebar-toggle-floating-btn:hover {
+      background: var(--gitsec-blue-hover);
+      box-shadow: 0 0 20px rgba(59, 130, 246, 0.85);
+    }
+
+    .sidebar-toggle-floating-btn svg {
+      transition: var(--transition-spring);
+    }
+
+    .sidebar-wrapper.collapsed .sidebar-toggle-floating-btn svg {
+      transform: rotate(180deg);
+    }
+  </style>
+</head>
+<body>
+
+  <header style="background: var(--header-bg);">
+    <div class="brand">
+      <!-- Official Gitsec Logo -->
+      <svg class="brand-logo-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 493 165" fill="none">
+        <g>
+          <!-- Text part (gitsec) - Crisp White / Dynamic Text Color -->
+          <path d="M192.525 83.415C192.525 59.5843 209.677 42.5323 233.304 42.5323C247.992 42.5323 260.421 49.7244 267.817 62.4604L254.052 69.239C249.533 61.1244 242.137 56.6057 233.407 56.6057C219.129 56.6057 209.165 67.2883 209.165 83.5177C209.165 98.5137 219.335 109.196 233.715 109.196C245.116 109.196 253.641 102.416 254.771 92.3497H239.619C236.697 92.3497 234.329 89.983 234.329 87.0617V85.0057C234.329 82.0843 236.697 79.7163 239.619 79.7163H266.38C269.399 79.7163 271.8 82.243 271.675 85.259C270.743 107.69 255.404 122.652 232.584 122.652C209.677 122.652 192.525 106.115 192.525 83.415Z" fill="var(--logo-text-color, #ffffff)"></path>
+          <path d="M279.939 64.8964C279.939 59.3204 284.006 55.3711 289.582 55.3711C295.277 55.3711 299.342 59.3204 299.342 64.8964C299.342 70.8217 295.507 74.5391 289.582 74.5391C283.657 74.5391 279.939 70.8217 279.939 64.8964Z" fill="var(--logo-text-color, #ffffff)"></path>
+          <path d="M297.19 121.418H282.092V79.638H297.19V121.418Z" fill="var(--logo-text-color, #ffffff)"></path>
+          <path d="M328.21 55.3724V70.2671H338.275V82.6951H328.21V121.316H313.108V82.6951H306.74V70.2671H313.108V55.3724H328.21Z" fill="var(--logo-text-color, #ffffff)"></path>
+          <path d="M366.931 50.7497C358.508 50.7497 354.194 56.7083 354.194 62.9737C354.194 70.267 359.226 73.1417 370.628 77.3537C379.462 80.4363 390.658 85.4683 390.658 98.2057C390.658 114.228 378.126 122.652 365.799 122.652C355.015 122.652 346.386 117.62 341.766 109.196L348.852 103.444C353.166 110.634 358.61 113.922 365.903 113.922C373.504 113.922 380.695 108.579 380.695 99.4377C380.695 90.811 373.607 87.727 364.054 84.4403C352.858 80.6403 344.231 75.7097 344.231 63.3857C344.231 53.011 351.934 42.5323 366.827 42.5323C373.915 42.5323 382.132 45.4097 387.164 53.215L381.003 58.8643C376.792 53.215 372.478 50.7497 366.931 50.7497Z" fill="var(--logo-text-color, #ffffff)"></path>
+          <path d="M436.465 91.8357C435.437 83.8237 429.789 78.6877 422.084 78.6877C413.867 78.6877 408.424 83.5157 406.883 91.8357H436.465ZM422.393 122.344C407.293 122.344 397.639 112.174 397.639 97.1784C397.639 82.0784 407.911 71.4984 422.188 71.4984C436.465 71.4984 445.812 82.0784 445.812 98.9237H406.575C407.293 108.784 413.765 114.844 422.496 114.844C429.172 114.844 433.795 111.557 437.801 105.396L444.477 109.606C440.163 117.516 432.049 122.344 422.393 122.344Z" fill="var(--logo-text-color, #ffffff)"></path>
+          <path d="M478.166 79.0998C468.716 79.0998 460.602 85.8798 460.602 96.9718C460.602 107.553 468.305 114.742 478.475 114.742C483.301 114.742 488.849 112.482 492.444 109.092H492.752V117.516C489.054 120.186 482.789 122.344 477.241 122.344C461.936 122.344 451.562 111.969 451.562 97.0744C451.562 82.0784 463.068 71.4984 477.345 71.4984C482.685 71.4984 488.028 73.0398 492.649 76.0184V84.6464L492.342 84.7504C488.642 81.2571 483.405 79.0998 478.166 79.0998Z" fill="var(--logo-text-color, #ffffff)"></path>
+          
+          <!-- Circle/Spiral Icon part - Siber Blue -->
+          <path d="M137.952 131.654C133.68 129.577 129.079 128.664 124.151 128.91C119.221 129.162 112.887 129.98 105.141 131.366C94.736 133.165 85.56 133.76 77.6067 133.161C69.6587 132.562 62.268 130.008 55.4427 125.5C51.3107 122.77 47.5467 119.138 44.136 114.633C44.156 114.621 44.176 114.608 44.196 114.596C36.992 105.926 32.656 94.7891 32.656 82.6358C32.656 54.9931 55.0653 32.5838 82.708 32.5838C94.6653 32.5838 105.628 36.7944 114.236 43.7904C114.409 43.9651 114.705 44.2891 115.009 44.7664C115.012 44.7718 115.015 44.7691 115.017 44.7731C117.925 50.0598 123.503 53.6704 129.964 53.6704C139.411 53.6704 147.069 46.0118 147.069 36.5651C147.069 30.1518 143.535 24.5704 138.313 21.6424C123.624 8.20644 104.069 -0.000218516 82.592 -0.000218516C36.9787 -0.000218516 0 36.9771 0 82.5918C0 123.821 30.212 157.986 69.704 164.176C70.288 155.169 77.748 148.038 86.9027 148.038C95.4307 148.038 102.497 154.252 103.896 162.382C119.909 158.11 134.013 149.16 144.637 137.065C142.652 134.722 140.444 132.87 137.952 131.654Z" fill="var(--gitsec-blue)"></path>
+          <path d="M165.182 82.5916L165.173 82.5956C165.08 73.7396 157.88 66.5876 149.001 66.5876H127.022C124.48 71.8356 119.118 75.4636 112.897 75.4636C106.674 75.4636 101.33 71.8743 98.789 66.6263C98.789 66.6263 98.7703 66.5969 98.7637 66.5876C95.0477 62.0423 88.9263 59.8009 82.5903 59.8009C70.061 59.8009 59.9023 69.9583 59.9023 82.4903C59.9023 95.0209 70.061 105.18 82.5903 105.18C87.561 105.18 92.141 103.564 95.8783 100.856C95.9263 100.84 95.977 100.842 96.0223 100.813C98.069 99.5409 99.393 98.9596 101.438 98.5236C108.538 97.3916 115.233 96.6676 121.466 96.4036C128.524 96.1063 135.014 96.7903 140.937 98.4543C146.86 100.122 152.404 103.208 157.578 107.712C158.524 108.534 159.444 109.457 160.357 110.406C163.428 101.82 165.133 92.5823 165.173 82.9489C165.176 82.8889 165.182 82.8303 165.182 82.7703C165.182 82.7503 165.181 82.7303 165.181 82.7103C165.181 82.6716 165.182 82.6316 165.182 82.5916Z" fill="var(--gitsec-blue)"></path>
+        </g>
+      </svg>
+      <h1 class="brand-title" style="margin-left: 0.25rem; color: var(--text-main);">Test Otomasyonu</h1>
+    </div>
+    
+    <div class="header-actions" style="display: flex; align-items: center; gap: 1.25rem;">
+      <!-- Clickable Glassmorphic Theme Dropdown Selector -->
+      <div class="theme-dropdown-container" style="position: relative;">
+        <button class="theme-dropdown-trigger" id="themeDropdownTriggerBtn" onclick="toggleThemeDropdown(event)" title="Temayı Değiştir">
+          <!-- Active theme icon dynamically controlled by JS setTheme -->
+          <span id="activeThemeIcon" style="display: flex; align-items: center; justify-content: center; width: 16px; height: 16px;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+          </span>
+        </button>
+        <div class="theme-dropdown-menu hidden" id="themeDropdownMenu">
+          <button class="theme-menu-item" onclick="selectTheme('dark', event)" data-theme-value="dark">
+            <span style="display: flex; align-items: center; justify-content: center; width: 14px; height: 14px;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+            </span>
+            <span>Koyu Tema</span>
+            <svg class="check-indicator" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </button>
+          <button class="theme-menu-item" onclick="selectTheme('light', event)" data-theme-value="light">
+            <span style="display: flex; align-items: center; justify-content: center; width: 14px; height: 14px;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+            </span>
+            <span>Açık Tema</span>
+            <svg class="check-indicator" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </button>
+          <button class="theme-menu-item" onclick="selectTheme('system', event)" data-theme-value="system">
+            <span style="display: flex; align-items: center; justify-content: center; width: 14px; height: 14px;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></svg>
+            </span>
+            <span>Sistem</span>
+            <svg class="check-indicator" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div id="globalStatus" class="status-badge idle">
+        <div class="status-indicator"></div>
+        <span id="globalStatusText">Boşta</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="dashboard-layout">
+    <!-- Sidebar Container Wrapper -->
+    <aside class="sidebar-wrapper" id="sidebarWrapper">
+      <!-- Sleek Floating Sidebar Toggle Button -->
+      <button class="sidebar-toggle-floating-btn" onclick="toggleSidebar()" title="Menüyü Göster/Gizle">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 18 9 12 15 6"></polyline>
+        </svg>
+      </button>
+
+      <!-- Left Navigation Sidebar Content -->
+      <div class="nav-sidebar">
+        <div class="nav-menu">
+          <div class="nav-section-label">Genel</div>
+          <button class="nav-item active" id="btn-tab-dashboard" onclick="showTab('dashboard')">
+            <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"></rect><rect x="14" y="3" width="7" height="5" rx="1"></rect><rect x="14" y="12" width="7" height="9" rx="1"></rect><rect x="3" y="16" width="7" height="5" rx="1"></rect></svg>
+            <span class="nav-label">Dashboard</span>
+          </button>
+
+          <div class="sidebar-divider"></div>
+          <div class="nav-section-label">Testler</div>
+
+          <button class="nav-item" id="btn-tab-schedulers" onclick="showTab('schedulers')">
+            <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+            <span class="nav-label">Schedulers & Restore</span>
+            <span class="nav-badge">2</span>
+          </button>
+          <button class="nav-item" id="btn-tab-github" onclick="showTab('github')">
+            <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg>
+            <span class="nav-label">GitHub Integration</span>
+            <span class="nav-badge">4</span>
+          </button>
+          <button class="nav-item" id="btn-tab-auth" onclick="showTab('auth')">
+            <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+            <span class="nav-label">Authentication</span>
+            <span class="nav-badge">2</span>
+          </button>
+          <button class="nav-item" id="btn-tab-storage" onclick="showTab('storage')">
+            <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+            <span class="nav-label">Storage Integration</span>
+            <span class="nav-badge">1</span>
+          </button>
+
+          <div class="sidebar-divider"></div>
+          <div class="nav-section-label">Ayarlar</div>
+
+          <button class="nav-item" id="btn-tab-env" onclick="showTab('env')">
+            <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+            <span class="nav-label">.env Yapılandırma</span>
+          </button>
+        </div>
+        
+        <div class="sidebar-footer">
+          <span>v1.0.0</span>
+          <div class="system-status"><span class="status-text">Çevrimiçi</span></div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Workspace Area -->
+    <section class="main-workspace">
+      
+      <!-- 1. TAB: Dashboard -->
+      <div id="tab-dashboard" class="tab-panel">
+        <!-- Dashboard Summary & Settings Grid -->
+        <div class="dashboard-grid">
+          <!-- Description / Welcome -->
+          <div class="test-card" style="justify-content: flex-start; gap: 1.25rem;">
+            <div>
+              <span class="card-tag">Özet</span>
+              <h3 class="card-title" style="margin-top: 0.5rem; font-size: 1.5rem;">Test Otomasyon Kontrol Paneli</h3>
+              <p style="color: var(--text-muted); font-size: 0.875rem; line-height: 1.6; margin-top: 0.75rem;">
+                Gitsec E2E (uçtan uca) testlerini sol menüden kategoriler halinde seçip çalıştırabilir ve canlı terminal çıktısını anlık olarak takip edebilirsiniz. Çevre değişkenlerini de doğrudan <strong>.env Config</strong> sekmesinden düzenleyebilirsiniz.
+              </p>
+            </div>
+            
+            <div class="stats-grid" style="margin-top: 1.75rem; border-top: 1px dashed rgba(255, 255, 255, 0.08); padding-top: 1.75rem; width: 100%;">
+              <div style="text-align: center; background: rgba(59, 130, 246, 0.03); border: 1px solid rgba(59, 130, 246, 0.12); padding: 1rem 0.5rem; border-radius: 0.75rem; box-shadow: 0 4px 10px rgba(0,0,0,0.1); transition: var(--transition-smooth);" onmouseover="this.style.borderColor='rgba(59, 130, 246, 0.35)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='rgba(59, 130, 246, 0.12)'; this.style.transform='translateY(0)'">
+                <div style="font-size: 1.8rem; font-weight: 800; color: var(--gitsec-blue); font-family: 'Outfit', sans-serif;">8</div>
+                <div style="font-size: 0.75rem; font-weight: 600; color: var(--text-muted); margin-top: 0.35rem; text-transform: uppercase; letter-spacing: 0.02em;">Toplam Test</div>
+              </div>
+              <div style="text-align: center; background: rgba(16, 185, 129, 0.03); border: 1px solid rgba(16, 185, 129, 0.12); padding: 1rem 0.5rem; border-radius: 0.75rem; box-shadow: 0 4px 10px rgba(0,0,0,0.1); transition: var(--transition-smooth);" onmouseover="this.style.borderColor='rgba(16, 185, 129, 0.35)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='rgba(16, 185, 129, 0.12)'; this.style.transform='translateY(0)'">
+                <div style="font-size: 1.8rem; font-weight: 800; color: var(--gitsec-green); font-family: 'Outfit', sans-serif;">Aktif</div>
+                <div style="font-size: 0.75rem; font-weight: 600; color: var(--text-muted); margin-top: 0.35rem; text-transform: uppercase; letter-spacing: 0.02em;">Entegrasyon</div>
+              </div>
+              <div style="text-align: center; background: rgba(245, 158, 11, 0.03); border: 1px solid rgba(245, 158, 11, 0.12); padding: 1rem 0.5rem; border-radius: 0.75rem; box-shadow: 0 4px 10px rgba(0,0,0,0.1); transition: var(--transition-smooth);" onmouseover="this.style.borderColor='rgba(245, 158, 11, 0.35)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='rgba(245, 158, 11, 0.12)'; this.style.transform='translateY(0)'">
+                <div style="font-size: 1.8rem; font-weight: 800; color: var(--gitsec-yellow); font-family: 'Outfit', sans-serif;">NodeJS</div>
+                <div style="font-size: 0.75rem; font-weight: 600; color: var(--text-muted); margin-top: 0.35rem; text-transform: uppercase; letter-spacing: 0.02em;">Runner Sunucu</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Koşum Ayarları Card -->
+          <div class="test-card" style="justify-content: flex-start; gap: 1.25rem;">
+            <div>
+              <span class="card-tag">Ayarlar</span>
+              <h3 class="card-title" style="margin-top: 0.5rem;">Koşum Ayarları</h3>
+            </div>
+            
+            <div style="display: flex; flex-direction: column; gap: 1rem; width: 100%;">
+              <div class="toggle-group" onclick="document.getElementById('headedToggle').click()">
+                <span style="font-size: 0.8125rem; font-weight: 500;">Başlıklı Mod (Headed)</span>
+                <label class="switch" onclick="event.stopPropagation()">
+                  <input type="checkbox" id="headedToggle" checked onchange="saveSettings()">
+                  <span class="slider"></span>
+                </label>
+              </div>
+
+              <div class="form-group">
+                <label for="workspaceId">Workspace ID</label>
+                <input type="text" id="workspaceId" value="823" placeholder="Örn: 823" oninput="saveSettings(); syncEnvField('WORKSPACE_ID', this.value)">
+              </div>
+              <div class="form-group">
+                <label for="baseUrl">Dashboard Base URL</label>
+                <input type="text" id="baseUrl" value="https://dev.dashboard.gitsec.io" placeholder="Base URL" oninput="saveSettings(); syncEnvField('DASHBOARD_BASE_URL', this.value)">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. TAB: Schedulers & Restore -->
+      <div id="tab-schedulers" class="tab-panel hidden">
+        <div class="cards-grid">
+          <!-- Unified Scheduler Controller Card -->
+          <div id="card-scheduler" class="test-card">
+            <div class="card-header">
+              <div class="card-title-group">
+                <span class="card-tag" id="schedulerActiveTag">@daily</span>
+                <h3 class="card-title" id="schedulerActiveTitle">Daily Scheduler</h3>
+              </div>
+              <div class="card-status-dot"></div>
+            </div>
+            
+            <div class="card-content">
+              <p style="color: var(--text-muted); font-size: 0.8125rem; line-height: 1.5; margin-bottom: 0.75rem;">
+                Otomatik yedekleme planlarını oluşturur, zamanlayıcı sıklığını (Daily, Weekly, Monthly, Cron) ayarlar.
+              </p>
+              <button type="button" id="btnToggleScheduler" class="btn-toggle-details" onclick="toggleSchedulerDetails()">
+                <span>Detayları Düzenle</span>
+                <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+              </button>
+            </div>
+            
+            <div class="card-footer">
+              <span class="card-meta">schedulers.spec.ts</span>
+              <button class="btn-run" onclick="runSchedulerTest()">
+                <span>Çalıştır</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Restore Card -->
+          <div id="card-restore" class="test-card">
+            <div class="card-header">
+              <div class="card-title-group">
+                <span class="card-tag">Restore</span>
+                <h3 class="card-title">Restore</h3>
+              </div>
+              <div class="card-status-dot"></div>
+            </div>
+            <div class="card-content">
+              <p style="color: var(--text-muted); font-size: 0.8125rem; line-height: 1.5;">
+                Oluşturulan yedeklerin geri yükleme arayüzünü test eder, adımları doğrular ve navigasyonu denetler.
+              </p>
+            </div>
+            <div class="card-footer">
+              <span class="card-meta">restore.spec.ts</span>
+              <button class="btn-run" onclick="runTest('', 'card-restore', 'tests/e2e/backups/restore.spec.ts')">
+                <span>Çalıştır</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. TAB: GitHub Integration -->
+      <div id="tab-github" class="tab-panel hidden">
+        <div class="cards-grid">
+          <!-- GitHub Connect -->
+          <div id="card-github-connect" class="test-card">
+            <div class="card-header">
+              <div class="card-title-group">
+                <span class="card-tag">GitHub</span>
+                <h3 class="card-title">GitHub Connect</h3>
+              </div>
+              <div class="card-status-dot"></div>
+            </div>
+            <div class="card-content">
+              <p style="color: var(--text-muted); font-size: 0.8125rem; line-height: 1.5;">
+                GitHub hesabını Gitsec platformuna bağlama adımlarını doğrular.
+              </p>
+            </div>
+            <div class="card-footer">
+              <span class="card-meta">github-connect.spec.ts</span>
+              <button class="btn-run" onclick="runTest('', 'card-github-connect', 'tests/e2e/providers/github-connect.spec.ts')">
+                <span>Çalıştır</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Repositories Include -->
+          <div id="card-github-include" class="test-card">
+            <div class="card-header">
+              <div class="card-title-group">
+                <span class="card-tag">GitHub</span>
+                <h3 class="card-title">Repositories Include</h3>
+              </div>
+              <div class="card-status-dot"></div>
+            </div>
+            <div class="card-content">
+              <p style="color: var(--text-muted); font-size: 0.8125rem; line-height: 1.5;">
+                Yedeklenecek depolardan belirli repo'ların dahil edilmesini ve seçim listenin güncellenmesini test eder.
+              </p>
+              
+              <div class="card-select-group" style="margin-top: 0.75rem;">
+                <label for="includeModeSelect" style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Include Kapsamı (Scope)</label>
+                <div class="gitsec-select-wrapper no-left-icon">
+                  <select id="includeModeSelect" class="gitsec-select" style="padding-left: 0.875rem;" onchange="saveSettings()">
+                    <option value="one_repo">Bir Repoyu İşle (One Repo Switch)</option>
+                    <option value="one_page">Bir Sayfayı Kapsama Ekle (One Page Bulk)</option>
+                    <option value="all_pages">Bütün Sayfaları Kapsama Ekle (All Pages Loop)</option>
+                  </select>
+                  <span class="select-chevron-right">
+                    <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div class="card-footer">
+              <span class="card-meta">github-repositories-include.spec.ts</span>
+              <button class="btn-run" onclick="runTest('', 'card-github-include', 'tests/e2e/providers/github-repositories-include.spec.ts')">
+                <span>Çalıştır</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Repositories Exclude -->
+          <div id="card-github-exclude" class="test-card">
+            <div class="card-header">
+              <div class="card-title-group">
+                <span class="card-tag">GitHub</span>
+                <h3 class="card-title">Repositories Exclude</h3>
+              </div>
+              <div class="card-status-dot"></div>
+            </div>
+            <div class="card-content">
+              <p style="color: var(--text-muted); font-size: 0.8125rem; line-height: 1.5;">
+                Yedeklenecek depolardan bazı repo'ların hariç tutulma (exclude) filtrelemesini doğrular.
+              </p>
+              
+              <div class="card-select-group" style="margin-top: 0.75rem;">
+                <label for="excludeModeSelect" style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Exclude Kapsamı (Scope)</label>
+                <div class="gitsec-select-wrapper no-left-icon">
+                  <select id="excludeModeSelect" class="gitsec-select" style="padding-left: 0.875rem;" onchange="saveSettings()">
+                    <option value="one_repo">Bir Repoyu İşle (One Repo Switch)</option>
+                    <option value="one_page">Bir Sayfayı Devre Dışı Bırak (One Page Bulk)</option>
+                    <option value="all_pages">Bütün Sayfaları Devre Dışı Bırak (All Pages Loop)</option>
+                  </select>
+                  <span class="select-chevron-right">
+                    <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div class="card-footer">
+              <span class="card-meta">github-repositories-exclude.spec.ts</span>
+              <button class="btn-run" onclick="runTest('', 'card-github-exclude', 'tests/e2e/providers/github-repositories-exclude.spec.ts')">
+                <span>Çalıştır</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Repositories Backup -->
+          <div id="card-github-backup" class="test-card">
+            <div class="card-header">
+              <div class="card-title-group">
+                <span class="card-tag">GitHub</span>
+                <h3 class="card-title">Repositories Backup</h3>
+              </div>
+              <div class="card-status-dot"></div>
+            </div>
+            <div class="card-content">
+              <p style="color: var(--text-muted); font-size: 0.8125rem; line-height: 1.5;">
+                Bağlanmış GitHub depolarının tetiklenen anlık yedekleme sürecini test eder.
+              </p>
+            </div>
+            <div class="card-footer">
+              <span class="card-meta">github-repositories-backup.spec.ts</span>
+              <button class="btn-run" onclick="runTest('', 'card-github-backup', 'tests/e2e/providers/github-repositories-backup.spec.ts')">
+                <span>Çalıştır</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. TAB: Authentication -->
+      <div id="tab-auth" class="tab-panel hidden">
+        <div class="cards-grid">
+          <!-- Login Card -->
+          <div id="card-auth-login" class="test-card">
+            <div class="card-header">
+              <div class="card-title-group">
+                <span class="card-tag">Auth</span>
+                <h3 class="card-title">Login E2E</h3>
+              </div>
+              <div class="card-status-dot"></div>
+            </div>
+            <div class="card-content">
+              <p style="color: var(--text-muted); font-size: 0.8125rem; line-height: 1.5;">
+                Gitsec platformuna kullanıcı giriş formunu, hata mesajlarını ve yönlendirmeleri test eder.
+              </p>
+            </div>
+            <div class="card-footer">
+              <span class="card-meta">login.spec.ts</span>
+              <button class="btn-run" onclick="runTest('', 'card-auth-login', 'tests/e2e/auth/login.spec.ts')">
+                <span>Çalıştır</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Register Card -->
+          <div id="card-auth-register" class="test-card">
+            <div class="card-header">
+              <div class="card-title-group">
+                <span class="card-tag">Auth</span>
+                <h3 class="card-title">Register E2E</h3>
+              </div>
+              <div class="card-status-dot"></div>
+            </div>
+            <div class="card-content">
+              <p style="color: var(--text-muted); font-size: 0.8125rem; line-height: 1.5;">
+                Yeni kullanıcı kayıt formu validasyonlarını, parola gereksinimlerini ve başarılı kaydı doğrular.
+              </p>
+            </div>
+            <div class="card-footer">
+              <span class="card-meta">register.spec.ts</span>
+              <button class="btn-run" onclick="runTest('', 'card-auth-register', 'tests/e2e/auth/register.spec.ts')">
+                <span>Çalıştır</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 5. TAB: Storage Integration -->
+      <div id="tab-storage" class="tab-panel hidden">
+        <div class="cards-grid">
+          <!-- Storage Card -->
+          <div id="card-storage" class="test-card">
+            <div class="card-header">
+              <div class="card-title-group">
+                <span class="card-tag">Storage</span>
+                <h3 class="card-title">Storage Provider Connection</h3>
+              </div>
+              <div class="card-status-dot"></div>
+            </div>
+            
+            <div class="card-content">
+              <p style="color: var(--text-muted); font-size: 0.8125rem; line-height: 1.5; margin-bottom: 0.5rem;">
+                Workspace üzerinden "Storage" sayfasına gider, "Add Storage Provider" butonuna tıklar ve seçilen bulut depolama sağlayıcısını bağlamayı dener.
+              </p>
+              
+              <div class="card-select-group" style="margin-top: 0.5rem;">
+                <label for="storageProviderSelect" style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Bulut Depolama Sağlayıcısı (Provider)</label>
+                <div class="gitsec-select-wrapper no-left-icon">
+                  <select id="storageProviderSelect" class="gitsec-select" style="padding-left: 0.875rem;" onchange="saveStorageProviderSettings()">
+                    <option value="aws">AWS S3 (Amazon Simple Storage Service)</option>
+                    <option value="azure">Azure Blob Storage (Microsoft Azure Blob Storage)</option>
+                    <option value="gdrive">Google Drive (Google Drive Service)</option>
+                    <option value="huawei">Huawei OBS (Huawei Object Storage Service)</option>
+                    <option value="onedrive">OneDrive Personal (OneDrive Personal)</option>
+                  </select>
+                  <span class="select-chevron-right">
+                    <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                  </span>
+                </div>
+              </div>
+            </div>
+            
+            <div class="card-footer">
+              <span class="card-meta">storage.spec.ts</span>
+              <button class="btn-run" onclick="runStorageTest()">
+                <span>Çalıştır</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Google Session Card -->
+          <div id="card-google-session" class="test-card">
+            <div class="card-header">
+              <div class="card-title-group">
+                <span class="card-tag">Google Auth</span>
+                <h3 class="card-title">Google Oturum Hazırlığı</h3>
+              </div>
+              <div class="card-status-dot" id="google-session-dot" style="width: 0.55rem; height: 0.55rem; border-radius: 50%; transition: var(--transition-smooth);"></div>
+            </div>
+            
+            <div class="card-content">
+              <p style="color: var(--text-muted); font-size: 0.8125rem; line-height: 1.5; margin-bottom: 0.5rem;">
+                Google güvenlik engellerini aşmak için tarayıcıda bir kez manuel oturum açarak session cookie'lerini kaydedin.
+              </p>
+              
+              <div style="background: rgba(30, 41, 59, 0.25); border: 1px solid var(--panel-border); padding: 0.75rem 1rem; border-radius: 0.5rem; display: flex; flex-direction: column; gap: 0.35rem; margin-top: 0.5rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem;">
+                  <span style="color: var(--text-muted); font-weight: 500;">Durum:</span>
+                  <span id="google-session-badge" class="coming-soon-badge" style="background: rgba(245, 158, 11, 0.12); color: var(--gitsec-yellow); border-color: rgba(245, 158, 11, 0.25); text-transform: none; font-size: 0.75rem; padding: 0.15rem 0.55rem; font-weight: 600;">Kontrol ediliyor...</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; border-top: 1px solid rgba(255,255,255,0.04); padding-top: 0.35rem;">
+                  <span style="color: var(--text-muted); font-weight: 500;">Son Güncelleme:</span>
+                  <span id="google-session-date" style="font-family: var(--font-mono); color: var(--text-muted); font-weight: 600;">-</span>
+                </div>
+              </div>
+            </div>
+            
+            <div class="card-footer">
+              <span class="card-meta">login-google-manually.ts</span>
+              <button class="btn-run" onclick="runGoogleLogin()" style="background: linear-gradient(135deg, #ea4335 0%, #c5221f 100%); box-shadow: 0 4px 10px rgba(234, 67, 53, 0.25); border: none; color: #ffffff; padding: 0.55rem 1.25rem; border-radius: 0.5rem; font-family: var(--font-sans); font-size: 0.825rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 0.45rem; transition: var(--transition-smooth);">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="min-width: 14px;"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+                <span>Google Bağla</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 6. TAB: .env Config -->
+      <div id="tab-env" class="tab-panel hidden">
+        <div class="test-card" style="justify-content: flex-start; gap: 1.5rem; display: flex; flex-direction: column; width: 100%;">
+          <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--panel-border); padding-bottom: 1.25rem; width: 100%;">
+            <div>
+              <span class="card-tag">Konfigürasyon</span>
+              <h3 class="card-title" style="margin-top: 0.5rem; font-size: 1.25rem;">.env Çevre Değişkenleri Editörü</h3>
+              <p style="color: var(--text-muted); font-size: 0.8125rem; margin-top: 0.25rem;">Değerleri değiştirip kaydederek testler sırasında sunucuyu yeniden başlatmadan anında uygulayabilirsiniz.</p>
+            </div>
+            <button class="btn-env-save" onclick="saveEnvVars()">
+              <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+              <span>Kaydet (Save env)</span>
+            </button>
+          </div>
+
+          <div class="env-grid">
+            <!-- E2E User Credentials -->
+            <div class="form-group">
+              <label for="env_E2E_USER_EMAIL">Gitsec Test E-posta (E2E_USER_EMAIL)</label>
+              <input type="text" id="env_E2E_USER_EMAIL" placeholder="gitsectest+1@gmail.com">
+            </div>
+            <div class="form-group">
+              <label for="env_E2E_USER_PASSWORD">Gitsec Test Şifre (E2E_USER_PASSWORD)</label>
+              <div class="password-input-wrapper">
+                <input type="password" id="env_E2E_USER_PASSWORD" placeholder="••••••••">
+                <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('env_E2E_USER_PASSWORD', this)" title="Şifreyi Göster/Gizle">
+                  <svg class="eye-icon w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                  </svg>
+                  <svg class="eye-off-icon w-4 h-4" style="display: none;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                    <line x1="1" y1="1" x2="23" y2="23"></line>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <!-- GitHub Credentials -->
+            <div class="form-group">
+              <label for="env_GITHUB_TEST_USER">GitHub Test Kullanıcı Adı / E-posta (GITHUB_TEST_USER)</label>
+              <input type="text" id="env_GITHUB_TEST_USER" placeholder="gitsectest@gmail.com">
+            </div>
+            <div class="form-group">
+              <label for="env_GITHUB_TEST_PASSWORD">GitHub Test Şifre (GITHUB_TEST_PASSWORD)</label>
+              <div class="password-input-wrapper">
+                <input type="password" id="env_GITHUB_TEST_PASSWORD" placeholder="••••••••">
+                <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('env_GITHUB_TEST_PASSWORD', this)" title="Şifreyi Göster/Gizle">
+                  <svg class="eye-icon w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                  </svg>
+                  <svg class="eye-off-icon w-4 h-4" style="display: none;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                    <line x1="1" y1="1" x2="23" y2="23"></line>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <!-- Core App Details -->
+            <div class="form-group">
+              <label for="env_WORKSPACE_ID">Workspace ID</label>
+              <input type="text" id="env_WORKSPACE_ID" placeholder="Örn: 823" oninput="syncSettingsField('workspaceId', this.value)">
+            </div>
+            <div class="form-group">
+              <label for="env_DASHBOARD_BASE_URL">Dashboard Base URL</label>
+              <input type="text" id="env_DASHBOARD_BASE_URL" placeholder="https://dev.dashboard.gitsec.io" oninput="syncSettingsField('baseUrl', this.value)">
+            </div>
+            <div class="form-group">
+              <label for="env_E2E_STORAGE_PROVIDER">Storage Sağlayıcısı (E2E_STORAGE_PROVIDER)</label>
+              <select id="env_E2E_STORAGE_PROVIDER" class="gitsec-select" onchange="syncStorageProviderField(this.value)">
+                <option value="aws">aws (AWS S3)</option>
+                <option value="azure">azure (Azure Blob Storage)</option>
+                <option value="gdrive">gdrive (Google Drive)</option>
+                <option value="huawei">huawei (Huawei OBS)</option>
+                <option value="onedrive">onedrive (OneDrive Personal)</option>
+              </select>
+            </div>
+
+            <!-- API Details -->
+            <div class="form-group env-card-wide">
+              <label for="env_API_BASE_URL">API Base URL</label>
+              <input type="text" id="env_API_BASE_URL" placeholder="https://dev.api.gitsec.io">
+            </div>
+
+            <!-- Gmail IMAP Credentials -->
+            <div class="form-group">
+              <label for="env_GITHUB_MAIL_USER">IMAP Gmail Adresi (GITHUB_MAIL_USER)</label>
+              <input type="text" id="env_GITHUB_MAIL_USER" placeholder="gmail_user@gmail.com">
+            </div>
+            <div class="form-group">
+              <label for="env_GITHUB_MAIL_PASSWORD">Gmail Uygulama Şifresi (GITHUB_MAIL_PASSWORD)</label>
+              <div class="password-input-wrapper">
+                <input type="password" id="env_GITHUB_MAIL_PASSWORD" placeholder="16 Karakterli Uygulama Şifresi">
+                <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('env_GITHUB_MAIL_PASSWORD', this)" title="Şifreyi Göster/Gizle">
+                  <svg class="eye-icon w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                  </svg>
+                  <svg class="eye-off-icon w-4 h-4" style="display: none;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                    <line x1="1" y1="1" x2="23" y2="23"></line>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live Terminal Console (Persistently visible at bottom) -->
+      <div class="terminal-container" id="terminalContainer">
+        <div class="terminal-resizer" id="terminalResizer"></div>
+        <div class="terminal-header">
+          <div class="terminal-title">Canlı Konsol Çıktısı</div>
+          <div class="terminal-actions">
+            <button id="btnStop" class="terminal-btn stop" style="display: none;" onclick="stopActiveTest()">Süreci Durdur</button>
+            <button class="terminal-btn" onclick="clearConsole()">Temizle</button>
+            <button class="terminal-btn" onclick="copyConsole()">Kopyala</button>
+          </div>
+        </div>
+        <div id="terminalScreen" class="terminal-screen">Tetiklenen testlerin canlı log çıktıları burada anlık olarak akacaktır...</div>
+      </div>
+    </section>
+  </main>
+
+  <div id="toastNotification" class="toast-notification hidden"></div>
+
+  <!-- Modern Centered Modal Dialog for Scheduler Settings -->
+  <div id="schedulerModal" class="modal-overlay" onclick="toggleSchedulerDetails()">
+    <div class="modal-container" role="dialog" aria-modal="true" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Zamanlayıcı Ayarları (Scheduler Settings)</h3>
+        <button type="button" class="btn-close-modal" onclick="toggleSchedulerDetails()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div id="scheduler-details-panel" class="details-panel">
+          <!-- Plan Adı (Schedule Name) -->
+          <div class="card-select-group">
+            <label for="scheduleName" style="font-weight: 600; color: #f4f4f5; margin-bottom: 0.375rem;">Plan Adı (Schedule Name)</label>
+            <div class="gitsec-input-wrapper">
+              <input type="text" id="scheduleName" placeholder="Örn: Nightly Full Backup" class="gitsec-input" oninput="saveSettings()">
+            </div>
+            <span class="field-hint">Boş bırakılırsa otomatik oluşturulur.</span>
+          </div>
+
+          <!-- Schedule Type (Zamanlayıcı Tipi) -->
+          <div class="card-select-group">
+            <label for="scheduleTypeSelect" style="font-weight: 600; color: #f4f4f5; margin-bottom: 0.375rem;">Schedule Type</label>
+            <div class="gitsec-select-wrapper">
+              <span class="select-icon-left" id="scheduleTypeIcon">
+                <!-- Default clock icon for daily -->
+                <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+              </span>
+              <select id="scheduleTypeSelect" class="gitsec-select" onchange="onScheduleTypeChange()">
+                <option value="daily" selected>Daily</option>
+                <option value="weekly">Weekly</option>
+                <option value="monthly">Monthly</option>
+                <option value="cron">Cron</option>
+              </select>
+              <span class="select-chevron-right">
+                <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+              </span>
+            </div>
+          </div>
+
+          <!-- 1. Daily Sub-fields (Time & Explain) -->
+          <div id="sub-panel-daily" class="card-select-group">
+            <label for="scheduleTime" style="font-weight: 600; color: #f4f4f5; margin-bottom: 0.375rem;">Time</label>
+            <div class="gitsec-input-wrapper time-input-wrapper">
+              <input type="time" id="scheduleTime" value="08:30" class="gitsec-input" oninput="syncTimeInputs(this)">
+              <span class="input-icon-right">
+                <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+              </span>
+            </div>
+            <span class="field-hint" id="desc-daily" style="color: #71717a; font-size: 0.8125rem; margin-top: 0.375rem;">Otomatik yedekleme her gün saat 08:30'da gerçekleştirilecektir.</span>
+          </div>
+
+          <!-- 2. Weekly Sub-fields (Days of Week & Time & Explain) -->
+          <div id="sub-panel-weekly" class="card-select-group hidden">
+            <label style="font-weight: 600; color: #f4f4f5; margin-bottom: 0.125rem;">Days of Week</label>
+            <span class="field-hint" style="color: #64748b; font-size: 0.8125rem; margin-bottom: 0.75rem;">Yedekleme planı için bir veya daha fazla gün seçin.</span>
+            <div class="weekly-days-container">
+              <label class="day-badge">
+                <input type="checkbox" name="weeklyDayCheckbox" value="Mon" checked onchange="updateSchedulerDescription(); saveSettings()">
+                <span class="day-badge-text">
+                  <span class="checkbox-box">
+                    <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  </span>
+                  <span>Mon</span>
+                </span>
+              </label>
+              <label class="day-badge">
+                <input type="checkbox" name="weeklyDayCheckbox" value="Tue" onchange="updateSchedulerDescription(); saveSettings()">
+                <span class="day-badge-text">
+                  <span class="checkbox-box">
+                    <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  </span>
+                  <span>Tue</span>
+                </span>
+              </label>
+              <label class="day-badge">
+                <input type="checkbox" name="weeklyDayCheckbox" value="Wed" onchange="updateSchedulerDescription(); saveSettings()">
+                <span class="day-badge-text">
+                  <span class="checkbox-box">
+                    <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  </span>
+                  <span>Wed</span>
+                </span>
+              </label>
+              <label class="day-badge">
+                <input type="checkbox" name="weeklyDayCheckbox" value="Thu" onchange="updateSchedulerDescription(); saveSettings()">
+                <span class="day-badge-text">
+                  <span class="checkbox-box">
+                    <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  </span>
+                  <span>Thu</span>
+                </span>
+              </label>
+              <label class="day-badge">
+                <input type="checkbox" name="weeklyDayCheckbox" value="Fri" onchange="updateSchedulerDescription(); saveSettings()">
+                <span class="day-badge-text">
+                  <span class="checkbox-box">
+                    <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  </span>
+                  <span>Fri</span>
+                </span>
+              </label>
+              <label class="day-badge">
+                <input type="checkbox" name="weeklyDayCheckbox" value="Sat" onchange="updateSchedulerDescription(); saveSettings()">
+                <span class="day-badge-text">
+                  <span class="checkbox-box">
+                    <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  </span>
+                  <span>Sat</span>
+                </span>
+              </label>
+              <label class="day-badge">
+                <input type="checkbox" name="weeklyDayCheckbox" value="Sun" onchange="updateSchedulerDescription(); saveSettings()">
+                <span class="day-badge-text">
+                  <span class="checkbox-box">
+                    <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  </span>
+                  <span>Sun</span>
+                </span>
+              </label>
+            </div>
+            
+            <label for="scheduleTimeWeekly" style="font-weight: 600; color: #f4f4f5; margin-top: 0.75rem; margin-bottom: 0.375rem;">Time</label>
+            <div class="gitsec-input-wrapper time-input-wrapper">
+              <input type="time" id="scheduleTimeWeekly" value="08:30" class="gitsec-input" oninput="syncTimeInputs(this)">
+              <span class="input-icon-right">
+                <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+              </span>
+            </div>
+            <span class="field-hint" id="desc-weekly" style="color: #64748b; font-size: 0.8125rem; margin-top: 0.375rem;">Otomatik yedekleme seçilen günlerde (Pzt) saat 08:30'da gerçekleştirilecektir.</span>
+          </div>
+
+          <!-- 3. Monthly Sub-fields (Day of Month & Time & Explain) -->
+          <div id="sub-panel-monthly" class="card-select-group hidden">
+            <label for="monthlyDaySelect" style="font-weight: 600; color: #f4f4f5; margin-bottom: 0.375rem;">Day of Month</label>
+            <div class="gitsec-select-wrapper no-left-icon">
+              <select id="monthlyDaySelect" class="gitsec-select" style="padding-left: 0.875rem;" onchange="updateSchedulerDescription(); saveSettings()">
+                <option value="1" selected>1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+                <option value="6">6</option>
+                <option value="7">7</option>
+                <option value="8">8</option>
+                <option value="9">9</option>
+                <option value="10">10</option>
+                <option value="11">11</option>
+                <option value="12">12</option>
+                <option value="13">13</option>
+                <option value="14">14</option>
+                <option value="15">15</option>
+                <option value="16">16</option>
+                <option value="17">17</option>
+                <option value="18">18</option>
+                <option value="19">19</option>
+                <option value="20">20</option>
+                <option value="21">21</option>
+                <option value="22">22</option>
+                <option value="23">23</option>
+                <option value="24">24</option>
+                <option value="25">25</option>
+                <option value="26">26</option>
+                <option value="27">27</option>
+                <option value="28">28</option>
+                <option value="29">29</option>
+                <option value="30">30</option>
+                <option value="31">31</option>
+              </select>
+              <span class="select-chevron-right">
+                <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+              </span>
+            </div>
+
+            <label for="scheduleTimeMonthly" style="font-weight: 600; color: #f4f4f5; margin-top: 0.75rem; margin-bottom: 0.375rem;">Time</label>
+            <div class="gitsec-input-wrapper time-input-wrapper">
+              <input type="time" id="scheduleTimeMonthly" value="08:30" class="gitsec-input" oninput="syncTimeInputs(this)">
+              <span class="input-icon-right">
+                <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+              </span>
+            </div>
+            <span class="field-hint" id="desc-monthly" style="color: #64748b; font-size: 0.8125rem; margin-top: 0.375rem;">Otomatik yedekleme her ayın 1. gününde saat 08:30'da gerçekleştirilecektir.</span>
+          </div>
+
+          <!-- 4. Cron Sub-fields (Cron Expression & Explain) -->
+          <div id="sub-panel-cron" class="card-select-group hidden">
+            <label for="cronExpressionInput" style="font-weight: 600; color: #f4f4f5; margin-bottom: 0.375rem;">Cron Expression</label>
+            <div class="gitsec-input-wrapper">
+              <input type="text" id="cronExpressionInput" value="0 2 * * ?" class="gitsec-input" placeholder="0 2 * * ?" oninput="saveSettings()">
+            </div>
+            <span class="field-hint" style="color: #64748b; font-size: 0.8125rem; margin-top: 0.375rem; line-height: 1.4; display: block; margin-bottom: 1rem;">Biçim: dakika saat ayın_günü ay haftanın_günü (5 veya 6 alanlı). Saniye alanı desteklenmez. Herhangi bir günün yerine geçmesi için '?' kullanabilirsiniz. Örnek: '0 0 2 * * ?' her gün saat 02:00'de çalıştırılacağını belirtir.</span>
+          </div>
+
+          <!-- Zaman Dilimi (Timezone) -->
+          <div id="timezone-panel" class="card-select-group">
+            <label style="font-weight: 600; color: #f4f4f5; display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.375rem;">
+              <svg class="w-4 h-4 text-zinc-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+              Time Zone
+            </label>
+            <div class="gitsec-select-wrapper no-left-icon">
+              <select id="schedulerTimezoneSelect" class="gitsec-select" onchange="saveSettings()">
+                <option value="UTC" selected>UTC</option>
+                <option value="Eastern Time (ET)">Eastern Time (ET)</option>
+                <option value="Local(İstanbul)">Local (İstanbul)</option>
+              </select>
+              <span class="select-chevron-right">
+                <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+              </span>
+            </div>
+            <span class="field-hint" style="color: #64748b; font-size: 0.8125rem; margin-top: 0.375rem;">Zaman ayarı bu zaman dilimine göre yorumlanır.</span>
+          </div>
+
+          <!-- Dahil Edilen Öğeler (Included Items) - Her Zaman Düzenlenebilir -->
+          <div id="included-items-panel" class="card-select-group">
+            <label style="font-weight: 600; color: #f4f4f5; margin-bottom: 0.375rem;">Included Items</label>
+            <div class="included-items-grid">
+              <label class="included-item-card checked" id="card-includeCode">
+                <input type="checkbox" id="includeCode" checked onchange="toggleIncludedItemClass(this)">
+                <span class="checkbox-box">
+                  <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                </span>
+                <span>Code & Commits</span>
+              </label>
+              <label class="included-item-card checked" id="card-includePr">
+                <input type="checkbox" id="includePr" checked onchange="toggleIncludedItemClass(this)">
+                <span class="checkbox-box">
+                  <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                </span>
+                <span>Pull Requests</span>
+              </label>
+              <label class="included-item-card checked" id="card-includeIssues">
+                <input type="checkbox" id="includeIssues" checked onchange="toggleIncludedItemClass(this)">
+                <span class="checkbox-box">
+                  <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                </span>
+                <span>Issues</span>
+              </label>
+              <label class="included-item-card disabled">
+                <span class="checkbox-box">
+                  <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                </span>
+                <span>Wiki Pages</span>
+                <span class="coming-soon-badge">Coming soon</span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-modal-cancel" onclick="toggleSchedulerDetails()">İptal (Cancel)</button>
+        <button type="button" class="btn-modal-save" onclick="saveAndCloseSchedulerModal()">Save Scheduler (Kaydet)</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let activeCardId = null;
+    let eventSource = null;
+
+    // 1. Sayfa yüklendiğinde anlık log akışını (SSE) başlatalım
+    function initSSE() {
+      eventSource = new EventSource('/api/logs');
+
+      // Durum güncellemesi dinleyelim
+      eventSource.addEventListener('status', (e) => {
+        const { running } = JSON.parse(e.data);
+        updateGlobalStatus(running);
+      });
+
+      // Anlık logları dinleyelim
+      eventSource.addEventListener('log', (e) => {
+        const text = JSON.parse(e.data);
+        appendConsole(text);
+      });
+
+      // Test tamamlanmasını dinleyelim
+      eventSource.addEventListener('done', (e) => {
+        const { success, code } = JSON.parse(e.data);
+        handleTestDone(success, code);
+      });
+
+      eventSource.onerror = () => {
+        console.error('SSE bağlantı hatası, 3 saniye içinde yeniden deneniyor...');
+        eventSource.close();
+        setTimeout(initSSE, 3000);
+      };
+    }
+
+    // 2. Global Durum Göstergesi
+    function updateGlobalStatus(running) {
+      const badge = document.getElementById('globalStatus');
+      const text = document.getElementById('globalStatusText');
+      const stopBtn = document.getElementById('btnStop');
+
+      if (running) {
+        badge.className = 'status-badge running';
+        text.innerText = 'Test Koşuyor...';
+        stopBtn.style.display = 'inline-block';
+        disableAllRunButtons(true);
+      } else {
+        badge.className = 'status-badge idle';
+        text.innerText = 'Boşta';
+        stopBtn.style.display = 'none';
+        disableAllRunButtons(false);
+      }
+    }
+
+    // Zamanlayıcı ayarları modalını açma/kapatma fonksiyonu
+    function toggleSchedulerDetails() {
+      const modal = document.getElementById('schedulerModal');
+      const btn = document.getElementById('btnToggleScheduler');
+      const isActive = modal.classList.contains('active');
+      
+      if (isActive) {
+        modal.classList.remove('active');
+        btn.classList.remove('active');
+      } else {
+        modal.classList.add('active');
+        btn.classList.add('active');
+      }
+    }
+
+    // Modal değişikliklerini kaydedip kapatma
+    function saveAndCloseSchedulerModal() {
+      updateSchedulerDescription();
+      saveSettings();
+      toggleSchedulerDetails();
+    }
+
+    // Toggle included item badge selection border highlighting
+    function toggleIncludedItemClass(el) {
+      const card = el.closest('.included-item-card');
+      if (card) {
+        if (el.checked) {
+          card.classList.add('checked');
+        } else {
+          card.classList.remove('checked');
+        }
+      }
+      saveSettings();
+    }
+
+    // Sync all time inputs dynamically across views and update UI details
+    function syncTimeInputs(el) {
+      const val = el.value;
+      document.getElementById('scheduleTime').value = val;
+      document.getElementById('scheduleTimeWeekly').value = val;
+      document.getElementById('scheduleTimeMonthly').value = val;
+      updateSchedulerDescription();
+      saveSettings();
+    }
+
+    // Seçilen Zamanlayıcı Tipi değiştiğinde arayüzü güncelle
+    function onScheduleTypeChange() {
+      const type = document.getElementById('scheduleTypeSelect').value;
+      
+      // Panelleri gizle/göster
+      document.getElementById('sub-panel-daily').classList.add('hidden');
+      document.getElementById('sub-panel-weekly').classList.add('hidden');
+      document.getElementById('sub-panel-monthly').classList.add('hidden');
+      document.getElementById('sub-panel-cron').classList.add('hidden');
+
+      // Aktif paneli göster
+      document.getElementById('sub-panel-' + type).classList.remove('hidden');
+
+      // Tag ve Başlığı güncelle
+      const tagSpan = document.getElementById('schedulerActiveTag');
+      const titleH3 = document.getElementById('schedulerActiveTitle');
+
+      if (type === 'daily') {
+        tagSpan.innerText = '@daily';
+        titleH3.innerText = 'Daily Scheduler';
+      } else if (type === 'weekly') {
+        tagSpan.innerText = '@weekly';
+        titleH3.innerText = 'Weekly Scheduler';
+      } else if (type === 'monthly') {
+        tagSpan.innerText = '@monthly';
+        titleH3.innerText = 'Monthly Scheduler';
+      } else if (type === 'cron') {
+        tagSpan.innerText = '@cron';
+        titleH3.innerText = 'Cron Scheduler';
+      }
+
+      // Icon güncelle
+      const iconSpan = document.getElementById('scheduleTypeIcon');
+      if (type === 'daily') {
+        iconSpan.innerHTML = `<svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>`;
+      } else if (type === 'weekly' || type === 'monthly') {
+        iconSpan.innerHTML = `<svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>`;
+      } else if (type === 'cron') {
+        iconSpan.innerHTML = `<svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>`;
+      }
+
+      // Timezone panelini gizle/göster
+      const tzPanel = document.getElementById('timezone-panel');
+      if (type === 'cron') {
+        tzPanel.classList.add('hidden');
+      } else {
+        tzPanel.classList.remove('hidden');
+      }
+
+      updateSchedulerDescription();
+      saveSettings();
+    }
+
+    // Dinamik açıklama metinlerini güncelle
+    function updateSchedulerDescription() {
+      const type = document.getElementById('scheduleTypeSelect').value;
+      
+      if (type === 'daily') {
+        const time = document.getElementById('scheduleTime').value || '08:30';
+        document.getElementById('desc-daily').innerText = `Otomatik yedekleme her gün saat ${time}'da gerçekleştirilecektir.`;
+      } else if (type === 'weekly') {
+        const time = document.getElementById('scheduleTimeWeekly').value || '08:30';
+        const checkedBoxes = document.querySelectorAll('input[name="weeklyDayCheckbox"]:checked');
+        const dayMap = {
+          'Mon': 'Pzt',
+          'Tue': 'Sal',
+          'Wed': 'Çar',
+          'Thu': 'Per',
+          'Fri': 'Cum',
+          'Sat': 'Cmt',
+          'Sun': 'Paz'
+        };
+        const selectedDays = Array.from(checkedBoxes).map(cb => dayMap[cb.value] || cb.value).join(', ');
+        const daysDisplay = selectedDays.length > 0 ? selectedDays : 'Hiçbiri';
+        document.getElementById('desc-weekly').innerText = `Otomatik yedekleme seçilen günlerde (${daysDisplay}) saat ${time}'da gerçekleştirilecektir.`;
+      } else if (type === 'monthly') {
+        const time = document.getElementById('scheduleTimeMonthly').value || '08:30';
+        const monthDay = document.getElementById('monthlyDaySelect').value || '1';
+        document.getElementById('desc-monthly').innerText = `Otomatik yedekleme her ayın ${monthDay}. gününde saat ${time}'da gerçekleştirilecektir.`;
+      }
+    }
+
+    // Zamanlayıcı Testini tetikle
+    async function runSchedulerTest() {
+      saveSettings();
+      const type = document.getElementById('scheduleTypeSelect').value;
+      const headed = document.getElementById('headedToggle').checked;
+      const workspaceId = document.getElementById('workspaceId').value;
+      const baseUrl = document.getElementById('baseUrl').value;
+      
+      const tag = '@' + type;
+      const cardId = 'card-scheduler';
+      const testFile = 'tests/e2e/backups/schedulers.spec.ts';
+
+      const scheduleName = document.getElementById('scheduleName').value;
+      
+      let scheduleTime = document.getElementById('scheduleTime').value;
+      if (type === 'weekly') {
+        scheduleTime = document.getElementById('scheduleTimeWeekly').value;
+      } else if (type === 'monthly') {
+        scheduleTime = document.getElementById('scheduleTimeMonthly').value;
+      }
+
+      const timezone = document.getElementById('schedulerTimezoneSelect').value;
+      
+      const includeCode = document.getElementById('includeCode').checked;
+      const includePr = document.getElementById('includePr').checked;
+      const includeIssues = document.getElementById('includeIssues').checked;
+
+      // Haftalık seçilmişse ilk seçili günü alalım
+      let weeklyDay = null;
+      if (type === 'weekly') {
+        const checkedBox = document.querySelector('input[name="weeklyDayCheckbox"]:checked');
+        weeklyDay = checkedBox ? checkedBox.value : 'Mon';
+      }
+
+      // Aylık seçilmişse
+      const monthlyDay = (type === 'monthly') ? document.getElementById('monthlyDaySelect').value : null;
+
+      // Cron seçilmişse
+      const cronExpression = (type === 'cron') ? document.getElementById('cronExpressionInput').value : null;
+
+      activeCardId = cardId;
+      clearConsole();
+      
+      const card = document.getElementById(cardId);
+      card.className = 'test-card running';
+      appendConsole(`[DASHBOARD] Test süreci hazırlanıyor... (Zamanlayıcı Tipi: ${type.toUpperCase()})\n`);
+
+      try {
+        const response = await fetch('/api/run', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            tag, headed, testFile, timezone, workspaceId, baseUrl,
+            scheduleName, scheduleTime, includeCode, includePr, includeIssues,
+            scheduleType: type.charAt(0).toUpperCase() + type.slice(1), // 'Daily', 'Weekly', 'Monthly', 'Cron'
+            weeklyDay, monthlyDay, cronExpression
+          })
+        });
+
+        const result = await response.json();
+        if (!response.ok) {
+          appendConsole(`[HATA] ${result.error}\n`);
+          card.className = 'test-card fail';
+        }
+      } catch (err) {
+        appendConsole(`[HATA] Bağlantı kurulamadı: ${err.message}\n`);
+        card.className = 'test-card fail';
+      }
+    }
+
+    // Genel Test Çalıştırma (Örn: Restore Navigate için)
+    async function runTest(tag, cardId, testFile) {
+      const headed = document.getElementById('headedToggle').checked;
+      const workspaceId = document.getElementById('workspaceId').value;
+      const baseUrl = document.getElementById('baseUrl').value;
+      
+      const includeMode = document.getElementById('includeModeSelect') ? document.getElementById('includeModeSelect').value : null;
+      const excludeMode = document.getElementById('excludeModeSelect') ? document.getElementById('excludeModeSelect').value : null;
+      
+      activeCardId = cardId;
+      clearConsole();
+      
+      const card = document.getElementById(cardId);
+      card.className = 'test-card running';
+      appendConsole(`[DASHBOARD] Test süreci hazırlanıyor...\n`);
+
+      try {
+        const response = await fetch('/api/run', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            tag, headed, testFile, workspaceId, baseUrl,
+            includeMode, excludeMode
+          })
+        });
+
+        const result = await response.json();
+        if (!response.ok) {
+          appendConsole(`[HATA] ${result.error}\n`);
+          card.className = 'test-card fail';
+        }
+      } catch (err) {
+        appendConsole(`[HATA] Bağlantı kurulamadı: ${err.message}\n`);
+        card.className = 'test-card fail';
+      }
+    }
+
+    // Storage Provider Ayarlarını Kaydetme
+    function saveStorageProviderSettings() {
+      const provider = document.getElementById('storageProviderSelect').value;
+      localStorage.setItem('gitsec_storage_provider', provider);
+      
+      // Senkronizasyon: .env sekmesindeki alanı da güncelle
+      const envInput = document.getElementById('env_E2E_STORAGE_PROVIDER');
+      if (envInput) {
+        envInput.value = provider;
+      }
+      console.log('Storage sağlayıcı ayarı kaydedildi:', provider);
+    }
+
+    // .env sekmesindeki değişiklikleri Storage sekmesine yansıt
+    function syncStorageProviderField(val) {
+      const select = document.getElementById('storageProviderSelect');
+      if (select) {
+        select.value = val;
+        saveStorageProviderSettings();
+      }
+    }
+
+    // Storage Testini tetikle
+    async function runStorageTest() {
+      saveStorageProviderSettings();
+      const provider = document.getElementById('storageProviderSelect').value;
+      const headed = document.getElementById('headedToggle').checked;
+      const workspaceId = document.getElementById('workspaceId').value;
+      const baseUrl = document.getElementById('baseUrl').value;
+      
+      const cardId = 'card-storage';
+      const testFile = 'tests/e2e/providers/storage.spec.ts';
+
+      activeCardId = cardId;
+      clearConsole();
+      
+      const card = document.getElementById(cardId);
+      card.className = 'test-card running';
+      appendConsole(`[DASHBOARD] Storage testi hazırlanıyor... (Sağlayıcı: ${provider.toUpperCase()})\n`);
+
+      // Çevre değişkenini .env dosyasına kaydet
+      try {
+        appendConsole(`[DASHBOARD] E2E_STORAGE_PROVIDER çevre değişkeni güncelleniyor...\n`);
+        
+        // Çevre değişkenlerini alalım
+        const envResponse = await fetch('/api/env');
+        if (!envResponse.ok) throw new Error('Çevre değişkenleri alınamadı.');
+        const envVars = await envResponse.json();
+        
+        envVars['E2E_STORAGE_PROVIDER'] = provider;
+        
+        const saveResponse = await fetch('/api/env', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(envVars)
+        });
+        
+        if (!saveResponse.ok) throw new Error('Çevre değişkeni kaydedilemedi.');
+        appendConsole(`[DASHBOARD] E2E_STORAGE_PROVIDER başarıyla kaydedildi: ${provider}\n`);
+      } catch (err) {
+        appendConsole(`[UYARI] Çevre değişkeni güncellenirken hata oluştu: ${err.message}. Test eski değerlerle koşacaktır.\n`);
+      }
+
+      // Playwright testini başlat
+      try {
+        const response = await fetch('/api/run', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            headed, testFile, workspaceId, baseUrl
+          })
+        });
+
+        const result = await response.json();
+        if (!response.ok) {
+          appendConsole(`[HATA] ${result.error}\n`);
+          card.className = 'test-card fail';
+        }
+      } catch (err) {
+        appendConsole(`[HATA] Bağlantı kurulamadı: ${err.message}\n`);
+        card.className = 'test-card fail';
+      }
+    }
+
+    // 4. Test Durdurma
+    async function stopActiveTest() {
+      try {
+        const response = await fetch('/api/stop', { method: 'POST' });
+        const result = await response.json();
+        if (!response.ok) {
+          appendConsole(`[HATA] Durdurma başarısız: ${result.error}\n`);
+        }
+      } catch (err) {
+        appendConsole(`[HATA] Bağlantı kurulamadı: ${err.message}\n`);
+      }
+    }
+
+    // 5. Test Tamamlanma İşlemleri
+    function handleTestDone(success, code) {
+      if (!activeCardId) return;
+      const card = document.getElementById(activeCardId);
+      
+      if (activeCardId === 'card-google-session') {
+        if (success) {
+          card.className = 'test-card success';
+          appendConsole(`\n[DASHBOARD] GOOGLE OTURUM BİLGİLERİ BAŞARIYLA KAYDEDİLDİ VE ENTEGRE EDİLDİ!\n`);
+        } else {
+          card.className = 'test-card fail';
+          appendConsole(`\n[DASHBOARD] GOOGLE GİRİŞ SÜRECİ İPTAL EDİLDİ VEYA HATA OLUŞTU.\n`);
+        }
+        updateGoogleSessionStatus();
+        return;
+      }
+
+      if (success) {
+        card.className = 'test-card success';
+        appendConsole(`\n[DASHBOARD] TEST BAŞARIYLA TAMAMLANDI! (Çıkış Kodu: ${code})\n`);
+      } else {
+        card.className = 'test-card fail';
+        appendConsole(`\n[DASHBOARD] TEST BAŞARISIZ OLDU VEYA DURDURULDU. (Çıkış Kodu: ${code})\n`);
+      }
+    }
+
+    // Google Oturum Durumunu Sunucudan Kontrol Et ve Arayüzü Güncelle
+    async function updateGoogleSessionStatus() {
+      try {
+        const response = await fetch('/api/google-session-status');
+        if (!response.ok) throw new Error('Oturum durumu alınamadı.');
+        const data = await response.json();
+        
+        const badge = document.getElementById('google-session-badge');
+        const dot = document.getElementById('google-session-dot');
+        const dateSpan = document.getElementById('google-session-date');
+        const card = document.getElementById('card-google-session');
+
+        if (data.exists) {
+          if (badge) {
+            badge.innerText = 'Aktif (Kayıtlı)';
+            badge.style.background = 'rgba(16, 185, 129, 0.12)';
+            badge.style.color = 'var(--gitsec-green)';
+            badge.style.borderColor = 'rgba(16, 185, 129, 0.25)';
+          }
+          if (dot) {
+            dot.style.background = 'var(--gitsec-green)';
+            dot.style.boxShadow = '0 0 10px var(--gitsec-green)';
+          }
+          if (dateSpan && data.mtime) {
+            const date = new Date(data.mtime);
+            const formatted = date.toLocaleDateString('tr-TR') + ' ' + date.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+            dateSpan.innerText = formatted;
+          }
+          if (card && card.className !== 'test-card running') {
+            card.className = 'test-card success';
+          }
+        } else {
+          if (badge) {
+            badge.innerText = 'Giriş Gerekli';
+            badge.style.background = 'rgba(244, 63, 94, 0.12)';
+            badge.style.color = 'var(--gitsec-red)';
+            badge.style.borderColor = 'rgba(244, 63, 94, 0.25)';
+          }
+          if (dot) {
+            dot.style.background = 'var(--gitsec-red)';
+            dot.style.boxShadow = '0 0 10px var(--gitsec-red)';
+          }
+          if (dateSpan) {
+            dateSpan.innerText = 'Oturum bilgisi yok';
+          }
+          if (card && card.className !== 'test-card running') {
+            card.className = 'test-card';
+          }
+        }
+      } catch (err) {
+        console.error('Google session status check failed:', err);
+      }
+    }
+
+    // Google Manuel Giriş İşlemini Başlat
+    async function runGoogleLogin() {
+      if (document.getElementById('globalStatusText').innerText === 'Test Koşuyor...') {
+        showToast('Aktif bir işlem sürerken başka bir işlem başlatılamaz!', true);
+        return;
+      }
+
+      const cardId = 'card-google-session';
+      activeCardId = cardId;
+      clearConsole();
+      
+      const card = document.getElementById(cardId);
+      card.className = 'test-card running';
+      
+      const dot = document.getElementById('google-session-dot');
+      const badge = document.getElementById('google-session-badge');
+      if (dot) {
+        dot.style.background = 'var(--gitsec-yellow)';
+        dot.style.boxShadow = '0 0 12px var(--gitsec-yellow)';
+      }
+      if (badge) {
+        badge.innerText = 'Çalışıyor...';
+        badge.style.background = 'rgba(245, 158, 11, 0.12)';
+        badge.style.color = 'var(--gitsec-yellow)';
+        badge.style.borderColor = 'rgba(245, 158, 11, 0.25)';
+      }
+      
+      appendConsole(`[DASHBOARD] Google Manuel Oturum Açma süreci başlatılıyor...\n`);
+      appendConsole(`[DASHBOARD] Lütfen açılacak Chrome tarayıcısında hesabınıza giriş yapın.\n`);
+
+      try {
+        const response = await fetch('/api/google-login', {
+          method: 'POST'
+        });
+
+        const result = await response.json();
+        if (!response.ok) {
+          appendConsole(`[HATA] ${result.error}\n`);
+          card.className = 'test-card fail';
+          updateGoogleSessionStatus();
+        }
+      } catch (err) {
+        appendConsole(`[HATA] Sunucuyla bağlantı kurulamadı: ${err.message}\n`);
+        card.className = 'test-card fail';
+        updateGoogleSessionStatus();
+      }
+    }
+
+    // 6. Yardımcı Buton Fonksiyonları
+    function disableAllRunButtons(disable) {
+      const buttons = document.querySelectorAll('.btn-run');
+      buttons.forEach(btn => btn.disabled = disable);
+    }
+
+    // Canlı Konsola Satır Ekleme
+    function appendConsole(text) {
+      const screen = document.getElementById('terminalScreen');
+      const cleanText = text.replace(/\x1B\[[0-9;]*[a-zA-Z]/g, '');
+      
+      if (screen.innerText === 'Tetiklenen testlerin canlı log çıktıları burada anlık olarak akacaktır...') {
+        screen.innerText = cleanText;
+      } else {
+        screen.innerText += cleanText;
+      }
+      screen.scrollTop = screen.scrollHeight;
+    }
+
+    // Konsolu Temizleme
+    function clearConsole() {
+      document.getElementById('terminalScreen').innerText = '';
+    }
+
+    // Konsolu Kopyalama
+    function copyConsole() {
+      const text = document.getElementById('terminalScreen').innerText;
+      navigator.clipboard.writeText(text);
+      showToast('Konsol çıktısı panoya kopyalandı!');
+    }
+
+    // 7. Toast Bildirimi Gösterme
+    function showToast(message, isError = false) {
+      const toast = document.getElementById('toastNotification');
+      if (!toast) return;
+      toast.innerText = message;
+      toast.className = 'toast-notification' + (isError ? ' error' : '');
+      toast.classList.remove('hidden');
+      
+      if (window.toastTimeout) {
+        clearTimeout(window.toastTimeout);
+      }
+      
+      window.toastTimeout = setTimeout(() => {
+        toast.classList.add('hidden');
+      }, 4000);
+    }
+
+    // 8. Tab Gezintisi (Navigation) Yönetimi
+    function showTab(tabId) {
+      const tabs = ['dashboard', 'schedulers', 'github', 'auth', 'storage', 'env'];
+      tabs.forEach(t => {
+        const panel = document.getElementById('tab-' + t);
+        const navBtn = document.getElementById('btn-tab-' + t);
+        if (panel) {
+          if (t === tabId) {
+            panel.classList.remove('hidden');
+          } else {
+            panel.classList.add('hidden');
+          }
+        }
+        if (navBtn) {
+          if (t === tabId) {
+            navBtn.classList.add('active');
+          } else {
+            navBtn.classList.remove('active');
+          }
+        }
+      });
+      sessionStorage.setItem('gitsec_active_tab', tabId);
+      
+      if (tabId === 'env') {
+        loadEnvVars();
+      }
+      if (tabId === 'storage') {
+        updateGoogleSessionStatus();
+      }
+    }
+
+    // 9. .env Çevre Değişkenleri Yönetimi
+    async function loadEnvVars() {
+      try {
+        const response = await fetch('/api/env');
+        if (!response.ok) throw new Error('Çevre değişkenleri yüklenemedi.');
+        const envVars = await response.json();
+        
+        const envKeys = [
+          'E2E_USER_EMAIL', 'E2E_USER_PASSWORD', 
+          'GITHUB_TEST_USER', 'GITHUB_TEST_PASSWORD',
+          'WORKSPACE_ID', 'DASHBOARD_BASE_URL',
+          'API_BASE_URL', 'GITHUB_MAIL_USER', 'GITHUB_MAIL_PASSWORD',
+          'E2E_STORAGE_PROVIDER'
+        ];
+        
+        envKeys.forEach(key => {
+          const input = document.getElementById('env_' + key);
+          if (input && envVars[key] !== undefined) {
+            input.value = envVars[key];
+          }
+        });
+
+        // Dashboard altındaki genel ayarları da eşitleyelim
+        if (envVars['WORKSPACE_ID'] !== undefined) {
+          document.getElementById('workspaceId').value = envVars['WORKSPACE_ID'];
+        }
+        if (envVars['DASHBOARD_BASE_URL'] !== undefined) {
+          document.getElementById('baseUrl').value = envVars['DASHBOARD_BASE_URL'];
+        }
+        // Storage sekmesindeki seçimi de eşitleyelim
+        if (envVars['E2E_STORAGE_PROVIDER'] !== undefined) {
+          const select = document.getElementById('storageProviderSelect');
+          if (select) select.value = envVars['E2E_STORAGE_PROVIDER'];
+          localStorage.setItem('gitsec_storage_provider', envVars['E2E_STORAGE_PROVIDER']);
+        }
+        
+        saveSettings();
+      } catch (err) {
+        console.error('Error loading env vars:', err);
+        showToast('Çevre değişkenleri yüklenirken hata oluştu!', true);
+      }
+    }
+
+    async function saveEnvVars() {
+      const envKeys = [
+        'E2E_USER_EMAIL', 'E2E_USER_PASSWORD', 
+        'GITHUB_TEST_USER', 'GITHUB_TEST_PASSWORD',
+        'WORKSPACE_ID', 'DASHBOARD_BASE_URL',
+        'API_BASE_URL', 'GITHUB_MAIL_USER', 'GITHUB_MAIL_PASSWORD',
+        'E2E_STORAGE_PROVIDER'
+      ];
+      
+      const envVars = {};
+      envKeys.forEach(key => {
+        const input = document.getElementById('env_' + key);
+        if (input) {
+          envVars[key] = input.value;
+        }
+      });
+
+      try {
+        const response = await fetch('/api/env', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(envVars)
+        });
+        
+        const result = await response.json();
+        if (response.ok) {
+          showToast('.env dosyası başarıyla güncellendi ve çalışma ortamına yüklendi!');
+          
+          // Dashboard altındaki genel ayarları da eşitleyelim
+          if (envVars['WORKSPACE_ID'] !== undefined) {
+            document.getElementById('workspaceId').value = envVars['WORKSPACE_ID'];
+          }
+          if (envVars['DASHBOARD_BASE_URL'] !== undefined) {
+            document.getElementById('baseUrl').value = envVars['DASHBOARD_BASE_URL'];
+          }
+          // Storage sekmesindeki seçimi de eşitleyelim
+          if (envVars['E2E_STORAGE_PROVIDER'] !== undefined) {
+            const select = document.getElementById('storageProviderSelect');
+            if (select) select.value = envVars['E2E_STORAGE_PROVIDER'];
+            localStorage.setItem('gitsec_storage_provider', envVars['E2E_STORAGE_PROVIDER']);
+          }
+          
+          saveSettings();
+        } else {
+          throw new Error(result.error || 'Bilinmeyen sunucu hatası');
+        }
+      } catch (err) {
+        console.error('Error saving env vars:', err);
+        showToast('HATA: Çevre değişkenleri kaydedilemedi!', true);
+      }
+    }
+
+    // Çift Yönlü Girdi Senkronizasyon Yardımcıları
+    function syncEnvField(key, value) {
+      const envInput = document.getElementById('env_' + key);
+      if (envInput) {
+        envInput.value = value;
+      }
+    }
+    
+    function syncSettingsField(settingsId, value) {
+      const settingsInput = document.getElementById(settingsId);
+      if (settingsInput) {
+        settingsInput.value = value;
+      }
+    }
+
+    // 10. Arayüz Ayarlarını Kaydetme ve Yükleme (Persistence)
+    function saveSettings() {
+      const settings = {
+        headed: document.getElementById('headedToggle').checked,
+        workspaceId: document.getElementById('workspaceId').value,
+        baseUrl: document.getElementById('baseUrl').value,
+        scheduleName: document.getElementById('scheduleName').value,
+        scheduleType: document.getElementById('scheduleTypeSelect').value,
+        scheduleTime: document.getElementById('scheduleTime').value,
+        scheduleTimeWeekly: document.getElementById('scheduleTimeWeekly').value,
+        scheduleTimeMonthly: document.getElementById('scheduleTimeMonthly').value,
+        monthlyDay: document.getElementById('monthlyDaySelect').value,
+        cronExpression: document.getElementById('cronExpressionInput').value,
+        includeCode: document.getElementById('includeCode').checked,
+        includePr: document.getElementById('includePr').checked,
+        includeIssues: document.getElementById('includeIssues').checked,
+        timezone: document.getElementById('schedulerTimezoneSelect').value,
+        weeklyDays: Array.from(document.querySelectorAll('input[name="weeklyDayCheckbox"]:checked')).map(cb => cb.value),
+        includeMode: document.getElementById('includeModeSelect') ? document.getElementById('includeModeSelect').value : 'one_repo',
+        excludeMode: document.getElementById('excludeModeSelect') ? document.getElementById('excludeModeSelect').value : 'one_repo'
+      };
+      localStorage.setItem('gitsec_scheduler_settings', JSON.stringify(settings));
+      console.log('Ayarlar kaydedildi:', settings);
+    }
+
+    function loadSettings() {
+      const data = localStorage.getItem('gitsec_scheduler_settings');
+      if (!data) {
+        // İlk açılışta default tetikleme
+        onScheduleTypeChange();
+        return;
+      }
+      try {
+        const settings = JSON.parse(data);
+        
+        if (settings.headed !== undefined) {
+          document.getElementById('headedToggle').checked = settings.headed;
+        }
+        if (settings.workspaceId !== undefined) {
+          document.getElementById('workspaceId').value = settings.workspaceId;
+        }
+        if (settings.baseUrl !== undefined) {
+          document.getElementById('baseUrl').value = settings.baseUrl;
+        }
+
+        // Modal fields
+        if (settings.scheduleName !== undefined) {
+          document.getElementById('scheduleName').value = settings.scheduleName;
+        }
+        if (settings.scheduleType !== undefined) {
+          document.getElementById('scheduleTypeSelect').value = settings.scheduleType;
+        }
+        if (settings.scheduleTime !== undefined) {
+          document.getElementById('scheduleTime').value = settings.scheduleTime;
+        }
+        if (settings.scheduleTimeWeekly !== undefined) {
+          document.getElementById('scheduleTimeWeekly').value = settings.scheduleTimeWeekly;
+        }
+        if (settings.scheduleTimeMonthly !== undefined) {
+          document.getElementById('scheduleTimeMonthly').value = settings.scheduleTimeMonthly;
+        }
+        if (settings.monthlyDay !== undefined) {
+          document.getElementById('monthlyDaySelect').value = settings.monthlyDay;
+        }
+        if (settings.cronExpression !== undefined) {
+          document.getElementById('cronExpressionInput').value = settings.cronExpression;
+        }
+        if (settings.timezone !== undefined) {
+          document.getElementById('schedulerTimezoneSelect').value = settings.timezone;
+        }
+
+        // Checkboxes
+        if (settings.includeCode !== undefined) {
+          const cb = document.getElementById('includeCode');
+          cb.checked = settings.includeCode;
+          toggleIncludedItemClass(cb);
+        }
+        if (settings.includePr !== undefined) {
+          const cb = document.getElementById('includePr');
+          cb.checked = settings.includePr;
+          toggleIncludedItemClass(cb);
+        }
+        if (settings.includeIssues !== undefined) {
+          const cb = document.getElementById('includeIssues');
+          cb.checked = settings.includeIssues;
+          toggleIncludedItemClass(cb);
+        }
+
+        // Weekly Days
+        if (settings.weeklyDays !== undefined) {
+          const checkboxes = document.querySelectorAll('input[name="weeklyDayCheckbox"]');
+          checkboxes.forEach(cb => {
+            cb.checked = settings.weeklyDays.includes(cb.value);
+          });
+        }
+
+        // Storage settings load
+        const savedProvider = localStorage.getItem('gitsec_storage_provider');
+        if (savedProvider) {
+          const select = document.getElementById('storageProviderSelect');
+          if (select) select.value = savedProvider;
+        }
+
+        if (settings.includeMode !== undefined && document.getElementById('includeModeSelect')) {
+          document.getElementById('includeModeSelect').value = settings.includeMode;
+        }
+        if (settings.excludeMode !== undefined && document.getElementById('excludeModeSelect')) {
+          document.getElementById('excludeModeSelect').value = settings.excludeMode;
+        }
+
+        onScheduleTypeChange();
+      } catch (e) {
+        console.error('Ayarlar yüklenirken hata oluştu:', e);
+        onScheduleTypeChange();
+      }
+    }
+
+    // === Theme Switcher & Dropdown Logic ===
+    function toggleThemeDropdown(event) {
+      if (event) event.stopPropagation();
+      const menu = document.getElementById('themeDropdownMenu');
+      if (menu) {
+        menu.classList.toggle('hidden');
+      }
+    }
+
+    function selectTheme(mode, event) {
+      if (event) event.stopPropagation();
+      setTheme(mode);
+      const menu = document.getElementById('themeDropdownMenu');
+      if (menu) {
+        menu.classList.add('hidden');
+      }
+    }
+
+    // Auto-close dropdown when clicking outside
+    document.addEventListener('click', function(event) {
+      const menu = document.getElementById('themeDropdownMenu');
+      const trigger = document.getElementById('themeDropdownTriggerBtn');
+      if (menu && !menu.classList.contains('hidden')) {
+        if (!menu.contains(event.target) && !trigger.contains(event.target)) {
+          menu.classList.add('hidden');
+        }
+      }
+    });
+
+    function setTheme(mode) {
+      const html = document.documentElement;
+      localStorage.setItem('gitsec_theme', mode);
+      
+      // Update dropdown menu items active status
+      const menuItems = document.querySelectorAll('.theme-menu-item');
+      menuItems.forEach(item => {
+        if (item.getAttribute('data-theme-value') === mode) {
+          item.classList.add('active');
+        } else {
+          item.classList.remove('active');
+        }
+      });
+
+      const iconContainer = document.getElementById('activeThemeIcon');
+
+      const icons = {
+        dark: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>`,
+        light: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>`,
+        system: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></svg>`
+      };
+
+      if (iconContainer) iconContainer.innerHTML = icons[mode] || '';
+
+      if (mode === 'dark') {
+        html.classList.add('dark');
+        html.classList.remove('light');
+      } else if (mode === 'light') {
+        html.classList.add('light');
+        html.classList.remove('dark');
+      } else {
+        // System preference
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (prefersDark) {
+          html.classList.add('dark');
+          html.classList.remove('light');
+        } else {
+          html.classList.add('light');
+          html.classList.remove('dark');
+        }
+      }
+    }
+
+    // System theme dynamic listener
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+      const savedTheme = localStorage.getItem('gitsec_theme') || 'system';
+      if (savedTheme === 'system') {
+        const html = document.documentElement;
+        if (e.matches) {
+          html.classList.add('dark');
+          html.classList.remove('light');
+        } else {
+          html.classList.add('light');
+          html.classList.remove('dark');
+        }
+      }
+    });
+
+    // === Password and Sidebar Toggles ===
+    function togglePasswordVisibility(inputId, btnEl) {
+      const input = document.getElementById(inputId);
+      if (!input) return;
+      const eyeIcon = btnEl.querySelector('.eye-icon');
+      const eyeOffIcon = btnEl.querySelector('.eye-off-icon');
+      
+      if (input.type === 'password') {
+        input.type = 'text';
+        if (eyeIcon) eyeIcon.style.display = 'none';
+        if (eyeOffIcon) eyeOffIcon.style.display = 'block';
+      } else {
+        input.type = 'password';
+        if (eyeIcon) eyeIcon.style.display = 'block';
+        if (eyeOffIcon) eyeOffIcon.style.display = 'none';
+      }
+    }
+
+    function toggleSidebar() {
+      const wrapper = document.getElementById('sidebarWrapper');
+      if (!wrapper) return;
+      const isCollapsed = wrapper.classList.toggle('collapsed');
+      localStorage.setItem('gitsec_sidebar_collapsed', isCollapsed ? 'true' : 'false');
+    }
+
+    // === Immediate Synchronous Execution to Prevent Layout/Theme/Tab Hydration Flashes ===
+    
+    // 1. Sidebar collapsed state setup
+    if (localStorage.getItem('gitsec_sidebar_collapsed') === 'true') {
+      const wrapper = document.getElementById('sidebarWrapper');
+      if (wrapper) wrapper.classList.add('collapsed');
+    }
+
+    // 2. Load settings synchronously (reads local storage and sets checkbox states)
+    loadSettings();
+
+    // 3. Active tab restoration synchronously (executes instantly to avoid Dashboard flash)
+    const savedTab = sessionStorage.getItem('gitsec_active_tab') || 'dashboard';
+    showTab(savedTab);
+
+    // 4. Initial theme button state highlighting setup
+    setTheme(localStorage.getItem('gitsec_theme') || 'system');
+
+    // 5. Initial terminal height setup from localStorage
+    const savedTerminalHeight = localStorage.getItem('gitsec_terminal_height');
+    const termContainer = document.getElementById('terminalContainer');
+    if (termContainer) {
+      if (savedTerminalHeight) {
+        termContainer.style.height = savedTerminalHeight + 'px';
+      } else {
+        termContainer.style.height = '280px';
+      }
+    }
+
+    // === Terminal Drag to Resize Logic ===
+    const terminalContainer = document.getElementById('terminalContainer');
+    const terminalResizer = document.getElementById('terminalResizer');
+    
+    if (terminalResizer && terminalContainer) {
+      let isDragging = false;
+      let startY = 0;
+      let startHeight = 0;
+
+      // Mouse drag handlers
+      terminalResizer.addEventListener('mousedown', function(e) {
+        isDragging = true;
+        startY = e.clientY;
+        startHeight = parseInt(document.defaultView.getComputedStyle(terminalContainer).height, 10);
+        terminalResizer.classList.add('dragging');
+        document.documentElement.addEventListener('mousemove', doDrag, false);
+        document.documentElement.addEventListener('mouseup', stopDrag, false);
+        e.preventDefault();
+      });
+
+      function doDrag(e) {
+        if (!isDragging) return;
+        const deltaY = startY - e.clientY;
+        let newHeight = startHeight + deltaY;
+        
+        const minHeight = 140;
+        const maxHeight = window.innerHeight - 240;
+        if (newHeight < minHeight) newHeight = minHeight;
+        if (newHeight > maxHeight) newHeight = maxHeight;
+
+        terminalContainer.style.height = newHeight + 'px';
+      }
+
+      function stopDrag(e) {
+        if (!isDragging) return;
+        isDragging = false;
+        terminalResizer.classList.remove('dragging');
+        document.documentElement.removeEventListener('mousemove', doDrag, false);
+        document.documentElement.removeEventListener('mouseup', stopDrag, false);
+        
+        localStorage.setItem('gitsec_terminal_height', parseInt(terminalContainer.style.height, 10));
+      }
+
+      // Touch drag handlers
+      terminalResizer.addEventListener('touchstart', function(e) {
+        isDragging = true;
+        startY = e.touches[0].clientY;
+        startHeight = parseInt(document.defaultView.getComputedStyle(terminalContainer).height, 10);
+        terminalResizer.classList.add('dragging');
+        document.documentElement.addEventListener('touchmove', doTouchDrag, { passive: false });
+        document.documentElement.addEventListener('touchend', stopTouchDrag, false);
+        e.preventDefault();
+      });
+
+      function doTouchDrag(e) {
+        if (!isDragging) return;
+        const deltaY = startY - e.touches[0].clientY;
+        let newHeight = startHeight + deltaY;
+        
+        const minHeight = 140;
+        const maxHeight = window.innerHeight - 240;
+        if (newHeight < minHeight) newHeight = minHeight;
+        if (newHeight > maxHeight) newHeight = maxHeight;
+
+        terminalContainer.style.height = newHeight + 'px';
+        e.preventDefault();
+      }
+
+      function stopTouchDrag(e) {
+        if (!isDragging) return;
+        isDragging = false;
+        terminalResizer.classList.remove('dragging');
+        document.documentElement.removeEventListener('touchmove', doTouchDrag);
+        document.documentElement.removeEventListener('touchend', stopTouchDrag);
+        
+        localStorage.setItem('gitsec_terminal_height', parseInt(terminalContainer.style.height, 10));
+      }
+    }
+
+    // Sayfa açılışında SSE, Env ve Google oturum durumunu yükleyelim
+    window.addEventListener('load', () => {
+      initSSE();
+      loadEnvVars();
+      updateGoogleSessionStatus();
+    });
+  </script>
+</body>
+</html>
