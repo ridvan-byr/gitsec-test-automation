@@ -41,103 +41,88 @@ test.describe('Login — UI Giriş Formu E2E Akışı', () => {
     await page.waitForTimeout(5000);
 
     const emailInput = page.locator('input[name="email"]');
-    const passwordInput = page.locator('input[type="password"]').first();
-    const signInButton = page.getByRole('button', { name: /^Sign in$/i });
+    const passwordInput = page.locator('input[name="password"], input[type="password"]').first();
+    const signInButton = page.locator('button').filter({ hasText: /^Sign in$/i }).first();
 
-    // ─── ADIM 1: E-posta alanına yavaşça yaz ───
-    console.log(`✉️ [E2E] E-posta yazılıyor: ${email}`);
-    await emailInput.click();
-    await emailInput.fill('');
-    await emailInput.pressSequentially(email, { delay: 75 });
-    await page.waitForTimeout(500);
-
-    // ─── ADIM 2: Şifre alanına yavaşça yaz ───
-    console.log(`🔑 [E2E] Şifre yazılıyor...`);
-    await passwordInput.click();
-    await passwordInput.fill('');
-    await passwordInput.pressSequentially(password, { delay: 75 });
+    // ─── ADIM 1: Sayfayı aşağı kaydır ve Captcha kontrolü yap (YAZMADAN ÖNCE) ───
+    console.log('🔄 [E2E] Sayfa görünümü buton bölgesine kaydırılıyor...');
+    await signInButton.scrollIntoViewIfNeeded().catch(() => {});
     await page.waitForTimeout(1000);
 
-    // ─── ADIM 3: Captcha çıkmış mı kontrol et (SADECE iframe varlığına bak) ───
-    // Sayfayı sessizce en alta (buton ve captcha bölgesine) odakla ve orada sabitle
-    console.log('🔄 [E2E] Sayfa görünümü form sonuna kaydırılıyor...');
-    await signInButton.scrollIntoViewIfNeeded().catch(() => {});
-    await page.waitForTimeout(500);
+    console.log('⏳ [E2E] Captcha iframe\'inin yüklenmesi bekleniyor (maksimum 10 saniye)...');
+    
+    // Promise.race ile hangi captcha iframe'i önce yüklenirse anında devam eder, gereksiz beklemez!
+    const captchaType = await Promise.race([
+      page.locator('iframe[src*="challenges.cloudflare.com"]').first().waitFor({ state: 'visible', timeout: 10000 }).then(() => 'Cloudflare Turnstile').catch(() => null),
+      page.locator('iframe[src*="google.com/recaptcha"]').first().waitFor({ state: 'visible', timeout: 10000 }).then(() => 'Google reCAPTCHA').catch(() => null)
+    ]);
 
-    const isCaptchaVisible = await page.locator('iframe[src*="challenges.cloudflare.com"]').isVisible().catch(() => false);
+    const isCaptchaVisible = captchaType !== null;
 
     if (isCaptchaVisible) {
       console.log('\n=========================================');
       console.log('⚠️⚠️ [CAPTCHA TESPİT EDİLDİ] ⚠️⚠️');
-      console.log('💡 Form doldurulurken Captcha devreye girdi!');
-      console.log('💡 Sayfa görünümü sabitlendi. Lütfen açılan Chrome tarayıcısından Captcha\'yı MANUEL olarak çözün.');
-      console.log('💡 Çözdüğünüz an test otomatik olarak kaldığı yerden devam edecektir.');
+      console.log(`💡 Sayfa yüklendiğinde Captcha aktif durumda! (${captchaType})`);
+      console.log('💡 Lütfen açılan Chrome tarayıcısından Captcha\'yı MANUEL olarak çözün.');
+      console.log('💡 Çözdüğünüz an test bilgileri doldurup otomatik devam edecektir.');
       console.log('=========================================\n');
 
-      // SIFIR-SCROLL SESSİZ BEKLEME: JS tabanlı elementHandle sorgusu ile sayfa odağını bozmadan butonun aktifleşmesini bekle
-      console.log('⏳ [E2E] Captcha çözümü bekleniyor... (Ekran sabitlendi - 90 saniye tolerans)');
-      const buttonHandle = await signInButton.elementHandle();
-      if (buttonHandle) {
-        await page.waitForFunction(
-          (btn) => btn instanceof HTMLButtonElement && !btn.disabled,
-          buttonHandle,
-          { timeout: 90000 }
-        ).catch(() => {});
-      } else {
-        // Fallback
-        await expect(signInButton).toBeEnabled({ timeout: 90000 });
-      }
+      console.log('⏳ [E2E] Captcha çözümü bekleniyor... (Ekran sabitlendi - 120 saniye tolerans)');
       
-      console.log('✅ [E2E] Captcha başarıyla çözüldü!');
+      // Turnstile (cf-turnstile-response) veya reCAPTCHA (g-recaptcha-response) çözüldüğünde token yüklenir
+      await page.waitForFunction(() => {
+        const turnstile = document.querySelector('[name="cf-turnstile-response"]') as HTMLInputElement | HTMLTextAreaElement | null;
+        const recaptcha = document.querySelector('[name="g-recaptcha-response"]') as HTMLInputElement | HTMLTextAreaElement | null;
+        const tVal = turnstile ? turnstile.value.trim() : '';
+        const rVal = recaptcha ? recaptcha.value.trim() : '';
+        return tVal.length > 0 || rVal.length > 0;
+      }, { timeout: 120000 }).catch((e) => {
+        console.log('⚠️ [E2E] Captcha bekleme süresi doldu veya hata oluştu:', e.message);
+      });
+      
+      console.log('✅ [E2E] Captcha başarıyla çözüldü (Token algılandı)!');
       await page.waitForTimeout(1000);
+    } else {
+      console.log('ℹ️ [E2E] Captcha iframe\'i bulunamadı veya pasif. Doğrudan veri girişine geçiliyor.');
     }
 
-    // ─── ADIM 4: E-posta ve şifre alanlarını kontrol et, eksikse düzelt ───
+    // ─── ADIM 2: E-posta alanına yaz ───
+    console.log(`✉️ [E2E] E-posta yazılıyor: ${email}`);
+    await emailInput.click();
+    await emailInput.fill(email);
+    await page.waitForTimeout(500);
+
+    // ─── ADIM 3: Şifre alanına yaz ───
+    console.log(`🔑 [E2E] Şifre yazılıyor...`);
+    await passwordInput.click();
+    await passwordInput.fill(password);
+    await page.waitForTimeout(1000);
+
+    // ─── ADIM 4: Yazım doğruluğunu teyit et ve eksiklikleri gider ───
     const currentEmailValue = await emailInput.inputValue();
     if (currentEmailValue !== email) {
-      console.log(`🔄 [E2E] E-posta eksik kalmış! Mevcut: "${currentEmailValue}" → Düzeltiliyor...`);
-      await emailInput.click();
-      await emailInput.fill('');
-      await emailInput.pressSequentially(email, { delay: 50 });
+      console.log(`🔄 [E2E] E-posta eksik kalmış! Düzeltiliyor...`);
+      await emailInput.fill(email);
       await page.waitForTimeout(300);
-      console.log('✅ [E2E] E-posta tamamlandı.');
     }
 
     const currentPasswordValue = await passwordInput.inputValue();
     if (currentPasswordValue !== password) {
       console.log(`🔄 [E2E] Şifre eksik kalmış! Düzeltiliyor...`);
-      await passwordInput.click();
-      await passwordInput.fill('');
-      await passwordInput.pressSequentially(password, { delay: 50 });
+      await passwordInput.fill(password);
       await page.waitForTimeout(300);
-      console.log('✅ [E2E] Şifre tamamlandı.');
+    }
+
+    // Ekstra Kontrol: Eğer son adımda buton hâlâ disabled ise aktifleşmesini bekle
+    if (await signInButton.isDisabled().catch(() => false)) {
+      console.log('⏳ [E2E] Butonun aktifleşmesi bekleniyor...');
+      await page.waitForFunction((btn) => btn instanceof HTMLButtonElement && !btn.disabled, await signInButton.elementHandle(), { timeout: 10000 }).catch(() => {});
     }
 
     // ─── ADIM 5: Sign in butonuna tıkla ───
-    // Buton hâlâ disabled ise (şifre sonrası captcha tetiklenmiş olabilir) bekle
-    if (await signInButton.isDisabled().catch(() => false)) {
-      console.log('\n=========================================');
-      console.log('⚠️⚠️ [CAPTCHA TESPİT EDİLDİ - SON AŞAMA] ⚠️⚠️');
-      console.log('💡 Lütfen Captcha\'yı MANUEL olarak çözün.');
-      console.log('=========================================\n');
-      
-      const buttonHandle = await signInButton.elementHandle();
-      if (buttonHandle) {
-        await page.waitForFunction(
-          (btn) => btn instanceof HTMLButtonElement && !btn.disabled,
-          buttonHandle,
-          { timeout: 90000 }
-        ).catch(() => {});
-      } else {
-        await expect(signInButton).toBeEnabled({ timeout: 90000 });
-      }
-      
-      console.log('✅ [E2E] Captcha çözüldü, buton aktif!');
-    }
-    
-    await page.waitForTimeout(1500);
+    await page.waitForTimeout(1000);
     console.log('👆 [E2E] "Sign in" butonuna tıklanıyor...');
-    await signInButton.click({ force: true });
+    await signInButton.click(); // Otomatik aksiyon alabilirlik (enabled/visible) bekleyen standart tıklama
 
     // ─── ADIM 6: Dashboard yönlendirmesini doğrula ───
     console.log('⏳ [E2E] Dashboard sayfasına yönlendirme bekleniyor...');

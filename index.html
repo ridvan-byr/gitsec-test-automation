@@ -2085,6 +2085,12 @@
             <span class="nav-label">Storage Integration</span>
             <span class="nav-badge">1</span>
           </button>
+          <button class="nav-item" id="btn-tab-audit" onclick="showTab('audit')">
+            <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"></path><path d="m9 12 2 2 4-4"></path></svg>
+            <span class="nav-label">UI & Chaos Audit</span>
+            <span class="nav-badge">1</span>
+          </button>
+
 
           <div class="sidebar-divider"></div>
           <div class="nav-section-label">Ayarlar</div>
@@ -2121,7 +2127,7 @@
             
             <div class="stats-grid" style="margin-top: 1.75rem; border-top: 1px dashed rgba(255, 255, 255, 0.08); padding-top: 1.75rem; width: 100%;">
               <div style="text-align: center; background: rgba(59, 130, 246, 0.03); border: 1px solid rgba(59, 130, 246, 0.12); padding: 1rem 0.5rem; border-radius: 0.75rem; box-shadow: 0 4px 10px rgba(0,0,0,0.1); transition: var(--transition-smooth);" onmouseover="this.style.borderColor='rgba(59, 130, 246, 0.35)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='rgba(59, 130, 246, 0.12)'; this.style.transform='translateY(0)'">
-                <div style="font-size: 1.8rem; font-weight: 800; color: var(--gitsec-blue); font-family: 'Outfit', sans-serif;">8</div>
+                <div style="font-size: 1.8rem; font-weight: 800; color: var(--gitsec-blue); font-family: 'Outfit', sans-serif;">9</div>
                 <div style="font-size: 0.75rem; font-weight: 600; color: var(--text-muted); margin-top: 0.35rem; text-transform: uppercase; letter-spacing: 0.02em;">Toplam Test</div>
               </div>
               <div style="text-align: center; background: rgba(16, 185, 129, 0.03); border: 1px solid rgba(16, 185, 129, 0.12); padding: 1rem 0.5rem; border-radius: 0.75rem; box-shadow: 0 4px 10px rgba(0,0,0,0.1); transition: var(--transition-smooth);" onmouseover="this.style.borderColor='rgba(16, 185, 129, 0.35)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='rgba(16, 185, 129, 0.12)'; this.style.transform='translateY(0)'">
@@ -2464,6 +2470,33 @@
               <button class="btn-run" onclick="runGoogleLogin()" style="background: linear-gradient(135deg, #ea4335 0%, #c5221f 100%); box-shadow: 0 4px 10px rgba(234, 67, 53, 0.25); border: none; color: #ffffff; padding: 0.55rem 1.25rem; border-radius: 0.5rem; font-family: var(--font-sans); font-size: 0.825rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 0.45rem; transition: var(--transition-smooth);">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="min-width: 14px;"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
                 <span>Google Bağla</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 5b. TAB: UI & Chaos Audit -->
+      <div id="tab-audit" class="tab-panel hidden">
+        <div class="cards-grid">
+          <!-- UI Auditor Card -->
+          <div id="card-ui-auditor" class="test-card">
+            <div class="card-header">
+              <div class="card-title-group">
+                <span class="card-tag">Audit & Chaos</span>
+                <h3 class="card-title">UI & Chaos Fuzzing Auditor</h3>
+              </div>
+              <div class="card-status-dot"></div>
+            </div>
+            <div class="card-content">
+              <p style="color: var(--text-muted); font-size: 0.8125rem; line-height: 1.5;">
+                Dashboard sayfalarını otomatik tarayarak tüm butonları, linkleri ve kırık resimleri bulur; form alanlarına SQL Injection, XSS ve taşma (Overflow) verileri yazarak en küçük arayüz ve API çökmelerini loglar.
+              </p>
+            </div>
+            <div class="card-footer">
+              <span class="card-meta">ui-auditor.spec.ts</span>
+              <button class="btn-run" onclick="runTest('', 'card-ui-auditor', 'tests/e2e/audit/ui-auditor.spec.ts')">
+                <span>Çalıştır</span>
               </button>
             </div>
           </div>
@@ -3413,7 +3446,7 @@
 
     // 8. Tab Gezintisi (Navigation) Yönetimi
     function showTab(tabId) {
-      const tabs = ['dashboard', 'schedulers', 'github', 'auth', 'storage', 'env'];
+      const tabs = ['dashboard', 'schedulers', 'github', 'auth', 'storage', 'audit', 'env'];
       tabs.forEach(t => {
         const panel = document.getElementById('tab-' + t);
         const navBtn = document.getElementById('btn-tab-' + t);
