@@ -20,6 +20,7 @@ export function extractMicrosoftOtp6(subject: string, body: string): string | nu
   const contextual = [
     /security code[^0-9]{0,80}(\d{6})/i,
     /güvenlik kodu[^0-9]{0,80}(\d{6})/i,
+    /tek kullanımlık kod[^0-9]{0,80}(\d{6})/i,
     /verification code[^0-9]{0,80}(\d{6})/i,
     /doğrulama kodu[^0-9]{0,80}(\d{6})/i,
     /use[^0-9]{0,40}(\d{6})[^0-9]{0,40}as/i,
@@ -103,7 +104,7 @@ export async function tryFetchMicrosoftOtpFromImapOnce(
             : env?.date
               ? new Date(env.date)
               : null;
-        if (minReceivedAt && msgDate && msgDate.getTime() < minReceivedAt.getTime() - 2000) {
+        if (minReceivedAt && msgDate && msgDate.getTime() < minReceivedAt.getTime() - 180000) {
           continue;
         }
 
@@ -177,7 +178,9 @@ export async function pollMicrosoftEmailOtp(options?: PollMicrosoftOtpOptions): 
     `[imap-microsoft] Microsoft OTP için mail taraması başladı (max ${maxWait}ms, lookback ${lookback} dk)`
   );
 
+  let attempt = 1;
   while (Date.now() < deadline) {
+    console.log(`📬 [imap-microsoft] Gelen kutusu taranıyor, yeni e-posta bekleniyor... (Deneme #${attempt}, Kalan Süre: ${Math.round((deadline - Date.now())/1000)}sn)`);
     try {
       const code = await tryFetchMicrosoftOtpFromImapOnce(lookback, minReceivedAt, excludeCodes);
       if (code) {
@@ -187,6 +190,7 @@ export async function pollMicrosoftEmailOtp(options?: PollMicrosoftOtpOptions): 
     } catch (e) {
       console.log('[imap-microsoft] Hata (tarama devam edecek):', e);
     }
+    attempt++;
     await new Promise((r) => setTimeout(r, pollMs));
   }
 

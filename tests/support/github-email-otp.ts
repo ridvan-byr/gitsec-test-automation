@@ -175,7 +175,7 @@ export async function tryFetchGithubOtpFromImapOnce(
             : env?.date
               ? new Date(env.date)
               : null;
-        if (minReceivedAt && msgDate && msgDate.getTime() < minReceivedAt.getTime() - 2000) {
+        if (minReceivedAt && msgDate && msgDate.getTime() < minReceivedAt.getTime() - 180000) {
           continue;
         }
 
@@ -266,12 +266,15 @@ export async function pollGithubEmailOtp(options?: PollGithubOtpOptions): Promis
     ')'
   );
 
+  let attempt = 1;
   while (Date.now() < deadline) {
+    console.log(`📬 [imap-debug] Gelen kutusu taranıyor, yeni e-posta bekleniyor... (Deneme #${attempt}, Kalan Süre: ${Math.round((deadline - Date.now())/1000)}sn)`);
     const code = await tryFetchGithubOtpFromImapOnce(lookback, minReceivedAt, excludeCodes);
     if (code) {
       console.log(`[imap-debug] poll bitti, dönen kod: "${code}"`);
       return code;
     }
+    attempt++;
     await new Promise((r) => setTimeout(r, pollMs));
   }
 

@@ -1,7 +1,8 @@
 import { expect, Locator, Page } from '@playwright/test';
+import { requireEnv } from '../support/require-env';
 
-const workspaceId = process.env.WORKSPACE_ID ?? '753';
-const dashboardBaseUrl = process.env.DASHBOARD_BASE_URL ?? 'https://dev.dashboard.gitsec.io';
+const workspaceId = requireEnv('WORKSPACE_ID');
+const dashboardBaseUrl = requireEnv('DASHBOARD_BASE_URL');
 
 export class ProviderPage {
   readonly page: Page;
@@ -19,7 +20,6 @@ export class ProviderPage {
   async waitForDashboardReady(): Promise<void> {
     await this.page.waitForURL(new RegExp(`/${workspaceId}/dashboard`), { timeout: 30000 });
     await this.page.waitForLoadState('domcontentloaded');
-    await this.page.waitForLoadState('networkidle');
     await expect(this.page.locator('main').first()).toBeVisible({ timeout: 20000 });
   }
 
@@ -30,9 +30,8 @@ export class ProviderPage {
 
     for (let i = 0; i < 4; i++) {
       await this.page.keyboard.press('Escape');
-      await this.page.waitForTimeout(300);
-      const stillVisible = await overviewTitle.isVisible().catch(() => false);
-      if (!stillVisible) break;
+      const isHidden = await overviewTitle.waitFor({ state: 'hidden', timeout: 400 }).then(() => true).catch(() => false);
+      if (isHidden) break;
     }
   }
 
@@ -44,18 +43,15 @@ export class ProviderPage {
   async isGithubAlreadyConnectedOnAddProvider(): Promise<boolean> {
     const githubRow = this.page.getByRole('row', { name: /GitHub/i }).first();
     await githubRow.waitFor({ state: 'attached', timeout: 15000 }).catch(() => { });
-    return githubRow.locator('text=/\\bActive\\b/i').first().isVisible().catch(() => false);
+    return githubRow.getByText(/\bActive\b/i).first().isVisible().catch(() => false);
   }
 
   async selectGithub(): Promise<void> {
     const githubActionButton = this.page
-      .locator(
-        [
-          'button:has-text("Install the GitSec app and grant repository permissions")',
-          'button:has-text("Configure App")',
-          '[role="button"]:has-text("Configure App")',
-        ].join(', ')
-      )
+      .getByRole('button')
+      .filter({
+        hasText: /Install the GitSec app and grant repository permissions|Configure App/i,
+      })
       .first();
 
     await githubActionButton.waitFor({ state: 'visible', timeout: 20000 });
@@ -78,7 +74,6 @@ export class ProviderPage {
     await repositoriesToggle.waitFor({ state: 'visible', timeout: 15000 });
     if (!(await githubLink.isVisible().catch(() => false))) {
       await repositoriesToggle.click();
-      await this.page.waitForTimeout(400);
     }
 
     await githubLink.waitFor({ state: 'visible', timeout: 15000 });
@@ -92,13 +87,13 @@ export class ProviderPage {
   githubProviderCardLocator(): Locator {
     const scope = this.page.locator('main').first().or(this.page.locator('body'));
     return scope
+      .locator('div, [role="button"], button')
+      .filter({ has: this.page.getByText(/^Github$/i) })
       .locator('button')
       .filter({ hasText: /Install the GitSec app and grant repository permissions/i })
-      .filter({ has: scope.getByText(/^Github$/i) })
       .first()
       .or(
-        this.page
-          .locator('button')
+        this.page.locator('button')
           .filter({ hasText: /Install the GitSec app and grant repository permissions/i })
           .first()
       );
@@ -140,7 +135,7 @@ export class ProviderPage {
               /* yükleniyor */
             }
           }
-          await this.page.waitForTimeout(300);
+          await this.page.waitForLoadState('domcontentloaded').catch(() => {});
         }
         throw new Error('GitHub sekmesi zaman aşımı');
       })();
@@ -184,7 +179,6 @@ export class ProviderPage {
 
     await this.page.bringToFront();
     await this.page.waitForLoadState('domcontentloaded').catch(() => {});
-    await this.page.waitForTimeout(400);
   }
 
   /** Kenar çubuğu: Backups. */
@@ -215,7 +209,6 @@ export class ProviderPage {
         .first();
       if (await sectionToggle.isVisible().catch(() => false)) {
         await sectionToggle.click();
-        await this.page.waitForTimeout(450);
       }
 
       await backupsLink.waitFor({ state: 'visible', timeout: 15000 });
@@ -237,5 +230,15 @@ export class ProviderPage {
     }
 
     await expect(this.page.locator('main').first()).toBeVisible({ timeout: 20000 });
+  }
+
+  async recoverFromChunkLoadError(): Promise<void> {
+    const errorSelector = this.page.getByText(/chunk|loading chunk/i);
+    const hasError = await errorSelector.isVisible().catch(() => false);
+    if (hasError) {
+      console.log('🔄 [RECOVERY] Chunk load error detected! Reloading page...');
+      await this.page.reload({ waitUntil: 'domcontentloaded' });
+      await expect(this.page.locator('main').first()).toBeVisible({ timeout: 20000 }).catch(() => {});
+    }
   }
 }

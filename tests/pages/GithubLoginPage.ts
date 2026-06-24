@@ -1,5 +1,5 @@
 import { Page, Locator } from '@playwright/test';
-import { pollGithubEmailOtp } from '../tests/support/github-email-otp';
+import { pollGithubEmailOtp } from '../support/github-email-otp';
 
 /** GitHub 2FA ekranı değerlendirmesi (login veya sudo). */
 export type Github2FaAssessment = {
@@ -28,7 +28,7 @@ export class GithubLoginPage {
 
     private async safePause(ms: number): Promise<void> {
         if (this.isGone()) return;
-        await this.page.waitForTimeout(ms).catch(() => {});
+        await new Promise(resolve => setTimeout(resolve, ms));
     }
 
     constructor(page: Page) {
@@ -46,14 +46,14 @@ export class GithubLoginPage {
         this.authorizeButton = page.locator('button[name="authorize"]');
 
         this.installAuthorizeButton = page
-            .getByRole('button', { name: /Install\s*(?:&|and)?\s*Authorize/i })
-            .or(page.locator('button[type="submit"]').filter({ hasText: /Install/i }).filter({ hasText: /Authorize/i }))
+            .getByRole('button', { name: /Install\s*(?:&|and)?\s*Authorize|Yükle\s*(?:ve|&)?\s*Yetkilendir|Kur\s*(?:ve|&)?\s*Yetkilendir/i })
+            .or(page.locator('button[type="submit"]').filter({ hasText: /Install|Yükle|Kur/i }).filter({ hasText: /Authorize|Yetkilendir/i }))
             .or(
                 page.locator('button').filter({
-                    has: page.locator('span.Button-label', { hasText: /\bInstall\b.*\bAuthorize\b/i }),
+                    has: page.locator('span.Button-label', { hasText: /\b(Install|Yükle|Kur)\b.*\b(Authorize|Yetkilendir)\b/i }),
                 })
             )
-            .or(page.locator('button.btn-primary').filter({ hasText: /Install/i }).filter({ hasText: /Authorize/i }));
+            .or(page.locator('button.btn-primary').filter({ hasText: /Install|Yükle|Kur/i }).filter({ hasText: /Authorize|Yetkilendir/i }));
     }
 
     async login(username: string, password: string) {
@@ -87,9 +87,9 @@ export class GithubLoginPage {
         return this.page
             .locator('button')
             .filter({
-                has: this.page.locator('span.Button-label', { hasText: /^Send a code via email$/i }),
+                has: this.page.locator('span.Button-label', { hasText: /^Send a code via email$|^E-posta ile kod gönder$/i }),
             })
-            .or(this.page.getByRole('button', { name: /^Send a code via email$/i }))
+            .or(this.page.getByRole('button', { name: /^Send a code via email$|^E-posta ile kod gönder$/i }))
             .first();
     }
 
@@ -110,7 +110,7 @@ export class GithubLoginPage {
         
         const hasEmailBtn = await this.page
             .getByRole('button', {
-                name: /send (\w+ )?code via email|verify via e-?mail|verify via email|verify with e-?mail/i,
+                name: /send (\w+ )?code via email|verify via e-?mail|verify via email|verify with e-?mail|e-posta ile (bir )?kod gönder/i,
             })
             .first()
             .isVisible()
@@ -120,7 +120,7 @@ export class GithubLoginPage {
         
         // Device verification automatically sends an email, without requiring a button click
         return this.page
-            .getByText(/device verification|we sent a (?:verification )?code to|sent an email with a/i)
+            .getByText(/device verification|we sent a (?:verification )?code to|sent an email with a|cihaz doğrulaması/i)
             .first()
             .isVisible()
             .catch(() => false);
@@ -169,12 +169,12 @@ export class GithubLoginPage {
             return true;
         }
         const heading = await this.page
-            .getByRole('heading', { name: /two.factor|two-step|authentication code|confirm access/i })
+            .getByRole('heading', { name: /two.factor|two-step|authentication code|confirm access|iki faktörlü|iki adımlı|erişimi onayla/i })
             .first()
             .isVisible()
             .catch(() => false);
         const label = await this.page
-            .getByText(/two.factor authentication|two-step verification/i)
+            .getByText(/two.factor authentication|two-step verification|iki faktörlü doğrulama|iki adımlı doğrulama/i)
             .first()
             .isVisible()
             .catch(() => false);
@@ -267,19 +267,19 @@ export class GithubLoginPage {
     }
 
     private logTwoFactorBlocked(assessment: Github2FaAssessment): void {
-        console.error('[github-2fa] --------------------------------------------------');
-        console.error('[github-2fa] Girilen GitHub hesabında iki faktörlü doğrulama (2FA) tespit edildi.');
-        console.error(`[github-2fa] Yöntem: ${assessment.method}`);
-        console.error(`[github-2fa] ${assessment.message}`);
+        console.error('[github-2fa] ⚠️ [UYARI] --------------------------------------------------');
+        console.error('[github-2fa] ⚠️ [UYARI] Girilen GitHub hesabında iki faktörlü doğrulama (2FA) tespit edildi.');
+        console.error(`[github-2fa]   └─ Yöntem: ${assessment.method}`);
+        console.error(`[github-2fa]   └─ Detay: ${assessment.message}`);
         if (!assessment.automatable) {
-            console.error('[github-2fa] OTOMATİK TEST GEÇİLEMEZ: Bu 2FA türü Playwright ile tamamlanamaz.');
+            console.error('[github-2fa] ❌ [ENGEL] OTOMATİK TEST GEÇİLEMEZ: Bu 2FA türü Playwright ile tamamlanamaz.');
             console.error(
-                '[github-2fa] Yapılması gerekenler: (1) Tarayıcıda elle giriş yapıp oturumu playwright/.auth/github.json olarak kaydedin,'
+                '[github-2fa]   └─ Yapılması gerekenler: (1) Tarayıcıda elle giriş yapıp oturumu playwright/.auth/github.json olarak kaydedin,'
             );
             console.error(
-                '[github-2fa] (2) Test hesabında 2FA\'yı kapatın veya yalnızca e-posta doğrulaması + .env GITHUB_MAIL_* kullanın,'
+                '[github-2fa]   └─ (2) Test hesabında 2FA\'yı kapatın veya yalnızca e-posta doğrulaması + .env GITHUB_MAIL_* kullanın,'
             );
-            console.error('[github-2fa] (3) Passkey / yalnızca authenticator kullanan hesaplarla otomasyon çalışmaz.');
+            console.error('[github-2fa]   └─ (3) Passkey / yalnızca authenticator kullanan hesaplarla otomasyon çalışmaz.');
         }
         console.error('[github-2fa] --------------------------------------------------');
     }
@@ -311,14 +311,14 @@ export class GithubLoginPage {
         let assessment = await this.assessTwoFactorChallenge();
 
         if (!assessment.hasTwoFactor) {
-            console.log('[github-2fa] İki faktörlü doğrulama ekranı yok; devam ediliyor.');
+            console.log('[github-2fa] 🔍 [KONTROL] İki faktörlü doğrulama ekranı yok; doğrudan geçiliyor.');
             return true;
         }
 
         console.log(
-            `[github-2fa] 2FA tespit edildi (yöntem=${assessment.method}, otomatik=${assessment.automatable ? 'evet' : 'hayır'}).`
+            `[github-2fa] 🛡️ [2FA] İki faktörlü doğrulama (2FA) tespit edildi. (Yöntem: ${assessment.method}, Otomatik: ${assessment.automatable ? 'evet' : 'hayır'})`
         );
-        console.log(`[github-2fa] ${assessment.message}`);
+        console.log(`[github-2fa] ℹ️ [BİLGİ] Detay: ${assessment.message}`);
 
         if (!assessment.automatable) {
             this.logTwoFactorBlocked(assessment);
@@ -329,19 +329,19 @@ export class GithubLoginPage {
         const sentAt = preLoginTime || new Date();
         const clicked = await this.tryClickSendCodeViaEmail();
         if (!clicked) {
-            console.log('[github-2fa] Verify via email tıklanamadı; OTP kutusu zaten açık olabilir.');
+            console.log('[github-2fa] ℹ️ [BİLGİ] "Verify via email" butonuna tıklanamadı. (OTP giriş kutusu zaten aktif olabilir)');
         }
 
         const otpOk = await this.completeEmailOtpIfConfigured(sentAt);
         if (this.isGone()) {
-            console.log('[github-2fa] Doğrulama sonrası popup kapandı (başarılı).');
+            console.log('[github-2fa] 🎉 [BAŞARILI] 2FA doğrulaması yapıldıktan sonra popup otomatik olarak kapandı.');
             return true;
         }
 
         if (!otpOk) {
             assessment = await this.assessTwoFactorChallenge();
             if (assessment.hasTwoFactor) {
-                console.error('[github-2fa] E-posta kodu ile 2FA tamamlanamadı.');
+                console.error('[github-2fa] ❌ [HATA] E-posta kodu ile 2FA tamamlanamadı.');
                 this.logTwoFactorBlocked({
                     ...assessment,
                     automatable: false,
@@ -358,7 +358,7 @@ export class GithubLoginPage {
             return false;
         }
 
-        console.log('[github-2fa] İki faktörlü doğrulama e-posta ile tamamlandı; test devam edebilir.');
+        console.log('[github-2fa] 🎉 [BAŞARILI] E-posta OTP doğrulaması başarıyla tamamlandı. Akış devam ediyor.');
         return true;
     }
 
@@ -399,7 +399,7 @@ export class GithubLoginPage {
             .catch(() => false);
 
         if (codeAlreadySent) {
-            console.log('[github] Doğrulama kodu e-postaya zaten gönderilmiş (Cihaz Doğrulaması). Buton aranmıyor.');
+            console.log('[github] 🔍 [KONTROL] GitHub e-posta doğrulama kodunu zaten otomatik göndermiş. (Durum: Cihaz Doğrulaması)');
             return false;
         }
 
@@ -421,7 +421,7 @@ export class GithubLoginPage {
         const sendViaEmail = this.sendCodeViaEmailButton();
         if (await sendViaEmail.isVisible().catch(() => false)) {
             if (await tryClickVisible(sendViaEmail)) {
-                console.log('[github] Send a code via email (Button-label) tıklandı.');
+                console.log('[github] 👆 [TIKLAMA] "Send a code via email" butonuna tıklandı.');
                 await this.page.waitForLoadState('domcontentloaded').catch(() => {});
                 return true;
             }
@@ -429,12 +429,12 @@ export class GithubLoginPage {
 
         const combinedBtn = this.page.locator('#sudo-send-email').or(
             this.page.getByRole('button', {
-                name: /send (\w+ )?code via email|verify via e-?mail|verify via email|verify with e-?mail/i,
+                name: /send (\w+ )?code via email|verify via e-?mail|verify via email|verify with e-?mail|e-posta ile kod gönder/i,
             })
         ).first();
 
         if (await tryClickVisible(combinedBtn, 4000)) {
-            console.log('[github] Verify / Send code via email tıklandı.');
+            console.log('[github] 👆 [TIKLAMA] "Verify / Send code via email" butonuna tıklandı.');
             await this.page.waitForLoadState('domcontentloaded').catch(() => {});
             return true;
         }
@@ -448,7 +448,7 @@ export class GithubLoginPage {
             .filter({ has: this.sudoEmailOtpInput })
             .locator('button[type="submit"]')
             .first()
-            .or(this.page.locator('button[type="submit"]').filter({ hasText: /^verify$/i }))
+            .or(this.page.locator('button[type="submit"]').filter({ hasText: /^verify$|^doğrula$/i }))
             .first();
     }
 
@@ -457,7 +457,7 @@ export class GithubLoginPage {
         if (await submit.isVisible().catch(() => false)) {
             await submit.scrollIntoViewIfNeeded().catch(() => {});
             await submit.click({ timeout: 10_000 }).catch(() => {});
-            console.log('[github] Sudo OTP Verify gönderildi.');
+            console.log('[github] 🚀 [GİRİŞ] Güvenli işlem (Sudo) OTP doğrulama kodu gönderildi.');
             return;
         }
         await this.sudoEmailOtpInput.press('Enter').catch(() => {});
@@ -485,12 +485,12 @@ export class GithubLoginPage {
         if (this.isGone()) {
             return true;
         }
-        console.log(`[github] Sudo / Confirm access bekleniyor (${Math.round(timeoutMs / 1000)}s)...`);
+        console.log(`[github] ⏳ [BEKLEME] Güvenlik teyidi (Sudo / Confirm access) penceresi bekleniyor... (Süre sınırı: ${Math.round(timeoutMs / 1000)}s)`);
 
         await this.page.waitForLoadState('networkidle', { timeout: 12000 }).catch(() => {});
         await this.page.waitForLoadState('domcontentloaded', { timeout: 5000 }).catch(() => {});
 
-        const sudoHeading = this.page.getByRole('heading', { name: /confirm access/i });
+        const sudoHeading = this.page.getByRole('heading', { name: /confirm access|erişimi onayla/i });
         const deadline = Date.now() + timeoutMs;
 
         while (Date.now() < deadline) {
@@ -535,7 +535,7 @@ export class GithubLoginPage {
         const hasMail =
             Boolean(process.env.GITHUB_MAIL_USER?.trim()) && Boolean(process.env.GITHUB_MAIL_PASSWORD?.trim());
         if (!hasMail) {
-            console.log('[github] GITHUB_MAIL_* tanımlı değil; OTP IMAP atlanıyor.');
+            console.log('[github] ⚠️ [UYARI] Çevre değişkenlerinde GITHUB_MAIL_USER veya GITHUB_MAIL_PASSWORD eksik. E-posta OTP okuma adımı atlanıyor.');
             return false;
         }
 
@@ -543,20 +543,20 @@ export class GithubLoginPage {
         try {
             await otpField.waitFor({ state: 'visible', timeout: 90_000 });
         } catch {
-            console.log('[github] OTP alanı (sudo_email_otp / otp) görünmedi.');
+            console.log('[github] 🔍 [KONTROL] OTP doğrulama kodu giriş alanı bulunamadı. (Sudo veya 2FA gerekmeyebilir)');
             return false;
         }
 
         if (minReceivedAt) {
-            console.log('[github] Postanın gelmesi için 6 sn bekleniyor...');
+            console.log('[github] ⏳ [BEKLEME] E-postanın posta kutusuna ulaşması için 6 saniye bekleniyor...');
             await this.safePause(6000);
             if (this.isGone()) {
-                console.log('[github] Bekleme sırasında popup kapandı (OAuth).');
+                console.log('[github] 🧹 [OTURUM] E-posta beklenirken popup penceresi kapandı. (Oturum tamamlanmış olabilir)');
                 return true;
             }
         }
 
-        console.log('[github] IMAP: 6 veya 8 haneli doğrulama kodu bekleniyor (en yeni GitHub doğrulama postası)...');
+        console.log('[github] ⏳ [BEKLEME] E-posta sunucusundan (IMAP) 6 veya 8 haneli tek kullanımlık güvenlik kodu (OTP) aranıyor...');
         const code = await pollGithubEmailOtp({
             maxWaitMs: 120_000,
             pollMs: 4000,
@@ -564,29 +564,29 @@ export class GithubLoginPage {
             excludeCodes: this.usedOtpCodes,
         });
         this.usedOtpCodes.push(code);
-        console.log(`[imap-debug] IMAP → Playwright: kutuya yazılacak tam kod = "${code}" (${code.length} hane)`);
+        console.log(`[github] 🔑 [OTURUM] E-posta ile gelen doğrulama kodu okundu: "${code}" (Kod Uzunluğu: ${code.length} karakter)`);
 
         await this.enterVerificationCode(code);
         const filled = await otpField.inputValue().catch(() => '');
-        console.log(`[imap-debug] OTP alanındaki değer = "${filled}"`);
+        console.log(`[github] 🔍 [KONTROL] Okunan kod giriş kutusuna yazıldı. (Giriş Değeri: "${filled}")`);
 
         await this.submitSudoEmailOtp();
         if (this.isGone()) {
-            console.log('[github] OTP gönderildi; popup kapandı (sudo/OAuth başarılı).');
+            console.log('[github] 🎉 [BAŞARILI] OTP doğrulama kodu onaylandı ve pencere kapandı.');
             return true;
         }
 
         await this.safePause(2500);
         if (this.isGone()) {
-            console.log('[github] E-posta OTP kabul edildi; popup kapandı.');
+            console.log('[github] 🎉 [BAŞARILI] E-posta OTP doğrulaması tamamlandı, popup otomatik kapandı.');
             return true;
         }
 
         if (await this.isSudoAuthFailedVisible()) {
-            console.log('[github] sudo Authentication failed — kod reddedildi.');
+            console.log('[github] ❌ [HATA] Güvenli işlem (Sudo) doğrulaması başarısız oldu! (Girilen kod GitHub tarafından reddedildi)');
             return false;
         }
-        console.log('[github] E-posta OTP kabul edildi.');
+        console.log('[github] 🎉 [BAŞARILI] E-posta OTP doğrulama kodu başarıyla onaylandı.');
         return true;
     }
 
@@ -604,7 +604,7 @@ export class GithubLoginPage {
         if (!sawSudo) {
             if (waitMs > 0) {
                 console.log(
-                    '[github] Sudo görünmedi — Verify/IMAP atlandı (gerekliyse GITHUB_SUDO_WAIT_MS ile süreyi artır).'
+                    `[github] 🔍 [KONTROL] Sudo güvenlik teyidi ekranı açılmadı, doğrulama adımları atlanıyor. (Beklenen Süre: ${waitMs}ms)`
                 );
             }
             return true;
@@ -613,17 +613,17 @@ export class GithubLoginPage {
         const sentAt = new Date();
         const clickedVerify = await this.tryClickSendCodeViaEmail();
         if (!clickedVerify) {
-            console.log('[github] Verify via email tıklanamadı; OTP kutusu doğrudan açılmış olabilir.');
+            console.log('[github] ℹ️ [BİLGİ] "Verify via email" butonuna tıklanamadı, kod giriş kutusu zaten hazır olabilir.');
         }
 
         let ok = await this.completeEmailOtpIfConfigured(sentAt);
         if (this.isGone()) {
-            console.log('[github] Sudo/OTP sonrası popup kapandı (başarılı).');
+            console.log('[github] 🎉 [BAŞARILI] Sudo şifre/OTP doğrulaması sonrasında pencere başarıyla kapatıldı.');
             return true;
         }
 
         for (let attempt = 0; !ok && !this.isGone() && attempt < 2 && (await this.isSudoAuthFailedVisible()); attempt++) {
-            console.log('[github] Yeni kod için Verify via email tekrar (deneme', attempt + 2, ')...');
+            console.log(`[github] 🔄 [TEKRAR] Doğrulama kodu geçersiz oldu, yeni bir kod isteniyor... (Deneme: ${attempt + 2})`);
             await this.sudoEmailOtpInput.fill('').catch(() => {});
             await this.page.locator('#sudo-send-email').waitFor({ state: 'visible', timeout: 20_000 }).catch(() => {});
             const retryAt = new Date();
@@ -633,15 +633,15 @@ export class GithubLoginPage {
         }
 
         if (this.isGone()) {
-            console.log('[github] Sudo doğrulama tamam (popup kapandı).');
+            console.log('[github] 🎉 [BAŞARILI] Sudo doğrulama tamam (popup kapandı).');
             return true;
         }
 
         if (!(await this.waitForSudoChallengeResolved()) || (await this.isSudoAuthFailedVisible())) {
-            console.log('[github] Sudo doğrulama BAŞARISIZ.');
+            console.log('[github] ❌ [HATA] Sudo/Güvenlik doğrulama süreci başarısız oldu.');
             return false;
         }
-        console.log('[github] Sudo doğrulama tamam.');
+        console.log('[github] 🎉 [BAŞARILI] Sudo/Güvenlik doğrulaması başarıyla tamamlandı.');
         return true;
     }
 
@@ -649,10 +649,46 @@ export class GithubLoginPage {
      * GitHub App permissions: önce Install (sudo tetikler) → e-posta sudo → gerekirse tekrar Install.
      */
     async completePermissionsInstallFlow(): Promise<boolean> {
-        await this.clickInstallAndAuthorize();
+        const url = this.page.url();
+        if (/settings\/installations\/\d+$/i.test(url)) {
+            console.log(`[github] Uygulama zaten kurulu görünüyor (URL: ${url}). Kaydet veya yetkilendirme adımı kontrol ediliyor...`);
+            const saveBtn = this.page.locator('button, input[type="submit"]').filter({ hasText: /Save|Kaydet/i }).or(
+                this.page.locator('input[type="submit"][value*="Save"]').or(this.page.locator('input[type="submit"][value*="Kaydet"]'))
+            ).first();
+            await saveBtn.waitFor({ state: 'visible', timeout: 10000 }).catch(() => {});
+            if (await saveBtn.isVisible().catch(() => false)) {
+                console.log('[github] 👆 [TIKLAMA] GitHub settings sayfasında "Save" butonuna tıklanıyor...');
+                await saveBtn.click().catch(() => {});
+                await this.page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => {});
+                return true;
+            }
+            console.log(`[github] Save butonu bulunamadı. Sayfa başlığı: "${await this.page.title().catch(() => '')}", URL: "${this.page.url()}"`);
+            await this.page.close().catch(() => {});
+            return true;
+        }
+
+        const clicked = await this.clickInstallAndAuthorize();
+        if (!clicked && (/settings\/installations\/\d+$/i.test(this.page.url()) || this.page.isClosed())) {
+            console.log(`[github] "Install & Authorize" butonu bulunamadı ve mevcut URL veya kapalı durum kurulumun bittiğini gösteriyor.`);
+            if (!this.page.isClosed()) {
+                await this.page.close().catch(() => {});
+            }
+            return true;
+        }
+
+        if (this.page.isClosed()) {
+            return true;
+        }
 
         await this.page.waitForLoadState('domcontentloaded', { timeout: 15000 }).catch(() => {});
         await this.safePause(500);
+
+        if (/settings\/installations\/\d+$/i.test(this.page.url()) || this.page.isClosed()) {
+            if (!this.page.isClosed()) {
+                await this.page.close().catch(() => {});
+            }
+            return true;
+        }
 
         const sudoOk = await this.handlePostLoginEmailChallenge({
             waitForSudoMs: Number(process.env.GITHUB_SUDO_WAIT_MS || '60000') || 60_000,
@@ -666,7 +702,7 @@ export class GithubLoginPage {
         }
 
         if (await this.installAuthorizeButton.first().isVisible().catch(() => false)) {
-            console.log('[github] Sudo sonrası Install & Authorize tekrar tıklanıyor.');
+            console.log('[github] 👆 [TIKLAMA] Sudo doğrulaması sonrasında "Install & Authorize" butonuna tekrar tıklanıyor.');
             await this.clickInstallAndAuthorize();
         }
 
@@ -695,23 +731,23 @@ export class GithubLoginPage {
                     });
                 });
                 await this.page.keyboard.press('End').catch(() => {});
-                await this.page.waitForTimeout(300);
+                await this.safePause(300);
                 if (await btn.isVisible().catch(() => false)) {
                     break;
                 }
             }
 
             await btn.scrollIntoViewIfNeeded();
-            await this.page.waitForTimeout(300);
+            await this.safePause(300);
             try {
                 await btn.click({ timeout: 15_000 });
             } catch {
                 await btn.click({ force: true });
             }
-            console.log('[github] Install & Authorize tıklandı.');
+            console.log('[github] 👆 [TIKLAMA] GitHub "Install & Authorize" / "Yükle ve Yetkilendir" butonuna tıklandı.');
             return true;
         } catch {
-            console.log('[github] Install & Authorize bulunamadı, URL:', this.page.url());
+            console.log(`[github] ⚠️ [UYARI] Sayfada "Install & Authorize" butonu bulunamadı. (Mevcut URL: ${this.page.url()})`);
             return false;
         }
     }
@@ -722,7 +758,7 @@ export class GithubLoginPage {
             await this.authorizeButton.scrollIntoViewIfNeeded();
             await this.authorizeButton.click();
         } catch {
-            console.log('Authorize butonu çıkmadı.');
+            console.log('[github] 🔍 [KONTROL] Authorize (Yetkilendir) butonu çıkmadı.');
         }
     }
 }

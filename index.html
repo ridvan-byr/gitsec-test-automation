@@ -140,9 +140,15 @@
     }
 
     /* Option styling to ensure custom select options look beautiful in Light/Dark theme */
-    .gitsec-select option, .gitsec-select-wrapper select option {
+    .gitsec-select option, .gitsec-select-wrapper select option, #consoleFilterSelect option {
       background: var(--panel-bg-solid);
       color: var(--text-main);
+    }
+
+    #consoleSearch, #consoleFilterSelect {
+      background: var(--input-bg) !important;
+      color: var(--text-main) !important;
+      border: 1px solid var(--panel-border) !important;
     }
 
     /* Dynamic Theme Overrides for Light Mode Components */
@@ -202,6 +208,18 @@
       background: rgba(244, 63, 94, 0.08);
       border-color: rgba(244, 63, 94, 0.3);
       color: var(--gitsec-red);
+    }
+
+    html.light .toast-notification {
+      background: rgba(255, 255, 255, 0.9);
+      border-color: rgba(16, 185, 129, 0.5);
+      color: #0f172a;
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1), 0 0 12px rgba(16, 185, 129, 0.1);
+    }
+
+    html.light .toast-notification.error {
+      border-color: rgba(244, 63, 94, 0.5);
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1), 0 0 12px rgba(244, 63, 94, 0.1);
     }
 
     /* Left Navigation Sidebar Light Theme Styles */
@@ -565,6 +583,15 @@
       box-shadow: var(--input-shadow-focus, inset 0 1px 2px rgba(0, 0, 0, 0.6)), 0 0 10px var(--gitsec-blue-glow);
     }
 
+    .form-group input[type="range"] {
+      background: transparent !important;
+      border: none !important;
+      padding: 0 !important;
+      box-shadow: none !important;
+      height: auto !important;
+      cursor: pointer;
+    }
+
     /* Settings Switch and Toggle Group */
     .toggle-group {
       display: flex;
@@ -819,6 +846,319 @@
       box-shadow: var(--input-shadow-focus), 0 0 8px var(--gitsec-blue-glow);
     }
 
+    /* Premium UI Enhancements Styles */
+    
+    /* 1. Live Captcha Alert Banner */
+    .captcha-alert-banner {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(217, 119, 6, 0.1) 100%);
+      border: 1px dashed rgba(245, 158, 11, 0.45);
+      border-radius: 0.75rem;
+      padding: 0.85rem 1.35rem;
+      color: var(--gitsec-yellow);
+      font-size: 0.875rem;
+      font-weight: 600;
+      box-shadow: 0 4px 20px rgba(245, 158, 11, 0.08), 0 0 10px rgba(245, 158, 11, 0.05);
+      animation: captcha-pulse 2s infinite alternate ease-in-out;
+      transition: var(--transition-smooth);
+      margin-bottom: 1.25rem;
+    }
+    
+    @keyframes captcha-pulse {
+      0% {
+        border-color: rgba(245, 158, 11, 0.3);
+        box-shadow: 0 4px 15px rgba(245, 158, 11, 0.05);
+      }
+      100% {
+        border-color: rgba(245, 158, 11, 0.65);
+        box-shadow: 0 4px 25px rgba(245, 158, 11, 0.15), 0 0 12px rgba(245, 158, 11, 0.1);
+      }
+    }
+    
+    .captcha-alert-banner.hidden {
+      display: none !important;
+    }
+
+    /* 2. Glassmorphic Lightbox Overlay */
+    .lightbox-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(3, 4, 8, 0.82);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 110000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    .lightbox-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    
+    .lightbox-container {
+      position: relative;
+      max-width: 90%;
+      max-height: 85vh;
+      border: 1px solid var(--panel-border);
+      border-radius: 1.25rem;
+      background: var(--panel-bg-solid);
+      padding: 0.65rem;
+      box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.9), 0 0 25px rgba(59, 130, 246, 0.15);
+      transform: scale(0.95) translateY(10px);
+      transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .lightbox-overlay.active .lightbox-container {
+      transform: scale(1) translateY(0);
+    }
+    
+    .lightbox-image {
+      max-width: 100%;
+      max-height: 78vh;
+      border-radius: 0.85rem;
+      object-fit: contain;
+      display: block;
+    }
+    
+    .lightbox-title-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.65rem 0.85rem 0.25rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+    }
+    
+    .btn-lightbox-close {
+      position: absolute;
+      top: -1.25rem;
+      right: -1.25rem;
+      background: var(--gitsec-red);
+      border: 1px solid rgba(255,255,255,0.15);
+      color: #ffffff;
+      width: 2.25rem;
+      height: 2.25rem;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(244, 63, 94, 0.4);
+      transition: var(--transition-smooth);
+      outline: none;
+      z-index: 10;
+    }
+    
+    .btn-lightbox-close:hover {
+      transform: scale(1.1) rotate(90deg);
+      box-shadow: 0 6px 18px rgba(244, 63, 94, 0.6);
+      background: #e11d48;
+    }
+
+    /* 3. .env Accordions & Search Styles */
+    .env-search-wrapper {
+      margin-bottom: 1.25rem;
+      display: flex;
+      gap: 0.85rem;
+    }
+    
+    .env-search-input {
+      flex: 1;
+      background: var(--input-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: 0.6rem;
+      padding: 0.75rem 1.15rem;
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      font-size: 0.85rem;
+      outline: none;
+      transition: var(--transition-smooth);
+      box-shadow: var(--input-shadow);
+    }
+    
+    .env-search-input:focus {
+      border-color: var(--gitsec-blue);
+      box-shadow: var(--input-shadow-focus), 0 0 10px var(--gitsec-blue-glow);
+    }
+    
+    .env-accordion-container {
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+    }
+    
+    .env-accordion-item {
+      border: 1px solid var(--panel-border);
+      border-radius: 0.85rem;
+      background: rgba(15, 23, 42, 0.25);
+      overflow: hidden;
+      transition: var(--transition-smooth);
+    }
+    
+    html.light .env-accordion-item {
+      background: rgba(255, 255, 255, 0.45);
+    }
+    
+    .env-accordion-item:hover {
+      border-color: rgba(59, 130, 246, 0.25);
+    }
+    
+    .env-accordion-header {
+      padding: 1rem 1.35rem;
+      background: rgba(15, 23, 42, 0.35);
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      user-select: none;
+      transition: var(--transition-smooth);
+    }
+    
+    html.light .env-accordion-header {
+      background: rgba(0, 0, 0, 0.02);
+    }
+    
+    .env-accordion-header:hover {
+      background: rgba(59, 130, 246, 0.05);
+    }
+    
+    .env-accordion-title {
+      font-family: 'Outfit', var(--font-sans);
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+    }
+    
+    .env-accordion-chevron {
+      color: var(--text-muted);
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    .env-accordion-item.active .env-accordion-chevron {
+      transform: rotate(180deg);
+      color: var(--gitsec-blue);
+    }
+    
+    .env-accordion-body {
+      padding: 1.35rem;
+      border-top: 1px solid var(--panel-border);
+      display: flex;
+      flex-direction: column;
+      gap: 1.15rem;
+      transition: max-height 0.3s ease-out;
+    }
+    
+    .env-accordion-item.collapsed .env-accordion-body {
+      display: none;
+    }
+
+    /* 4. Circular Progress & Detailed Stats */
+    .radial-stats-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 1.5rem;
+      margin-top: 1rem;
+      border-top: 1px dashed rgba(255, 255, 255, 0.08);
+      padding-top: 1.25rem;
+      width: 100%;
+    }
+    
+    .radial-progress-wrapper {
+      position: relative;
+      width: 80px;
+      height: 80px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .radial-progress-svg {
+      transform: rotate(-90deg);
+      width: 80px;
+      height: 80px;
+    }
+    
+    .radial-progress-bg {
+      fill: none;
+      stroke: rgba(255, 255, 255, 0.05);
+      stroke-width: 6;
+    }
+    
+    html.light .radial-progress-bg {
+      stroke: rgba(0, 0, 0, 0.04);
+    }
+    
+    .radial-progress-value {
+      fill: none;
+      stroke: var(--gitsec-green);
+      stroke-width: 6;
+      stroke-dasharray: 226;
+      stroke-dashoffset: 226; /* Dynamic offset controlled by JS: 226 * (1 - percent/100) */
+      stroke-linecap: round;
+      transition: stroke-dashoffset 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    .radial-progress-text {
+      position: absolute;
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text-main);
+      font-family: 'Outfit', sans-serif;
+    }
+
+    .detailed-stats-grid {
+      flex: 1;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.65rem;
+    }
+    
+    .detail-stat-card {
+      background: rgba(15, 23, 42, 0.45);
+      border: 1px solid var(--panel-border);
+      border-radius: 0.5rem;
+      padding: 0.65rem 0.85rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+    }
+    
+    html.light .detail-stat-card {
+      background: rgba(0, 0, 0, 0.015);
+    }
+    
+    .detail-stat-value {
+      font-size: 1.15rem;
+      font-weight: 700;
+      font-family: 'Outfit', sans-serif;
+    }
+    
+    .detail-stat-label {
+      font-size: 0.65rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.02em;
+    }
+
     /* Dynamic Card Border and Indicators */
     .test-card.success {
       border-color: rgba(16, 185, 129, 0.25);
@@ -923,6 +1263,30 @@
       overflow: hidden;
       box-shadow: 0 10px 40px rgba(0, 0, 0, 0.65), inset 0 1px 1px rgba(255, 255, 255, 0.05);
       position: relative;
+      transition: height 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .terminal-container.fullscreen {
+      position: fixed !important;
+      top: 0 !important;
+      left: 0 !important;
+      right: 0 !important;
+      bottom: 0 !important;
+      width: 100vw !important;
+      height: 100vh !important;
+      z-index: 99999 !important;
+      border-radius: 0 !important;
+      margin: 0 !important;
+    }
+
+    .terminal-container.fullscreen .terminal-resizer {
+      display: none !important;
+    }
+
+    .terminal-container.fullscreen .terminal-screen {
+      font-size: 0.95rem !important;
+      line-height: 1.8 !important;
+      padding: 2rem !important;
     }
 
     .terminal-resizer {
@@ -1859,6 +2223,36 @@
       transform: scale(0.97);
     }
 
+    .btn-settings-save {
+      background: linear-gradient(135deg, var(--gitsec-blue) 0%, #1d4ed8 100%);
+      border: none;
+      color: #ffffff;
+      padding: 0.75rem 1.6rem;
+      border-radius: 0.5rem;
+      font-family: var(--font-sans);
+      font-size: 0.875rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.55rem;
+      transition: var(--transition-smooth);
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
+      outline: none;
+      width: 100%;
+      margin-top: 0.5rem;
+    }
+
+    .btn-settings-save:hover {
+      box-shadow: 0 6px 18px rgba(59, 130, 246, 0.45), 0 0 10px var(--gitsec-blue-glow);
+      filter: brightness(1.15);
+    }
+
+    .btn-settings-save:active {
+      transform: scale(0.97);
+    }
+
     /* === Toast Glassmorphic Notification === */
     .toast-notification {
       position: fixed;
@@ -1872,7 +2266,7 @@
       padding: 1.15rem 1.75rem;
       border-radius: 0.75rem;
       box-shadow: 0 20px 45px rgba(0, 0, 0, 0.7), 0 0 15px rgba(16, 185, 129, 0.1);
-      z-index: 2000;
+      z-index: 1000000;
       display: flex;
       align-items: center;
       gap: 0.85rem;
@@ -1976,6 +2370,179 @@
     .sidebar-wrapper.collapsed .sidebar-toggle-floating-btn svg {
       transform: rotate(180deg);
     }
+    
+    /* Interactive log view selection border highlighting */
+    .test-card.selected-log-view {
+      border-color: var(--gitsec-blue) !important;
+      box-shadow: 0 0 15px rgba(59, 130, 246, 0.25) !important;
+    }
+
+    /* === Dynamic Terminal Tabs & Console Options === */
+    .terminal-sub-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.5rem 1.25rem;
+      background: var(--terminal-header-bg);
+      border-bottom: 1px solid var(--panel-border);
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .terminal-tabs {
+      display: flex;
+      gap: 0.45rem;
+      overflow-x: auto;
+      flex: 1;
+      padding-bottom: 2px;
+      scrollbar-width: none; /* Firefox */
+    }
+    
+    .terminal-tabs::-webkit-scrollbar {
+      display: none; /* Chrome/Safari */
+    }
+
+    .terminal-tab-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.35rem 0.75rem;
+      border-radius: 0.375rem;
+      font-family: var(--font-sans);
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--panel-border);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: var(--transition-smooth);
+      flex-shrink: 0; /* Multi-test/multi-tab squeezing protection */
+    }
+
+    .terminal-tab-btn:hover {
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text-main);
+      border-color: rgba(255, 255, 255, 0.15);
+    }
+
+    .terminal-tab-btn.active {
+      background: rgba(59, 130, 246, 0.15);
+      color: #60a5fa;
+      border-color: rgba(59, 130, 246, 0.45);
+      box-shadow: 0 0 12px rgba(59, 130, 246, 0.15);
+    }
+
+    /* Light Theme Tab Overrides */
+    html.light .terminal-tab-btn {
+      background: rgba(0, 0, 0, 0.03);
+      border-color: rgba(0, 0, 0, 0.08);
+      color: var(--text-muted);
+    }
+
+    html.light .terminal-tab-btn:hover {
+      background: rgba(0, 0, 0, 0.06);
+      border-color: rgba(0, 0, 0, 0.15);
+      color: var(--text-main);
+    }
+
+    html.light .terminal-tab-btn.active {
+      background: rgba(59, 130, 246, 0.1);
+      color: #1d4ed8;
+      border-color: rgba(59, 130, 246, 0.4);
+      box-shadow: 0 1px 3px rgba(59, 130, 246, 0.1);
+    }
+
+    html.light .terminal-tab-btn::before {
+      background: #94a3b8;
+    }
+
+    html.light .terminal-tab-btn.active::before {
+      background: #1d4ed8;
+    }
+    
+    .terminal-tab-btn::before {
+      content: '';
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--text-dark);
+      transition: var(--transition-smooth);
+    }
+
+    .terminal-tab-btn.running::before {
+      background: var(--gitsec-blue);
+      box-shadow: 0 0 8px var(--gitsec-blue);
+      animation: pulse-blue-indicator 1.2s infinite alternate;
+    }
+
+    .terminal-tab-btn.success::before {
+      background: var(--gitsec-green);
+      box-shadow: 0 0 6px var(--gitsec-green-glow);
+    }
+
+    .terminal-tab-btn.fail::before {
+      background: var(--gitsec-red);
+      box-shadow: 0 0 8px var(--gitsec-red);
+    }
+
+    .tab-close-btn {
+      margin-left: 0.35rem;
+      border-radius: 50%;
+      width: 14px;
+      height: 14px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: 700;
+      line-height: 1;
+      color: var(--text-muted);
+      transition: var(--transition-smooth);
+      opacity: 0.6;
+    }
+    
+    .tab-close-btn:hover {
+      opacity: 1;
+      background: rgba(255, 255, 255, 0.15);
+      color: var(--gitsec-red) !important;
+    }
+    
+    html.light .tab-close-btn:hover {
+      background: rgba(0, 0, 0, 0.1);
+      color: #b91c1c !important;
+    }
+
+    .console-options-panel {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-family: var(--font-sans);
+    }
+    
+    .console-options-panel label {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      cursor: pointer;
+      user-select: none;
+      font-weight: 500;
+    }
+    
+    .console-options-panel input[type="checkbox"] {
+      cursor: pointer;
+      accent-color: var(--gitsec-blue);
+      width: 0.85rem;
+      height: 0.85rem;
+    }
+
+    @keyframes pulse-blue-indicator {
+      0% { opacity: 0.4; transform: scale(0.9); }
+      100% { opacity: 1; transform: scale(1.1); }
+    }
   </style>
 </head>
 <body>
@@ -2068,7 +2635,7 @@
           <button class="nav-item" id="btn-tab-schedulers" onclick="showTab('schedulers')">
             <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
             <span class="nav-label">Schedulers & Restore</span>
-            <span class="nav-badge">2</span>
+            <span class="nav-badge">4</span>
           </button>
           <button class="nav-item" id="btn-tab-github" onclick="showTab('github')">
             <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg>
@@ -2078,17 +2645,17 @@
           <button class="nav-item" id="btn-tab-auth" onclick="showTab('auth')">
             <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
             <span class="nav-label">Authentication</span>
-            <span class="nav-badge">2</span>
+            <span class="nav-badge">3</span>
           </button>
           <button class="nav-item" id="btn-tab-storage" onclick="showTab('storage')">
             <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
             <span class="nav-label">Storage Integration</span>
-            <span class="nav-badge">1</span>
+            <span class="nav-badge">5</span>
           </button>
           <button class="nav-item" id="btn-tab-audit" onclick="showTab('audit')">
             <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"></path><path d="m9 12 2 2 4-4"></path></svg>
-            <span class="nav-label">UI & Chaos Audit</span>
-            <span class="nav-badge">1</span>
+            <span class="nav-label">Audit & Activity Logs</span>
+            <span class="nav-badge">4</span>
           </button>
 
 
@@ -2111,6 +2678,12 @@
     <!-- Main Workspace Area -->
     <section class="main-workspace">
       
+      <!-- Live Captcha Alert Banner -->
+      <div id="captchaAlertBanner" class="captcha-alert-banner hidden">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="animation: spin 3s linear infinite;"><path d="M12 2v4"/><path d="m16.2 7.8 2.9-2.9"/><path d="M18 12h4"/><path d="m16.2 16.2 2.9 2.9"/><path d="M12 18v4"/><path d="m4.9 19.1 2.9-2.9"/><path d="M2 12h4"/><path d="m4.9 4.9 2.9 2.9"/></svg>
+        <span id="captchaAlertText">⚠️ E2E UYARISI: Captcha Çözülmesi Bekleniyor! Lütfen açılan Chrome tarayıcısında çözün.</span>
+      </div>
+
       <!-- 1. TAB: Dashboard -->
       <div id="tab-dashboard" class="tab-panel">
         <!-- Dashboard Summary & Settings Grid -->
@@ -2125,18 +2698,44 @@
               </p>
             </div>
             
-            <div class="stats-grid" style="margin-top: 1.75rem; border-top: 1px dashed rgba(255, 255, 255, 0.08); padding-top: 1.75rem; width: 100%;">
-              <div style="text-align: center; background: rgba(59, 130, 246, 0.03); border: 1px solid rgba(59, 130, 246, 0.12); padding: 1rem 0.5rem; border-radius: 0.75rem; box-shadow: 0 4px 10px rgba(0,0,0,0.1); transition: var(--transition-smooth);" onmouseover="this.style.borderColor='rgba(59, 130, 246, 0.35)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='rgba(59, 130, 246, 0.12)'; this.style.transform='translateY(0)'">
-                <div style="font-size: 1.8rem; font-weight: 800; color: var(--gitsec-blue); font-family: 'Outfit', sans-serif;">9</div>
-                <div style="font-size: 0.75rem; font-weight: 600; color: var(--text-muted); margin-top: 0.35rem; text-transform: uppercase; letter-spacing: 0.02em;">Toplam Test</div>
+            <!-- Premium Radial & Detailed Stats Grid -->
+            <div class="radial-stats-container">
+              <div class="radial-progress-wrapper" title="Başarı Oranı">
+                <svg class="radial-progress-svg">
+                  <circle class="radial-progress-bg" cx="40" cy="40" r="36" />
+                  <circle id="radial-progress-circle" class="radial-progress-value" cx="40" cy="40" r="36" />
+                </svg>
+                <div id="stat-pass-rate" class="radial-progress-text">0%</div>
               </div>
-              <div style="text-align: center; background: rgba(16, 185, 129, 0.03); border: 1px solid rgba(16, 185, 129, 0.12); padding: 1rem 0.5rem; border-radius: 0.75rem; box-shadow: 0 4px 10px rgba(0,0,0,0.1); transition: var(--transition-smooth);" onmouseover="this.style.borderColor='rgba(16, 185, 129, 0.35)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='rgba(16, 185, 129, 0.12)'; this.style.transform='translateY(0)'">
-                <div style="font-size: 1.8rem; font-weight: 800; color: var(--gitsec-green); font-family: 'Outfit', sans-serif;">Aktif</div>
-                <div style="font-size: 0.75rem; font-weight: 600; color: var(--text-muted); margin-top: 0.35rem; text-transform: uppercase; letter-spacing: 0.02em;">Entegrasyon</div>
+              
+              <div class="detailed-stats-grid">
+                <div class="detail-stat-card">
+                  <span id="stat-total-runs" class="detail-stat-value" style="color: var(--gitsec-blue);">0</span>
+                  <span class="detail-stat-label">Toplam Koşu</span>
+                </div>
+                <div class="detail-stat-card">
+                  <span id="stat-passed-runs" class="detail-stat-value" style="color: var(--gitsec-green);">0</span>
+                  <span class="detail-stat-label">Başarılı</span>
+                </div>
+                <div class="detail-stat-card">
+                  <span id="stat-failed-runs" class="detail-stat-value" style="color: var(--gitsec-red);">0</span>
+                  <span class="detail-stat-label">Başarısız</span>
+                </div>
+                <div class="detail-stat-card">
+                  <span id="stat-avg-duration" class="detail-stat-value" style="color: var(--gitsec-yellow);">0s</span>
+                  <span class="detail-stat-label">Ort. Süre</span>
+                </div>
               </div>
-              <div style="text-align: center; background: rgba(245, 158, 11, 0.03); border: 1px solid rgba(245, 158, 11, 0.12); padding: 1rem 0.5rem; border-radius: 0.75rem; box-shadow: 0 4px 10px rgba(0,0,0,0.1); transition: var(--transition-smooth);" onmouseover="this.style.borderColor='rgba(245, 158, 11, 0.35)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.borderColor='rgba(245, 158, 11, 0.12)'; this.style.transform='translateY(0)'">
-                <div style="font-size: 1.8rem; font-weight: 800; color: var(--gitsec-yellow); font-family: 'Outfit', sans-serif;">NodeJS</div>
-                <div style="font-size: 0.75rem; font-weight: 600; color: var(--text-muted); margin-top: 0.35rem; text-transform: uppercase; letter-spacing: 0.02em;">Runner Sunucu</div>
+            </div>
+
+            <!-- Son Koşu Geçmişi Sparkline -->
+            <div style="margin-top: 0.75rem; width: 100%;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.45rem;">
+                <span style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Son Koşu Tarihçesi</span>
+                <span id="history-reset-btn" onclick="resetTestHistory()" style="font-size: 0.65rem; font-weight: 600; color: var(--gitsec-red); cursor: pointer; text-transform: uppercase; opacity: 0.7; transition: var(--transition-smooth);" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.7'">Sıfırla</span>
+              </div>
+              <div id="sparkline-container" style="display: flex; gap: 0.4rem; flex-wrap: wrap; padding: 0.6rem 0.75rem; background: var(--toggle-group-bg); border: 1px solid var(--panel-border); border-radius: 0.6rem; min-height: 2.25rem; align-items: center;">
+                <span style="color: var(--text-muted); font-size: 0.725rem; width: 100%; text-align: center;">Henüz koşu yapılmadı</span>
               </div>
             </div>
           </div>
@@ -2152,19 +2751,31 @@
               <div class="toggle-group" onclick="document.getElementById('headedToggle').click()">
                 <span style="font-size: 0.8125rem; font-weight: 500;">Başlıklı Mod (Headed)</span>
                 <label class="switch" onclick="event.stopPropagation()">
-                  <input type="checkbox" id="headedToggle" checked onchange="saveSettings()">
+                  <input type="checkbox" id="headedToggle" checked>
                   <span class="slider"></span>
                 </label>
               </div>
 
               <div class="form-group">
                 <label for="workspaceId">Workspace ID</label>
-                <input type="text" id="workspaceId" value="823" placeholder="Örn: 823" oninput="saveSettings(); syncEnvField('WORKSPACE_ID', this.value)">
+                <input type="text" id="workspaceId" value="883" placeholder="Örn: 883" oninput="syncEnvField('WORKSPACE_ID', this.value)">
               </div>
               <div class="form-group">
                 <label for="baseUrl">Dashboard Base URL</label>
-                <input type="text" id="baseUrl" value="https://dev.dashboard.gitsec.io" placeholder="Base URL" oninput="saveSettings(); syncEnvField('DASHBOARD_BASE_URL', this.value)">
+                <input type="text" id="baseUrl" value="https://dev.dashboard.gitsec.io" placeholder="Base URL" oninput="syncEnvField('DASHBOARD_BASE_URL', this.value)">
               </div>
+              <div class="form-group">
+                <label for="workersCount">Paralel İş Parçacığı (Workers)</label>
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                  <input type="range" id="workersCountSlider" min="1" max="8" value="1" style="flex: 1; accent-color: var(--gitsec-blue);" oninput="document.getElementById('workersCount').value = this.value">
+                  <input type="number" id="workersCount" min="1" max="8" value="1" style="width: 60px; text-align: center; padding: 0.4rem 0.5rem;" class="gitsec-select" oninput="document.getElementById('workersCountSlider').value = this.value">
+                </div>
+              </div>
+              
+              <button id="btnSaveRunSettings" class="btn-settings-save" onclick="saveRunSettings()">
+                <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+                <span>Değişiklikleri Kaydet</span>
+              </button>
             </div>
           </div>
         </div>
@@ -2201,6 +2812,31 @@
             </div>
           </div>
 
+          <!-- Scheduler Validation Card -->
+          <div id="card-scheduler-validation" class="test-card">
+            <div class="card-header">
+              <div class="card-title-group">
+                <span class="card-tag">Scheduler Validation</span>
+                <h3 class="card-title">Zamanlayıcı Doğrulama</h3>
+              </div>
+              <div class="card-status-dot"></div>
+            </div>
+            <div class="card-content">
+              <p style="color: var(--text-muted); font-size: 0.8125rem; line-height: 1.5;">
+                Zamanlayıcı formundaki isim alanının boşluk kontrolü ve mükerrer zamanlayıcı adı çakışma durumlarını doğrular.
+              </p>
+            </div>
+            <div class="card-content">
+              <!-- Spacer -->
+            </div>
+            <div class="card-footer">
+              <span class="card-meta">schedulers-validation.spec.ts</span>
+              <button class="btn-run" onclick="runTest('', 'card-scheduler-validation', 'tests/e2e/backups/schedulers-validation.spec.ts')">
+                <span>Çalıştır</span>
+              </button>
+            </div>
+          </div>
+
           <!-- Restore Card -->
           <div id="card-restore" class="test-card">
             <div class="card-header">
@@ -2218,6 +2854,28 @@
             <div class="card-footer">
               <span class="card-meta">restore.spec.ts</span>
               <button class="btn-run" onclick="runTest('', 'card-restore', 'tests/e2e/backups/restore.spec.ts')">
+                <span>Çalıştır</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Restore Validation Card -->
+          <div id="card-restore-validation" class="test-card">
+            <div class="card-header">
+              <div class="card-title-group">
+                <span class="card-tag">Restore Validation</span>
+                <h3 class="card-title">Restore Doğrulama</h3>
+              </div>
+              <div class="card-status-dot"></div>
+            </div>
+            <div class="card-content">
+              <p style="color: var(--text-muted); font-size: 0.8125rem; line-height: 1.5;">
+                Geri yükleme sihirbazındaki boş depo adı girdilerini ve aynı isimdeki çakışan depo restore denemelerini test eder.
+              </p>
+            </div>
+            <div class="card-footer">
+              <span class="card-meta">restore-validation.spec.ts</span>
+              <button class="btn-run" onclick="runTest('', 'card-restore-validation', 'tests/e2e/backups/restore-validation.spec.ts')">
                 <span>Çalıştır</span>
               </button>
             </div>
@@ -2371,6 +3029,29 @@
             </div>
           </div>
 
+          <!-- Login Failures Card -->
+          <div id="card-auth-login-failures" class="test-card">
+            <div class="card-header">
+              <div class="card-title-group">
+                <span class="card-tag">Auth Edge Case</span>
+                <h3 class="card-title">Login Failures & Disconnect</h3>
+              </div>
+              <div class="card-status-dot"></div>
+            </div>
+            <div class="card-content">
+              <p style="color: var(--text-muted); font-size: 0.8125rem; line-height: 1.5;">
+                Giriş esnasında ağ bağlantısı kopması (Network Request Failed) ve sunucu çökmesi (HTTP 500) durumlarını simüle ederek UI kararlılığını test eder.
+              </p>
+            </div>
+            <div class="card-footer">
+              <span class="card-meta">login-failures.spec.ts</span>
+              <button class="btn-run" onclick="runTest('', 'card-auth-login-failures', 'tests/e2e/auth/login-failures.spec.ts')">
+                <span>Çalıştır</span>
+              </button>
+            </div>
+          </div>
+
+
           <!-- Register Card -->
           <div id="card-auth-register" class="test-card">
             <div class="card-header">
@@ -2438,6 +3119,83 @@
             </div>
           </div>
 
+          <!-- Storage Validation Card -->
+          <div id="card-storage-validation" class="test-card">
+            <div class="card-header">
+              <div class="card-title-group">
+                <span class="card-tag">Storage Validation</span>
+                <h3 class="card-title">Form Doğrulama & Sınırlar</h3>
+              </div>
+              <div class="card-status-dot"></div>
+            </div>
+            
+            <div class="card-content">
+              <p style="color: var(--text-muted); font-size: 0.8125rem; line-height: 1.5;">
+                Boş alan denetimlerini, whitespace engellemelerini ve mükerrer kayıt backend hata toast mesajlarını test eder.
+              </p>
+            </div>
+            
+            <div class="card-content">
+              <!-- Empty spacer to match visual layout -->
+            </div>
+            
+            <div class="card-footer">
+              <span class="card-meta">storage-validation.spec.ts</span>
+              <button class="btn-run" onclick="runTest('', 'card-storage-validation', 'tests/e2e/providers/storage-validation.spec.ts')">
+                <span>Çalıştır</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Storage API Failures Card -->
+          <div id="card-storage-api-failures" class="test-card">
+            <div class="card-header">
+              <div class="card-title-group">
+                <span class="card-tag">API & Network</span>
+                <h3 class="card-title">Ağ & API Hata Dayanıklılığı</h3>
+              </div>
+              <div class="card-status-dot"></div>
+            </div>
+            
+            <div class="card-content">
+              <p style="color: var(--text-muted); font-size: 0.8125rem; line-height: 1.5;">
+                Ağ kesintilerini, 500 Internal Server Error çökmelerini, yavaş internet (Latency) gecikmelerini ve 401 Unauthorized oturum düşmelerini simüle eder.
+              </p>
+            </div>
+            
+            <div class="card-footer">
+              <span class="card-meta">storage-api-failures.spec.ts</span>
+              <button class="btn-run" onclick="runTest('', 'card-storage-api-failures', 'tests/e2e/providers/storage-api-failures.spec.ts')">
+                <span>Çalıştır</span>
+              </button>
+            </div>
+          </div>
+
+
+          <!-- Storage Edge Cases Card -->
+          <div id="card-storage-edge-cases" class="test-card">
+            <div class="card-header">
+              <div class="card-title-group">
+                <span class="card-tag">Edge Cases</span>
+                <h3 class="card-title">Stres & Sınır Durumları</h3>
+              </div>
+              <div class="card-status-dot"></div>
+            </div>
+            
+            <div class="card-content">
+              <p style="color: var(--text-muted); font-size: 0.8125rem; line-height: 1.5;">
+                Çift tıklama spam korumasını (Double-Click) ve internet kesintisi (Offline Mode) dayanıklılığını test eder.
+              </p>
+            </div>
+            
+            <div class="card-footer">
+              <span class="card-meta">storage-edge-cases.spec.ts</span>
+              <button class="btn-run" onclick="runTest('', 'card-storage-edge-cases', 'tests/e2e/providers/storage-edge-cases.spec.ts')">
+                <span>Çalıştır</span>
+              </button>
+            </div>
+          </div>
+
           <!-- Google Session Card -->
           <div id="card-google-session" class="test-card">
             <div class="card-header">
@@ -2476,32 +3234,94 @@
         </div>
       </div>
 
-      <!-- 5b. TAB: UI & Chaos Audit -->
+      <!-- 5b. TAB: Audit & Activity Logs -->
       <div id="tab-audit" class="tab-panel hidden">
         <div class="cards-grid">
-          <!-- UI Auditor Card -->
-          <div id="card-ui-auditor" class="test-card">
+          <!-- Activity Log Card -->
+          <div id="card-activity-log" class="test-card">
             <div class="card-header">
               <div class="card-title-group">
-                <span class="card-tag">Audit & Chaos</span>
-                <h3 class="card-title">UI & Chaos Fuzzing Auditor</h3>
+                <span class="card-tag">Audit Logs</span>
+                <h3 class="card-title">Activity & Audit Logs</h3>
               </div>
               <div class="card-status-dot"></div>
             </div>
             <div class="card-content">
               <p style="color: var(--text-muted); font-size: 0.8125rem; line-height: 1.5;">
-                Dashboard sayfalarını otomatik tarayarak tüm butonları, linkleri ve kırık resimleri bulur; form alanlarına SQL Injection, XSS ve taşma (Overflow) verileri yazarak en küçük arayüz ve API çökmelerini loglar.
+                Sistem üzerindeki depolama sağlayıcısı ekleme/silme gibi kritik aktivitelerin Audit Logs sayfasında doğru şekilde loglanıp loglanmadığını dinamik olarak doğrular.
               </p>
             </div>
             <div class="card-footer">
-              <span class="card-meta">ui-auditor.spec.ts</span>
-              <button class="btn-run" onclick="runTest('', 'card-ui-auditor', 'tests/e2e/audit/ui-auditor.spec.ts')">
+              <span class="card-meta">activity-log.spec.ts</span>
+              <button class="btn-run" onclick="runTest('', 'card-activity-log', 'tests/e2e/audit/activity-log.spec.ts')">
+                <span>Çalıştır</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Full Flow Auditor Card -->
+          <div id="card-full-flow-auditor" class="test-card">
+            <div class="card-header">
+              <div class="card-title-group">
+                <span class="card-tag">Grand Integration</span>
+                <h3 class="card-title">Toplu Entegrasyon Akışı</h3>
+              </div>
+              <div class="card-status-dot"></div>
+            </div>
+            <div class="card-content">
+              <p style="color: var(--text-muted); font-size: 0.8125rem; line-height: 1.5;">
+                Giriş, GitHub, Repo Include, Backup, Restore ve 5 Storage sağlayıcısı bağlantı adımlarını tek seferde koşturup Audit Log detaylarını teker teker doğrular.
+              </p>
+            </div>
+            <div class="card-footer">
+              <span class="card-meta">full-flow-auditor.spec.ts</span>
+              <button class="btn-run" onclick="runTest('', 'card-full-flow-auditor', 'tests/e2e/audit/full-flow-auditor.spec.ts')">
+                <span>Çalıştır</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Activity UI Card -->
+          <div id="card-activity-ui" class="test-card">
+            <div class="card-header">
+              <div class="card-title-group">
+                <span class="card-tag">Activity UI</span>
+                <h3 class="card-title">Aktivite Paneli Arayüzü</h3>
+              </div>
+              <div class="card-status-dot"></div>
+            </div>
+            <div class="card-content">
+              <p style="color: var(--text-muted); font-size: 0.8125rem; line-height: 1.5;">
+                Aktivite sayfasındaki arayüz filtrelerini (Status -> Partially Completed), detay satır içi açma/kapatma (Expand/Collapse details) ve detay alanlarındaki boş/placeholder kontrolünü test eder.
+              </p>
+            </div>
+          </div>
+
+          <!-- System Edge Cases Card -->
+          <div id="card-system-edge-cases" class="test-card">
+            <div class="card-header">
+              <div class="card-title-group">
+                <span class="card-tag">System Edge Case</span>
+                <h3 class="card-title">Workspace Isolation & Token Expiry</h3>
+              </div>
+              <div class="card-status-dot"></div>
+            </div>
+            <div class="card-content">
+              <p style="color: var(--text-muted); font-size: 0.8125rem; line-height: 1.5;">
+                Workspace yetki yalıtımını (403 Forbidden), oturum esnasında token geçerliliğini yitirme (401 Unauthorized) ve eşzamanlı isteklerde token yenileme yarışını (Token Refresh Race) test eder.
+              </p>
+            </div>
+            <div class="card-footer">
+              <span class="card-meta">system-edge-cases.spec.ts</span>
+              <button class="btn-run" onclick="runTest('', 'card-system-edge-cases', 'tests/e2e/system-edge-cases.spec.ts')">
                 <span>Çalıştır</span>
               </button>
             </div>
           </div>
         </div>
       </div>
+
+
 
       <!-- 6. TAB: .env Config -->
       <div id="tab-env" class="tab-panel hidden">
@@ -2518,98 +3338,299 @@
             </button>
           </div>
 
-          <div class="env-grid">
-            <!-- E2E User Credentials -->
-            <div class="form-group">
-              <label for="env_E2E_USER_EMAIL">Gitsec Test E-posta (E2E_USER_EMAIL)</label>
-              <input type="text" id="env_E2E_USER_EMAIL" placeholder="gitsectest+1@gmail.com">
-            </div>
-            <div class="form-group">
-              <label for="env_E2E_USER_PASSWORD">Gitsec Test Şifre (E2E_USER_PASSWORD)</label>
-              <div class="password-input-wrapper">
-                <input type="password" id="env_E2E_USER_PASSWORD" placeholder="••••••••">
-                <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('env_E2E_USER_PASSWORD', this)" title="Şifreyi Göster/Gizle">
-                  <svg class="eye-icon w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                    <circle cx="12" cy="12" r="3"></circle>
-                  </svg>
-                  <svg class="eye-off-icon w-4 h-4" style="display: none;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
-                    <line x1="1" y1="1" x2="23" y2="23"></line>
-                  </svg>
-                </button>
+          <!-- Env Search Bar -->
+          <div class="env-search-wrapper">
+            <input type="text" id="envSearchInput" class="env-search-input" placeholder="Değişken adı veya değeri ara..." oninput="filterEnvVars()">
+          </div>
+
+          <div class="env-accordion-container" id="envAccordionContainer">
+            
+            <!-- Group 1: Kullanıcı Bilgileri -->
+            <div class="env-accordion-item active" id="env-group-user">
+              <div class="env-accordion-header" onclick="toggleEnvAccordion('env-group-user')">
+                <span class="env-accordion-title">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                  Kullanıcı Bilgileri (User Credentials)
+                </span>
+                <span class="env-accordion-chevron">▼</span>
+              </div>
+              <div class="env-accordion-body env-grid">
+                <div class="form-group">
+                  <label for="env_E2E_USER_EMAIL">Gitsec Test E-posta (E2E_USER_EMAIL)</label>
+                  <input type="text" id="env_E2E_USER_EMAIL" placeholder="gitsectest+1@gmail.com">
+                </div>
+                <div class="form-group">
+                  <label for="env_E2E_USER_PASSWORD">Gitsec Test Şifre (E2E_USER_PASSWORD)</label>
+                  <div class="password-input-wrapper">
+                    <input type="password" id="env_E2E_USER_PASSWORD" placeholder="••••••••">
+                    <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('env_E2E_USER_PASSWORD', this)" title="Şifreyi Göster/Gizle">
+                      <svg class="eye-icon w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                        <circle cx="12" cy="12" r="3"></circle>
+                      </svg>
+                      <svg class="eye-off-icon w-4 h-4" style="display: none;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                        <line x1="1" y1="1" x2="23" y2="23"></line>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
 
-            <!-- GitHub Credentials -->
-            <div class="form-group">
-              <label for="env_GITHUB_TEST_USER">GitHub Test Kullanıcı Adı / E-posta (GITHUB_TEST_USER)</label>
-              <input type="text" id="env_GITHUB_TEST_USER" placeholder="gitsectest@gmail.com">
-            </div>
-            <div class="form-group">
-              <label for="env_GITHUB_TEST_PASSWORD">GitHub Test Şifre (GITHUB_TEST_PASSWORD)</label>
-              <div class="password-input-wrapper">
-                <input type="password" id="env_GITHUB_TEST_PASSWORD" placeholder="••••••••">
-                <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('env_GITHUB_TEST_PASSWORD', this)" title="Şifreyi Göster/Gizle">
-                  <svg class="eye-icon w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                    <circle cx="12" cy="12" r="3"></circle>
-                  </svg>
-                  <svg class="eye-off-icon w-4 h-4" style="display: none;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
-                    <line x1="1" y1="1" x2="23" y2="23"></line>
-                  </svg>
-                </button>
+            <!-- Group 2: Google & Gmail Entegrasyonu -->
+            <div class="env-accordion-item active" id="env-group-google">
+              <div class="env-accordion-header" onclick="toggleEnvAccordion('env-group-google')">
+                <span class="env-accordion-title">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"></rect><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path></svg>
+                  Google & Gmail Entegrasyonu (Google & Gmail Integration)
+                </span>
+                <span class="env-accordion-chevron">▼</span>
+              </div>
+              <div class="env-accordion-body env-grid">
+                <div class="form-group">
+                  <label for="env_GOOGLE_TEST_USER">Google Test Kullanıcı Adı (GOOGLE_TEST_USER)</label>
+                  <input type="text" id="env_GOOGLE_TEST_USER" placeholder="gitsectest@gmail.com">
+                </div>
+                <div class="form-group">
+                  <label for="env_GOOGLE_TEST_PASSWORD">Google Test Şifre (GOOGLE_TEST_PASSWORD)</label>
+                  <div class="password-input-wrapper">
+                    <input type="password" id="env_GOOGLE_TEST_PASSWORD" placeholder="••••••••">
+                    <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('env_GOOGLE_TEST_PASSWORD', this)" title="Şifreyi Göster/Gizle">
+                      <svg class="eye-icon w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                        <circle cx="12" cy="12" r="3"></circle>
+                      </svg>
+                      <svg class="eye-off-icon w-4 h-4" style="display: none;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                        <line x1="1" y1="1" x2="23" y2="23"></line>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="env_GOOGLE_TOTP_SECRET">Google TOTP Secret (GOOGLE_TOTP_SECRET)</label>
+                  <div class="password-input-wrapper">
+                    <input type="password" id="env_GOOGLE_TOTP_SECRET" placeholder="TOTP Secret Key">
+                    <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('env_GOOGLE_TOTP_SECRET', this)" title="Şifreyi Göster/Gizle">
+                      <svg class="eye-icon w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                        <circle cx="12" cy="12" r="3"></circle>
+                      </svg>
+                      <svg class="eye-off-icon w-4 h-4" style="display: none;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                        <line x1="1" y1="1" x2="23" y2="23"></line>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="env_GITHUB_MAIL_USER">IMAP Gmail Adresi (GITHUB_MAIL_USER)</label>
+                  <input type="text" id="env_GITHUB_MAIL_USER" placeholder="gmail_user@gmail.com">
+                </div>
+                <div class="form-group">
+                  <label for="env_GITHUB_MAIL_PASSWORD">Gmail Uygulama Şifresi (GITHUB_MAIL_PASSWORD)</label>
+                  <div class="password-input-wrapper">
+                    <input type="password" id="env_GITHUB_MAIL_PASSWORD" placeholder="16 Karakterli Uygulama Şifresi">
+                    <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('env_GITHUB_MAIL_PASSWORD', this)" title="Şifreyi Göster/Gizle">
+                      <svg class="eye-icon w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                        <circle cx="12" cy="12" r="3"></circle>
+                      </svg>
+                      <svg class="eye-off-icon w-4 h-4" style="display: none;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                        <line x1="1" y1="1" x2="23" y2="23"></line>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
 
-            <!-- Core App Details -->
-            <div class="form-group">
-              <label for="env_WORKSPACE_ID">Workspace ID</label>
-              <input type="text" id="env_WORKSPACE_ID" placeholder="Örn: 823" oninput="syncSettingsField('workspaceId', this.value)">
-            </div>
-            <div class="form-group">
-              <label for="env_DASHBOARD_BASE_URL">Dashboard Base URL</label>
-              <input type="text" id="env_DASHBOARD_BASE_URL" placeholder="https://dev.dashboard.gitsec.io" oninput="syncSettingsField('baseUrl', this.value)">
-            </div>
-            <div class="form-group">
-              <label for="env_E2E_STORAGE_PROVIDER">Storage Sağlayıcısı (E2E_STORAGE_PROVIDER)</label>
-              <select id="env_E2E_STORAGE_PROVIDER" class="gitsec-select" onchange="syncStorageProviderField(this.value)">
-                <option value="aws">aws (AWS S3)</option>
-                <option value="azure">azure (Azure Blob Storage)</option>
-                <option value="gdrive">gdrive (Google Drive)</option>
-                <option value="huawei">huawei (Huawei OBS)</option>
-                <option value="onedrive">onedrive (OneDrive Personal)</option>
-              </select>
-            </div>
-
-            <!-- API Details -->
-            <div class="form-group env-card-wide">
-              <label for="env_API_BASE_URL">API Base URL</label>
-              <input type="text" id="env_API_BASE_URL" placeholder="https://dev.api.gitsec.io">
-            </div>
-
-            <!-- Gmail IMAP Credentials -->
-            <div class="form-group">
-              <label for="env_GITHUB_MAIL_USER">IMAP Gmail Adresi (GITHUB_MAIL_USER)</label>
-              <input type="text" id="env_GITHUB_MAIL_USER" placeholder="gmail_user@gmail.com">
-            </div>
-            <div class="form-group">
-              <label for="env_GITHUB_MAIL_PASSWORD">Gmail Uygulama Şifresi (GITHUB_MAIL_PASSWORD)</label>
-              <div class="password-input-wrapper">
-                <input type="password" id="env_GITHUB_MAIL_PASSWORD" placeholder="16 Karakterli Uygulama Şifresi">
-                <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('env_GITHUB_MAIL_PASSWORD', this)" title="Şifreyi Göster/Gizle">
-                  <svg class="eye-icon w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                    <circle cx="12" cy="12" r="3"></circle>
-                  </svg>
-                  <svg class="eye-off-icon w-4 h-4" style="display: none;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
-                    <line x1="1" y1="1" x2="23" y2="23"></line>
-                  </svg>
-                </button>
+            <!-- Group 3: GitHub Ayarları -->
+            <div class="env-accordion-item active" id="env-group-github">
+              <div class="env-accordion-header" onclick="toggleEnvAccordion('env-group-github')">
+                <span class="env-accordion-title">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg>
+                  GitHub Ayarları (GitHub Integration)
+                </span>
+                <span class="env-accordion-chevron">▼</span>
+              </div>
+              <div class="env-accordion-body env-grid">
+                <div class="form-group">
+                  <label for="env_GITHUB_TEST_USER">GitHub Test Kullanıcı Adı / E-posta (GITHUB_TEST_USER)</label>
+                  <input type="text" id="env_GITHUB_TEST_USER" placeholder="gitsectest@gmail.com">
+                </div>
+                <div class="form-group">
+                  <label for="env_GITHUB_TEST_PASSWORD">GitHub Test Şifre (GITHUB_TEST_PASSWORD)</label>
+                  <div class="password-input-wrapper">
+                    <input type="password" id="env_GITHUB_TEST_PASSWORD" placeholder="••••••••">
+                    <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('env_GITHUB_TEST_PASSWORD', this)" title="Şifreyi Göster/Gizle">
+                      <svg class="eye-icon w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                        <circle cx="12" cy="12" r="3"></circle>
+                      </svg>
+                      <svg class="eye-off-icon w-4 h-4" style="display: none;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                        <line x1="1" y1="1" x2="23" y2="23"></line>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
+
+            <!-- Group 4: Workspace & Base URLs -->
+            <div class="env-accordion-item active" id="env-group-workspace">
+              <div class="env-accordion-header" onclick="toggleEnvAccordion('env-group-workspace')">
+                <span class="env-accordion-title">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 1 0 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                  Workspace & Base URLs
+                </span>
+                <span class="env-accordion-chevron">▼</span>
+              </div>
+              <div class="env-accordion-body env-grid">
+                <div class="form-group">
+                  <label for="env_WORKSPACE_ID">Workspace ID</label>
+                  <input type="text" id="env_WORKSPACE_ID" placeholder="Örn: 883" oninput="syncSettingsField('workspaceId', this.value)">
+                </div>
+                <div class="form-group">
+                  <label for="env_DASHBOARD_BASE_URL">Dashboard Base URL</label>
+                  <input type="text" id="env_DASHBOARD_BASE_URL" placeholder="https://dev.dashboard.gitsec.io" oninput="syncSettingsField('baseUrl', this.value)">
+                </div>
+                <div class="form-group env-card-wide">
+                  <label for="env_API_BASE_URL">API Base URL</label>
+                  <input type="text" id="env_API_BASE_URL" placeholder="https://dev.api.gitsec.io">
+                </div>
+              </div>
+            </div>
+
+            <!-- Group 5: Depolama Sağlayıcıları -->
+            <div class="env-accordion-item active" id="env-group-storage">
+              <div class="env-accordion-header" onclick="toggleEnvAccordion('env-group-storage')">
+                <span class="env-accordion-title">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+                  Depolama Sağlayıcıları (Storage Providers)
+                </span>
+                <span class="env-accordion-chevron">▼</span>
+              </div>
+              <div class="env-accordion-body env-grid">
+                <div class="form-group">
+                  <label for="env_E2E_STORAGE_PROVIDER">Storage Sağlayıcısı (E2E_STORAGE_PROVIDER)</label>
+                  <select id="env_E2E_STORAGE_PROVIDER" class="gitsec-select" onchange="syncStorageProviderField(this.value)">
+                    <option value="aws">aws (AWS S3)</option>
+                    <option value="azure">azure (Azure Blob Storage)</option>
+                    <option value="gdrive">gdrive (Google Drive)</option>
+                    <option value="huawei">huawei (Huawei OBS)</option>
+                    <option value="onedrive">onedrive (OneDrive Personal)</option>
+                  </select>
+                </div>
+                
+                <!-- AWS S3 -->
+                <div class="form-group">
+                  <label for="env_AWS_ACCESS_KEY_ID">AWS Access Key ID (AWS_ACCESS_KEY_ID)</label>
+                  <input type="text" id="env_AWS_ACCESS_KEY_ID" placeholder="AKIA...">
+                </div>
+                <div class="form-group">
+                  <label for="env_AWS_SECRET_ACCESS_KEY">AWS Secret Key (AWS_SECRET_ACCESS_KEY)</label>
+                  <div class="password-input-wrapper">
+                    <input type="password" id="env_AWS_SECRET_ACCESS_KEY" placeholder="••••••••">
+                    <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('env_AWS_SECRET_ACCESS_KEY', this)" title="Şifreyi Göster/Gizle">
+                      <svg class="eye-icon w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                        <circle cx="12" cy="12" r="3"></circle>
+                      </svg>
+                      <svg class="eye-off-icon w-4 h-4" style="display: none;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                        <line x1="1" y1="1" x2="23" y2="23"></line>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="env_AWS_REGION">AWS Region (AWS_REGION)</label>
+                  <input type="text" id="env_AWS_REGION" placeholder="us-east-1">
+                </div>
+                <div class="form-group">
+                  <label for="env_AWS_S3_BUCKET">AWS S3 Bucket (AWS_S3_BUCKET)</label>
+                  <input type="text" id="env_AWS_S3_BUCKET" placeholder="gitsec-test">
+                </div>
+
+                <!-- Azure -->
+                <div class="form-group env-card-wide">
+                  <label for="env_AZURE_CONNECTION_STRING">Azure Connection String (AZURE_CONNECTION_STRING)</label>
+                  <input type="text" id="env_AZURE_CONNECTION_STRING" placeholder="DefaultEndpointsProtocol=https;AccountName=...">
+                </div>
+                <div class="form-group env-card-wide">
+                  <label for="env_AZURE_FOLDER_PATH">Azure Folder Path (AZURE_FOLDER_PATH)</label>
+                  <input type="text" id="env_AZURE_FOLDER_PATH" placeholder="/">
+                </div>
+
+                <!-- Huawei OBS -->
+                <div class="form-group">
+                  <label for="env_HUAWEI_ACCESS_KEY_ID">Huawei Access Key ID (HUAWEI_ACCESS_KEY_ID)</label>
+                  <div class="password-input-wrapper">
+                    <input type="password" id="env_HUAWEI_ACCESS_KEY_ID" placeholder="Access Key ID">
+                    <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('env_HUAWEI_ACCESS_KEY_ID', this)" title="Şifreyi Göster/Gizle">
+                      <svg class="eye-icon w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                        <circle cx="12" cy="12" r="3"></circle>
+                      </svg>
+                      <svg class="eye-off-icon w-4 h-4" style="display: none;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                        <line x1="1" y1="1" x2="23" y2="23"></line>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="env_HUAWEI_SECRET_ACCESS_KEY">Huawei Secret Key (HUAWEI_SECRET_ACCESS_KEY)</label>
+                  <div class="password-input-wrapper">
+                    <input type="password" id="env_HUAWEI_SECRET_ACCESS_KEY" placeholder="Secret Key">
+                    <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('env_HUAWEI_SECRET_ACCESS_KEY', this)" title="Şifreyi Göster/Gizle">
+                      <svg class="eye-icon w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                        <circle cx="12" cy="12" r="3"></circle>
+                      </svg>
+                      <svg class="eye-off-icon w-4 h-4" style="display: none;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                        <line x1="1" y1="1" x2="23" y2="23"></line>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="env_HUAWEI_BUCKET">Huawei OBS Bucket (HUAWEI_BUCKET)</label>
+                  <input type="text" id="env_HUAWEI_BUCKET" placeholder="Huawei Bucket Name">
+                </div>
+                <div class="form-group">
+                  <label for="env_HUAWEI_REGION">Huawei OBS Bölge (HUAWEI_REGION)</label>
+                  <input type="text" id="env_HUAWEI_REGION" placeholder="Europe (Turkey - West)">
+                </div>
+              </div>
+            </div>
+
+            <!-- Group 6: Test Dahil/Hariç Kapsamı -->
+            <div class="env-accordion-item active" id="env-group-scope">
+              <div class="env-accordion-header" onclick="toggleEnvAccordion('env-group-scope')">
+                <span class="env-accordion-title">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"></path><path d="m9 12 2 2 4-4"></path></svg>
+                  Test Dahil/Hariç Kapsamı (Include/Exclude Scope)
+                </span>
+                <span class="env-accordion-chevron">▼</span>
+              </div>
+              <div class="env-accordion-body env-grid">
+                <div class="form-group">
+                  <label for="env_E2E_INCLUDE_MODE">E2E Include Modu (E2E_INCLUDE_MODE)</label>
+                  <input type="text" id="env_E2E_INCLUDE_MODE" placeholder="one_repo">
+                </div>
+                <div class="form-group">
+                  <label for="env_E2E_EXCLUDE_MODE">E2E Exclude Modu (E2E_EXCLUDE_MODE)</label>
+                  <input type="text" id="env_E2E_EXCLUDE_MODE" placeholder="one_repo">
+                </div>
+              </div>
+            </div>
+
           </div>
         </div>
       </div>
@@ -2619,10 +3640,36 @@
         <div class="terminal-resizer" id="terminalResizer"></div>
         <div class="terminal-header">
           <div class="terminal-title">Canlı Konsol Çıktısı</div>
-          <div class="terminal-actions">
+          <div class="terminal-actions" style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+            <!-- Canlı Arama ve Kategori Filtre Kontrolleri -->
+            <input type="text" id="consoleSearch" placeholder="Loglarda ara..." oninput="handleConsoleFilter()" style="border: 1px solid var(--panel-border); border-radius: 0.375rem; font-family: var(--font-sans); font-size: 0.75rem; padding: 0.35rem 0.65rem; width: 120px; outline: none; transition: var(--transition-smooth); box-sizing: border-box;" onfocus="this.style.borderColor='var(--gitsec-blue)'; this.style.width='160px'; this.style.boxShadow='0 0 8px rgba(59,130,246,0.15)';" onblur="this.style.borderColor=''; this.style.width='120px'; this.style.boxShadow='';">
+            
+            <select id="consoleFilterSelect" onchange="handleConsoleFilter()" style="border: 1px solid var(--panel-border); border-radius: 0.375rem; font-family: var(--font-sans); font-size: 0.75rem; padding: 0.35rem 0.5rem; outline: none; cursor: pointer; transition: var(--transition-smooth);" onfocus="this.style.borderColor='var(--gitsec-blue)';" onblur="this.style.borderColor='';">
+              <option value="all">Tüm Loglar</option>
+              <option value="error">Hatalar (Error/Fail)</option>
+              <option value="pom">POM Adımları</option>
+            </select>
+            
+            <div style="width: 1px; height: 16px; background: var(--panel-border); margin: 0 0.15rem;"></div>
+
             <button id="btnStop" class="terminal-btn stop" style="display: none;" onclick="stopActiveTest()">Süreci Durdur</button>
+            <button id="btnToggleFullscreen" class="terminal-btn" onclick="toggleFullscreenConsole()" style="border-color: var(--panel-border);">Tam Ekran</button>
+            <button id="btnCloseAllTabs" class="terminal-btn" onclick="closeAllConsoleTabs()" style="border-color: var(--panel-border); display: none;">Tümünü Kapat</button>
             <button class="terminal-btn" onclick="clearConsole()">Temizle</button>
             <button class="terminal-btn" onclick="copyConsole()">Kopyala</button>
+          </div>
+        </div>
+        <div class="terminal-sub-header">
+          <div class="terminal-tabs" id="terminalTabs">
+            <!-- Dynamically populated by JS -->
+          </div>
+          <div class="console-options-panel">
+            <label>
+              <input type="checkbox" id="autoFocusActiveTest" checked>
+              <span>Aktif Teste Odaklan</span>
+            </label>
+            <span style="width: 1px; height: 12px; background: var(--panel-border); margin: 0 0.15rem;"></span>
+            <span id="activeWorkerStats" style="font-weight: 600; color: var(--text-main);">Worker: 0/1</span>
           </div>
         </div>
         <div id="terminalScreen" class="terminal-screen">Tetiklenen testlerin canlı log çıktıları burada anlık olarak akacaktır...</div>
@@ -2886,8 +3933,121 @@
   </div>
 
   <script>
+    const activeCardIds = new Set();
+    const consoleBuffers = {}; // cardId -> array of log lines
+    const testStartTimes = {}; // cardId -> timestamp
+    let selectedConsoleCardId = 'global';
     let activeCardId = null;
     let eventSource = null;
+    let testStartTime = null;
+    let consoleBuffer = [];
+    let lastArtifacts = {}; // cardId -> { screenshot, video }
+    let artifactTab = 'img';
+
+    const cardNameMap = {
+      'global': 'Tüm Loglar (Global)',
+      'card-storage': 'Storage Provider',
+      'card-storage-validation': 'Storage Validation',
+      'card-storage-api-failures': 'Storage API Failures',
+      'card-storage-edge-cases': 'Storage Edge Cases',
+      'card-google-session': 'Google Session',
+      'card-scheduler': 'Daily Scheduler',
+      'card-scheduler-validation': 'Zamanlayıcı Doğrulama',
+      'card-restore': 'Restore Navigate',
+      'card-restore-validation': 'Restore Doğrulama',
+      'card-github-connect': 'GitHub Connect',
+      'card-github-include': 'GitHub Include',
+      'card-github-exclude': 'GitHub Exclude',
+      'card-github-backup': 'GitHub Backup',
+      'card-auth-login': 'Login E2E',
+      'card-auth-login-failures': 'Login Failures & Disconnect',
+      'card-auth-register': 'Register E2E',
+      'card-activity-log': 'Activity & Audit Logs',
+      'card-full-flow-auditor': 'Grand Integration Flow',
+      'card-activity-ui': 'Activity UI Logs'
+    };
+
+    const testStatuses = {}; // cardId -> 'running' | 'success' | 'fail' | 'idle'
+
+    function updateWorkerStats() {
+      const statsEl = document.getElementById('activeWorkerStats');
+      if (!statsEl) return;
+      const maxWorkersInput = document.getElementById('workersCount');
+      const maxWorkers = maxWorkersInput ? (parseInt(maxWorkersInput.value) || 1) : 1;
+      statsEl.innerText = `Worker: ${activeCardIds.size}/${maxWorkers}`;
+    }
+
+    function renderConsoleTabs() {
+      const tabsContainer = document.getElementById('terminalTabs');
+      if (!tabsContainer) return;
+
+      tabsContainer.innerHTML = '';
+
+      // Always render Global tab
+      const globalBtn = document.createElement('button');
+      globalBtn.type = 'button';
+      globalBtn.className = 'terminal-tab-btn' + (selectedConsoleCardId === 'global' ? ' active' : '');
+      globalBtn.innerHTML = `<span>🌐 Tüm Loglar</span>`;
+      globalBtn.onclick = () => selectConsoleView('global');
+      tabsContainer.appendChild(globalBtn);
+
+      // Collect all cardIds that have log buffers
+      const loggedCardIds = Object.keys(consoleBuffers).filter(id => id !== 'global');
+
+      // Sort: running ones first, then others
+      loggedCardIds.sort((a, b) => {
+        const aRunning = activeCardIds.has(a) ? 1 : 0;
+        const bRunning = activeCardIds.has(b) ? 1 : 0;
+        if (aRunning !== bRunning) return bRunning - aRunning;
+        return 0;
+      });
+
+      // Render a tab button for each logged card ID
+      loggedCardIds.forEach(cardId => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        
+        let statusClass = '';
+        const isRunning = activeCardIds.has(cardId);
+        if (isRunning) {
+          statusClass = 'running';
+        } else if (testStatuses[cardId] === 'success') {
+          statusClass = 'success';
+        } else if (testStatuses[cardId] === 'fail') {
+          statusClass = 'fail';
+        }
+
+        btn.className = `terminal-tab-btn ${statusClass}` + (selectedConsoleCardId === cardId ? ' active' : '');
+        
+        const displayName = cardNameMap[cardId] || cardId.replace('card-', '').replace(/-/g, ' ');
+        
+        const textSpan = document.createElement('span');
+        textSpan.innerText = displayName;
+        btn.appendChild(textSpan);
+        
+        if (!isRunning) {
+          const closeBtn = document.createElement('span');
+          closeBtn.className = 'tab-close-btn';
+          closeBtn.innerHTML = '&times;';
+          closeBtn.title = 'Sekmeyi Kapat';
+          closeBtn.onclick = (e) => {
+            e.stopPropagation();
+            closeConsoleTab(cardId);
+          };
+          btn.appendChild(closeBtn);
+        }
+        
+        btn.onclick = () => selectConsoleView(cardId);
+        tabsContainer.appendChild(btn);
+      });
+
+      // Toggle Close All Tabs button display dynamically
+      const closeAllBtn = document.getElementById('btnCloseAllTabs');
+      if (closeAllBtn) {
+        const hasCloseableTabs = Object.keys(consoleBuffers).some(id => id !== 'global' && !activeCardIds.has(id));
+        closeAllBtn.style.display = hasCloseableTabs ? 'inline-block' : 'none';
+      }
+    }
 
     // 1. Sayfa yüklendiğinde anlık log akışını (SSE) başlatalım
     function initSSE() {
@@ -2895,20 +4055,28 @@
 
       // Durum güncellemesi dinleyelim
       eventSource.addEventListener('status', (e) => {
-        const { running } = JSON.parse(e.data);
-        updateGlobalStatus(running);
+        const { running, runningCardIds } = JSON.parse(e.data);
+        updateGlobalStatus(running, runningCardIds);
       });
 
       // Anlık logları dinleyelim
       eventSource.addEventListener('log', (e) => {
-        const text = JSON.parse(e.data);
-        appendConsole(text);
+        const payload = JSON.parse(e.data);
+        let cId = 'global';
+        let txt = '';
+        if (payload && typeof payload === 'object') {
+          cId = payload.cardId || 'global';
+          txt = payload.text || '';
+        } else {
+          txt = payload || '';
+        }
+        appendConsole(cId, txt);
       });
 
       // Test tamamlanmasını dinleyelim
       eventSource.addEventListener('done', (e) => {
-        const { success, code } = JSON.parse(e.data);
-        handleTestDone(success, code);
+        const { cardId, success, code } = JSON.parse(e.data);
+        handleTestDone(cardId, success, code);
       });
 
       eventSource.onerror = () => {
@@ -2919,22 +4087,57 @@
     }
 
     // 2. Global Durum Göstergesi
-    function updateGlobalStatus(running) {
+    function updateGlobalStatus(running, runningCardIds = []) {
       const badge = document.getElementById('globalStatus');
       const text = document.getElementById('globalStatusText');
       const stopBtn = document.getElementById('btnStop');
 
+      const autoFocusEnabled = document.getElementById('autoFocusActiveTest') ? document.getElementById('autoFocusActiveTest').checked : true;
+      let newlyStartedCardId = null;
+
+      runningCardIds.forEach(id => {
+        if (!activeCardIds.has(id)) {
+          newlyStartedCardId = id;
+        }
+        testStatuses[id] = 'running';
+      });
+
+      activeCardIds.clear();
+      runningCardIds.forEach(id => activeCardIds.add(id));
+
+      if (autoFocusEnabled && newlyStartedCardId) {
+        selectedConsoleCardId = newlyStartedCardId;
+      }
+
       if (running) {
         badge.className = 'status-badge running';
-        text.innerText = 'Test Koşuyor...';
+        text.innerText = `${activeCardIds.size} Test Koşuyor...`;
         stopBtn.style.display = 'inline-block';
-        disableAllRunButtons(true);
       } else {
         badge.className = 'status-badge idle';
         text.innerText = 'Boşta';
         stopBtn.style.display = 'none';
-        disableAllRunButtons(false);
       }
+
+      // Update test card visual running states based on runningCardIds
+      document.querySelectorAll('.test-card').forEach(card => {
+        const cId = card.id;
+        if (activeCardIds.has(cId)) {
+          if (!card.classList.contains('running')) {
+            card.classList.add('running');
+            card.classList.remove('success', 'fail');
+          }
+          // Hata Detayı butonunu kaldır
+          const oldBtn = card.querySelector('.btn-view-artifact');
+          if (oldBtn) oldBtn.remove();
+        } else {
+          card.classList.remove('running');
+        }
+      });
+
+      disableAllRunButtons();
+      renderConsoleTabs();
+      updateWorkerStats();
     }
 
     // Zamanlayıcı ayarları modalını açma/kapatma fonksiyonu
@@ -3105,12 +4308,22 @@
       const cronExpression = (type === 'cron') ? document.getElementById('cronExpressionInput').value : null;
 
       activeCardId = cardId;
-      clearConsole();
+      selectedConsoleCardId = cardId;
+      testStartTime = Date.now();
+      testStartTimes[cardId] = Date.now();
+      if (lastArtifacts[cardId]) {
+        delete lastArtifacts[cardId];
+      }
+      clearConsole(cardId);
+      selectConsoleView(cardId);
       
       const card = document.getElementById(cardId);
       card.className = 'test-card running';
-      appendConsole(`[DASHBOARD] Test süreci hazırlanıyor... (Zamanlayıcı Tipi: ${type.toUpperCase()})\n`);
+      const oldBtn = card.querySelector('.btn-view-artifact');
+      if (oldBtn) oldBtn.remove();
+      appendConsole(cardId, `[DASHBOARD] Test süreci hazırlanıyor... (Zamanlayıcı Tipi: ${type.toUpperCase()})\n`);
 
+      const workers = document.getElementById('workersCount') ? document.getElementById('workersCount').value : 1;
       try {
         const response = await fetch('/api/run', {
           method: 'POST',
@@ -3119,17 +4332,17 @@
             tag, headed, testFile, timezone, workspaceId, baseUrl,
             scheduleName, scheduleTime, includeCode, includePr, includeIssues,
             scheduleType: type.charAt(0).toUpperCase() + type.slice(1), // 'Daily', 'Weekly', 'Monthly', 'Cron'
-            weeklyDay, monthlyDay, cronExpression
+            weeklyDay, monthlyDay, cronExpression, workers, cardId
           })
         });
 
         const result = await response.json();
         if (!response.ok) {
-          appendConsole(`[HATA] ${result.error}\n`);
+          appendConsole(cardId, `[HATA] ${result.error}\n`);
           card.className = 'test-card fail';
         }
       } catch (err) {
-        appendConsole(`[HATA] Bağlantı kurulamadı: ${err.message}\n`);
+        appendConsole(cardId, `[HATA] Bağlantı kurulamadı: ${err.message}\n`);
         card.className = 'test-card fail';
       }
     }
@@ -3142,13 +4355,23 @@
       
       const includeMode = document.getElementById('includeModeSelect') ? document.getElementById('includeModeSelect').value : null;
       const excludeMode = document.getElementById('excludeModeSelect') ? document.getElementById('excludeModeSelect').value : null;
+      const workers = document.getElementById('workersCount') ? document.getElementById('workersCount').value : 1;
       
       activeCardId = cardId;
-      clearConsole();
+      selectedConsoleCardId = cardId;
+      testStartTime = Date.now();
+      testStartTimes[cardId] = Date.now();
+      if (lastArtifacts[cardId]) {
+        delete lastArtifacts[cardId];
+      }
+      clearConsole(cardId);
+      selectConsoleView(cardId);
       
       const card = document.getElementById(cardId);
       card.className = 'test-card running';
-      appendConsole(`[DASHBOARD] Test süreci hazırlanıyor...\n`);
+      const oldBtn = card.querySelector('.btn-view-artifact');
+      if (oldBtn) oldBtn.remove();
+      appendConsole(cardId, `[DASHBOARD] Test süreci hazırlanıyor...\n`);
 
       try {
         const response = await fetch('/api/run', {
@@ -3156,17 +4379,17 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             tag, headed, testFile, workspaceId, baseUrl,
-            includeMode, excludeMode
+            includeMode, excludeMode, workers, cardId
           })
         });
 
         const result = await response.json();
         if (!response.ok) {
-          appendConsole(`[HATA] ${result.error}\n`);
+          appendConsole(cardId, `[HATA] ${result.error}\n`);
           card.className = 'test-card fail';
         }
       } catch (err) {
-        appendConsole(`[HATA] Bağlantı kurulamadı: ${err.message}\n`);
+        appendConsole(cardId, `[HATA] Bağlantı kurulamadı: ${err.message}\n`);
         card.className = 'test-card fail';
       }
     }
@@ -3205,15 +4428,24 @@
       const testFile = 'tests/e2e/providers/storage.spec.ts';
 
       activeCardId = cardId;
-      clearConsole();
+      selectedConsoleCardId = cardId;
+      testStartTime = Date.now();
+      testStartTimes[cardId] = Date.now();
+      if (lastArtifacts[cardId]) {
+        delete lastArtifacts[cardId];
+      }
+      clearConsole(cardId);
+      selectConsoleView(cardId);
       
       const card = document.getElementById(cardId);
       card.className = 'test-card running';
-      appendConsole(`[DASHBOARD] Storage testi hazırlanıyor... (Sağlayıcı: ${provider.toUpperCase()})\n`);
+      const oldBtn = card.querySelector('.btn-view-artifact');
+      if (oldBtn) oldBtn.remove();
+      appendConsole(cardId, `[DASHBOARD] Storage testi hazırlanıyor... (Sağlayıcı: ${provider.toUpperCase()})\n`);
 
       // Çevre değişkenini .env dosyasına kaydet
       try {
-        appendConsole(`[DASHBOARD] E2E_STORAGE_PROVIDER çevre değişkeni güncelleniyor...\n`);
+        appendConsole(cardId, `[DASHBOARD] E2E_STORAGE_PROVIDER çevre değişkeni güncelleniyor...\n`);
         
         // Çevre değişkenlerini alalım
         const envResponse = await fetch('/api/env');
@@ -3229,69 +4461,91 @@
         });
         
         if (!saveResponse.ok) throw new Error('Çevre değişkeni kaydedilemedi.');
-        appendConsole(`[DASHBOARD] E2E_STORAGE_PROVIDER başarıyla kaydedildi: ${provider}\n`);
+        appendConsole(cardId, `[DASHBOARD] E2E_STORAGE_PROVIDER başarıyla kaydedildi: ${provider}\n`);
       } catch (err) {
-        appendConsole(`[UYARI] Çevre değişkeni güncellenirken hata oluştu: ${err.message}. Test eski değerlerle koşacaktır.\n`);
+        appendConsole(cardId, `[UYARI] Çevre değişkeni güncellenirken hata oluştu: ${err.message}. Test eski değerlerle koşacaktır.\n`);
       }
 
       // Playwright testini başlat
+      const workers = document.getElementById('workersCount') ? document.getElementById('workersCount').value : 1;
       try {
         const response = await fetch('/api/run', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            headed, testFile, workspaceId, baseUrl
+            headed, testFile, workspaceId, baseUrl, workers, cardId
           })
         });
 
         const result = await response.json();
         if (!response.ok) {
-          appendConsole(`[HATA] ${result.error}\n`);
+          appendConsole(cardId, `[HATA] ${result.error}\n`);
           card.className = 'test-card fail';
         }
       } catch (err) {
-        appendConsole(`[HATA] Bağlantı kurulamadı: ${err.message}\n`);
+        appendConsole(cardId, `[HATA] Bağlantı kurulamadı: ${err.message}\n`);
         card.className = 'test-card fail';
       }
     }
 
     // 4. Test Durdurma
-    async function stopActiveTest() {
+    async function stopActiveTest(cardId = selectedConsoleCardId) {
       try {
-        const response = await fetch('/api/stop', { method: 'POST' });
+        const response = await fetch('/api/stop', { 
+          method: 'POST', 
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ cardId })
+        });
         const result = await response.json();
         if (!response.ok) {
-          appendConsole(`[HATA] Durdurma başarısız: ${result.error}\n`);
+          appendConsole(cardId, `[HATA] Durdurma başarısız: ${result.error}\n`);
         }
       } catch (err) {
-        appendConsole(`[HATA] Bağlantı kurulamadı: ${err.message}\n`);
+        appendConsole(cardId, `[HATA] Bağlantı kurulamadı: ${err.message}\n`);
       }
     }
 
     // 5. Test Tamamlanma İşlemleri
-    function handleTestDone(success, code) {
-      if (!activeCardId) return;
-      const card = document.getElementById(activeCardId);
+    function handleTestDone(cardId, success, code) {
+      if (!cardId) return;
+      testStatuses[cardId] = success ? 'success' : 'fail';
+      renderConsoleTabs();
+
+      const card = document.getElementById(cardId);
+      const duration = testStartTimes[cardId] ? Math.round((Date.now() - testStartTimes[cardId]) / 1000) : 0;
       
-      if (activeCardId === 'card-google-session') {
+      // Hide any active captcha alerts when test is done
+      hideCaptchaAlert();
+      
+      if (cardId === 'card-google-session') {
         if (success) {
-          card.className = 'test-card success';
-          appendConsole(`\n[DASHBOARD] GOOGLE OTURUM BİLGİLERİ BAŞARIYLA KAYDEDİLDİ VE ENTEGRE EDİLDİ!\n`);
+          if (card) card.className = 'test-card success';
+          appendConsole(cardId, `\n[DASHBOARD] GOOGLE OTURUM BİLGİLERİ BAŞARIYLA KAYDEDİLDİ VE ENTEGRE EDİLDİ!\n`);
         } else {
-          card.className = 'test-card fail';
-          appendConsole(`\n[DASHBOARD] GOOGLE GİRİŞ SÜRECİ İPTAL EDİLDİ VEYA HATA OLUŞTU.\n`);
+          if (card) card.className = 'test-card fail';
+          appendConsole(cardId, `\n[DASHBOARD] GOOGLE GİRİŞ SÜRECİ İPTAL EDİLDİ VEYA HATA OLUŞTU.\n`);
         }
         updateGoogleSessionStatus();
+        saveToHistory(cardId, success, duration);
+        updateStatsUI();
         return;
       }
 
       if (success) {
-        card.className = 'test-card success';
-        appendConsole(`\n[DASHBOARD] TEST BAŞARIYLA TAMAMLANDI! (Çıkış Kodu: ${code})\n`);
+        if (card) card.className = 'test-card success';
+        appendConsole(cardId, `\n[DASHBOARD] TEST BAŞARIYLA TAMAMLANDI! (Çıkış Kodu: ${code})\n`);
       } else {
-        card.className = 'test-card fail';
-        appendConsole(`\n[DASHBOARD] TEST BAŞARISIZ OLDU VEYA DURDURULDU. (Çıkış Kodu: ${code})\n`);
+        if (card) card.className = 'test-card fail';
+        appendConsole(cardId, `\n[DASHBOARD] TEST BAŞARISIZ OLDU VEYA DURDURULDU. (Çıkış Kodu: ${code})\n`);
+        
+        // Hata kanıtı butonunu göster
+        setTimeout(() => {
+          showArtifactButton(cardId);
+        }, 500);
       }
+      
+      saveToHistory(cardId, success, duration);
+      updateStatsUI();
     }
 
     // Google Oturum Durumunu Sunucudan Kontrol Et ve Arayüzü Güncelle
@@ -3306,7 +4560,7 @@
         const dateSpan = document.getElementById('google-session-date');
         const card = document.getElementById('card-google-session');
 
-        if (data.exists) {
+        if (data.exists && !data.expired) {
           if (badge) {
             badge.innerText = 'Aktif (Kayıtlı)';
             badge.style.background = 'rgba(16, 185, 129, 0.12)';
@@ -3324,6 +4578,23 @@
           }
           if (card && card.className !== 'test-card running') {
             card.className = 'test-card success';
+          }
+        } else if (data.exists && data.expired) {
+          if (badge) {
+            badge.innerText = 'Süresi Dolmuş (Yenileyin)';
+            badge.style.background = 'rgba(245, 158, 11, 0.12)';
+            badge.style.color = 'var(--gitsec-yellow)';
+            badge.style.borderColor = 'rgba(245, 158, 11, 0.25)';
+          }
+          if (dot) {
+            dot.style.background = 'var(--gitsec-yellow)';
+            dot.style.boxShadow = '0 0 10px var(--gitsec-yellow)';
+          }
+          if (dateSpan) {
+            dateSpan.innerText = data.expiredReason || 'Oturum zaman aşımı';
+          }
+          if (card && card.className !== 'test-card running') {
+            card.className = 'test-card fail';
           }
         } else {
           if (badge) {
@@ -3357,10 +4628,16 @@
 
       const cardId = 'card-google-session';
       activeCardId = cardId;
+      testStartTime = Date.now();
+      if (lastArtifacts[cardId]) {
+        delete lastArtifacts[cardId];
+      }
       clearConsole();
       
       const card = document.getElementById(cardId);
       card.className = 'test-card running';
+      const oldBtn = card.querySelector('.btn-view-artifact');
+      if (oldBtn) oldBtn.remove();
       
       const dot = document.getElementById('google-session-dot');
       const badge = document.getElementById('google-session-badge');
@@ -3374,9 +4651,8 @@
         badge.style.color = 'var(--gitsec-yellow)';
         badge.style.borderColor = 'rgba(245, 158, 11, 0.25)';
       }
-      
-      appendConsole(`[DASHBOARD] Google Manuel Oturum Açma süreci başlatılıyor...\n`);
-      appendConsole(`[DASHBOARD] Lütfen açılacak Chrome tarayıcısında hesabınıza giriş yapın.\n`);
+      appendConsole(cardId, `[DASHBOARD] Google Manuel Oturum Açma süreci başlatılıyor...\n`);
+      appendConsole(cardId, `[DASHBOARD] Lütfen açılacak Chrome tarayıcısında hesabınıza giriş yapın.\n`);
 
       try {
         const response = await fetch('/api/google-login', {
@@ -3385,46 +4661,626 @@
 
         const result = await response.json();
         if (!response.ok) {
-          appendConsole(`[HATA] ${result.error}\n`);
+          appendConsole(cardId, `[HATA] ${result.error}\n`);
           card.className = 'test-card fail';
           updateGoogleSessionStatus();
         }
       } catch (err) {
-        appendConsole(`[HATA] Sunucuyla bağlantı kurulamadı: ${err.message}\n`);
+        appendConsole(cardId, `[HATA] Sunucuyla bağlantı kurulamadı: ${err.message}\n`);
         card.className = 'test-card fail';
         updateGoogleSessionStatus();
       }
     }
 
     // 6. Yardımcı Buton Fonksiyonları
-    function disableAllRunButtons(disable) {
+    function disableAllRunButtons() {
       const buttons = document.querySelectorAll('.btn-run');
-      buttons.forEach(btn => btn.disabled = disable);
+      const maxWorkers = parseInt(document.getElementById('workersCount').value) || 1;
+      const reachedLimit = activeCardIds.size >= maxWorkers;
+
+      buttons.forEach(btn => {
+        const card = btn.closest('.test-card');
+        const cardId = card ? card.id : null;
+        
+        if (cardId && activeCardIds.has(cardId)) {
+          btn.disabled = true;
+        } else {
+          btn.disabled = reachedLimit;
+        }
+      });
     }
 
-    // Canlı Konsola Satır Ekleme
-    function appendConsole(text) {
-      const screen = document.getElementById('terminalScreen');
-      const cleanText = text.replace(/\x1B\[[0-9;]*[a-zA-Z]/g, '');
+    // Seçilen Test Kartının Loglarını Görüntüle
+    function selectConsoleView(cardId) {
+      selectedConsoleCardId = cardId;
       
-      if (screen.innerText === 'Tetiklenen testlerin canlı log çıktıları burada anlık olarak akacaktır...') {
-        screen.innerText = cleanText;
-      } else {
-        screen.innerText += cleanText;
+      // Update visual selection indicators
+      document.querySelectorAll('.test-card').forEach(c => {
+        if (c.id === cardId) {
+          c.classList.add('selected-log-view');
+        } else {
+          c.classList.remove('selected-log-view');
+        }
+      });
+
+      // Update console title
+      const title = document.querySelector('.terminal-title');
+      if (title) {
+        if (cardId === 'global') {
+          title.innerText = 'Canlı Konsol Çıktısı';
+        } else {
+          const card = document.getElementById(cardId);
+          const cardTitle = card ? card.querySelector('.card-title').innerText : cardId;
+          title.innerText = `Canlı Konsol Çıktısı: ${cardTitle}`;
+        }
       }
+
+      renderConsoleScreen();
+      renderConsoleTabs();
+    }
+
+    // Konsolu Ekrana Çiz
+    function renderConsoleScreen() {
+      const screen = document.getElementById('terminalScreen');
+      if (!screen) return;
+
+      const buffer = consoleBuffers[selectedConsoleCardId] || [];
+      const filter = document.getElementById('consoleFilterSelect').value;
+      const searchVal = document.getElementById('consoleSearch').value.toLowerCase().trim();
+
+      screen.innerHTML = '';
+
+      if (buffer.length === 0) {
+        screen.innerText = 'Seçilen teste ait canlı log çıktısı bulunmuyor veya henüz başlamadı...';
+        return;
+      }
+
+      let count = 0;
+      buffer.forEach(lineObj => {
+        if (filter === 'error' && lineObj.type !== 'error') return;
+        if (filter === 'pom' && lineObj.type !== 'pom') return;
+        if (searchVal && !lineObj.text.toLowerCase().includes(searchVal)) return;
+
+        const lineDiv = document.createElement('div');
+        lineDiv.className = `terminal-line ${lineObj.type}`;
+        lineDiv.textContent = lineObj.text;
+        screen.appendChild(lineDiv);
+        count++;
+      });
+
+      if (count === 0) {
+        screen.innerText = 'Filtrelere uygun log bulunamadı.';
+      }
+
       screen.scrollTop = screen.scrollHeight;
     }
 
+    // Canlı Konsola Satır Ekleme (Tampon Kaydı)
+    function appendConsoleBuffer(cardId, text) {
+      if (!consoleBuffers[cardId]) {
+        consoleBuffers[cardId] = [];
+      }
+
+      const cleanText = text
+        .replace(/\x1B\]8;[^]*?(\x07|\x1B\\)/g, '')
+        .replace(/\x1B\[[0-9;]*[a-zA-Z]/g, '')
+        .replace(/\x1B\][^\x07]*(\x07|\x1B\\)/g, '')
+        .replace(/\x1B[()][A-Z0-9]/g, '')
+        .replace(/[\x00-\x08\x0B\x0E-\x1F]/g, '');
+
+      if (cleanText) {
+        const lines = cleanText.split('\n');
+        lines.forEach((line, idx) => {
+          if (idx === lines.length - 1 && !line) return;
+          
+          let type = 'normal';
+          if (line.includes('✓') || line.includes('passed') || line.includes('Başarılı') || line.includes('basari')) {
+            type = 'success';
+          } else if (line.includes('✘') || line.includes('failed') || line.includes('HATA') || line.includes('Error') || line.includes('Fail')) {
+            type = 'error';
+          } else if (line.includes('POM') || line.includes('›')) {
+            type = 'pom';
+          }
+
+          consoleBuffers[cardId].push({ text: line, type });
+          
+          // Captcha uyarısı yakalama
+          if (line.includes('Manuel çözüm bekleniyor') || line.includes('Captcha tespit edildi')) {
+            showCaptchaAlert('⚠️ ' + line.trim());
+          } else if (line.includes('çözüldü') || line.includes('success') || line.includes('başarıyla geçildi')) {
+            hideCaptchaAlert();
+          }
+        });
+      }
+
+      if (consoleBuffers[cardId].length > 1000) {
+        consoleBuffers[cardId] = consoleBuffers[cardId].slice(consoleBuffers[cardId].length - 1000);
+      }
+
+      // Playwright çıktılarını yakala (Screenshot & Video)
+      if (cardId !== 'global') {
+        const fullCleanText = cleanText;
+        const screenshotMatches = fullCleanText.match(/test-results[\\/][^\s]+\.png/i);
+        const videoMatches = fullCleanText.match(/test-results[\\/][^\s]+\.webm/i);
+        
+        if (screenshotMatches) {
+          if (!lastArtifacts[cardId]) lastArtifacts[cardId] = {};
+          lastArtifacts[cardId].screenshot = screenshotMatches[0].trim().replace(/\\/g, '/');
+          console.log(`[Dashboard] ✅ Ekran görüntüsü kanıtı yakalandı: "${lastArtifacts[cardId].screenshot}"`);
+        }
+        if (videoMatches) {
+          if (!lastArtifacts[cardId]) lastArtifacts[cardId] = {};
+          lastArtifacts[cardId].video = videoMatches[0].trim().replace(/\\/g, '/');
+          console.log(`[Dashboard] ✅ Video kanıtı yakalandı: "${lastArtifacts[cardId].video}"`);
+        }
+      }
+
+      if (cardId === selectedConsoleCardId) {
+        renderConsoleScreen();
+      }
+    }
+
+    // Canlı Konsola Yönlendirme ve Ekleme
+    function appendConsole(cardId, text) {
+      if (!cardId) return;
+
+      // 1. Kendi tamponuna ekle
+      appendConsoleBuffer(cardId, text);
+
+      // 2. Global tampona prefix ile ekle
+      if (cardId !== 'global') {
+        const displayName = cardNameMap[cardId] || cardId.replace('card-', '');
+        const lines = text.split(/\r?\n/);
+        
+        const prefixedText = lines.map((line, idx) => {
+          if (idx === lines.length - 1 && !line) return '';
+          if (!line.trim()) return line;
+          return `[${displayName}] ${line}`;
+        }).join('\n') + (text.endsWith('\n') ? '\n' : '');
+
+        appendConsoleBuffer('global', prefixedText);
+      }
+
+      // Dinamik sekmeleri güncel tutalım
+      renderConsoleTabs();
+    }
+
     // Konsolu Temizleme
-    function clearConsole() {
-      document.getElementById('terminalScreen').innerText = '';
+    function clearConsole(cardId = selectedConsoleCardId) {
+      consoleBuffers[cardId] = [];
+      if (cardId === selectedConsoleCardId) {
+        renderConsoleScreen();
+      }
     }
 
     // Konsolu Kopyalama
     function copyConsole() {
-      const text = document.getElementById('terminalScreen').innerText;
-      navigator.clipboard.writeText(text);
-      showToast('Konsol çıktısı panoya kopyalandı!');
+      const buffer = consoleBuffers[selectedConsoleCardId] || [];
+      const text = buffer.map(l => l.text).join('\n');
+      navigator.clipboard.writeText(text).then(() => {
+        showToast('Konsol çıktısı panoya kopyalandı!');
+      });
+    }
+
+    // Tek bir test sekmesini/penceresini kapatma
+    function closeConsoleTab(cardId) {
+      if (cardId === 'global') return;
+      if (activeCardIds.has(cardId)) {
+        showToast('Koşan bir testin konsol ekranı kapatılamaz!');
+        return;
+      }
+      
+      delete consoleBuffers[cardId];
+      if (lastArtifacts[cardId]) {
+        delete lastArtifacts[cardId];
+      }
+      
+      if (selectedConsoleCardId === cardId) {
+        selectConsoleView('global');
+      } else {
+        renderConsoleTabs();
+      }
+      
+      showToast('Sekme başarıyla kapatıldı.');
+    }
+
+    // Tüm pasif (hareketsiz) test sekmelerini kapatma
+    function closeAllConsoleTabs() {
+      const closeableCardIds = Object.keys(consoleBuffers).filter(id => id !== 'global' && !activeCardIds.has(id));
+      if (closeableCardIds.length === 0) {
+        showToast('Kapatılabilecek etkin sekme bulunmuyor.');
+        return;
+      }
+      
+      closeableCardIds.forEach(cardId => {
+        delete consoleBuffers[cardId];
+        if (lastArtifacts[cardId]) {
+          delete lastArtifacts[cardId];
+        }
+      });
+      
+      if (!consoleBuffers[selectedConsoleCardId]) {
+        selectConsoleView('global');
+      } else {
+        renderConsoleTabs();
+      }
+      
+      showToast('Tüm hareketsiz sekmeler kapatıldı.');
+    }
+
+    // Konsol Akıllı Arama & Filtreleme İşlevi
+    function handleConsoleFilter() {
+      renderConsoleScreen();
+    }
+
+    // Koşuları localStorage'a Kaydetme
+    function saveToHistory(cardId, success, duration) {
+      let history = [];
+      try {
+        const raw = localStorage.getItem('gitsec_test_history');
+        if (raw) history = JSON.parse(raw);
+      } catch (e) {
+        console.error('Error parsing test history:', e);
+      }
+      
+      history.push({
+        id: Date.now(),
+        cardId: cardId,
+        success: success,
+        duration: duration,
+        timestamp: Date.now()
+      });
+      
+      if (history.length > 50) {
+        history = history.slice(history.length - 50);
+      }
+      
+      localStorage.setItem('gitsec_test_history', JSON.stringify(history));
+    }
+
+    // Görsel Analitik İstatistiklerini Güncelleme
+    function updateStatsUI() {
+      let history = [];
+      try {
+        const raw = localStorage.getItem('gitsec_test_history');
+        if (raw) history = JSON.parse(raw);
+      } catch (e) {
+        console.error('Error parsing test history:', e);
+      }
+      
+      const totalRuns = history.length;
+      const passedRuns = history.filter(r => r.success).length;
+      const failedRuns = totalRuns - passedRuns;
+      const passRate = totalRuns > 0 ? Math.round((passedRuns / totalRuns) * 100) : 0;
+      
+      const totalDuration = history.reduce((sum, r) => sum + (r.duration || 0), 0);
+      const avgDuration = totalRuns > 0 ? Math.round(totalDuration / totalRuns) : 0;
+      
+      const totalEl = document.getElementById('stat-total-runs');
+      const rateEl = document.getElementById('stat-pass-rate');
+      const durationEl = document.getElementById('stat-avg-duration');
+      const passedEl = document.getElementById('stat-passed-runs');
+      const failedEl = document.getElementById('stat-failed-runs');
+      const circle = document.getElementById('radial-progress-circle');
+      
+      if (totalEl) totalEl.innerText = totalRuns;
+      if (rateEl) rateEl.innerText = passRate + '%';
+      if (durationEl) durationEl.innerText = avgDuration + 's';
+      if (passedEl) passedEl.innerText = passedRuns;
+      if (failedEl) failedEl.innerText = failedRuns;
+      
+      if (circle) {
+        const offset = 226 * (1 - passRate / 100);
+        circle.style.strokeDashoffset = offset;
+      }
+      
+      const sparklineContainer = document.getElementById('sparkline-container');
+      if (sparklineContainer) {
+        sparklineContainer.innerHTML = '';
+        
+        if (totalRuns === 0) {
+          sparklineContainer.innerHTML = `<span style="color: var(--text-muted); font-size: 0.725rem; width: 100%; text-align: center;">Henüz koşu yapılmadı</span>`;
+          return;
+        }
+        
+        const recentRuns = history.slice(-15);
+        
+        recentRuns.forEach((run, idx) => {
+          const box = document.createElement('div');
+          const cardNameMap = {
+            'card-storage': 'Storage Provider',
+            'card-storage-validation': 'Storage Validation',
+            'card-storage-api-failures': 'Storage API Failures',
+            'card-storage-edge-cases': 'Storage Edge Cases',
+            'card-google-session': 'Google Session',
+            'card-scheduler': 'Daily Scheduler',
+            'card-scheduler-validation': 'Zamanlayıcı Doğrulama',
+            'card-restore': 'Restore Navigate',
+            'card-restore-validation': 'Restore Doğrulama',
+            'card-github-connect': 'GitHub Connect',
+            'card-github-include': 'GitHub Include',
+            'card-github-exclude': 'GitHub Exclude',
+            'card-github-backup': 'GitHub Backup',
+            'card-auth-login': 'Login E2E',
+            'card-auth-login-failures': 'Login Failures & Disconnect',
+            'card-auth-register': 'Register E2E',
+            'card-activity-log': 'Activity & Audit Logs',
+            'card-full-flow-auditor': 'Grand Integration Flow',
+            'card-activity-ui': 'Activity UI Logs'
+          };
+          
+          const testName = cardNameMap[run.cardId] || run.cardId;
+          const statusText = run.success ? 'BAŞARILI (PASS)' : 'BAŞARISIZ (FAIL)';
+          const color = run.success ? 'var(--gitsec-green)' : 'var(--gitsec-red)';
+          const glow = run.success ? 'var(--gitsec-green-glow)' : 'var(--gitsec-red-glow)';
+          
+          const date = new Date(run.timestamp);
+          const timeStr = date.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+          
+          box.style.cssText = `width: 14px; height: 14px; background: ${color}; border-radius: 3px; cursor: help; box-shadow: 0 0 6px ${glow}; transition: var(--transition-smooth);`;
+          box.title = `${idx + 1}. Koşu\nTest: ${testName}\nDurum: ${statusText}\nSüre: ${run.duration}s\nSaat: ${timeStr}`;
+          
+          box.onmouseover = () => {
+            box.style.transform = 'scale(1.25)';
+            box.style.filter = 'brightness(1.2)';
+          };
+          box.onmouseout = () => {
+            box.style.transform = 'scale(1)';
+            box.style.filter = '';
+          };
+          
+          sparklineContainer.appendChild(box);
+        });
+      }
+    }
+
+    // Test Tarihçesini Sıfırlama
+    function resetTestHistory() {
+      if (confirm('Bütün test koşu geçmişini sıfırlamak istediğinize emin misiniz?')) {
+        localStorage.removeItem('gitsec_test_history');
+        
+        const oldBtns = document.querySelectorAll('.btn-view-artifact');
+        oldBtns.forEach(btn => btn.remove());
+        
+        lastArtifacts = {};
+        updateStatsUI();
+        showToast('Test koşu geçmişi başarıyla sıfırlandı!');
+      }
+    }
+
+    // Hata Kanıtı Detay Butonunu Gösterme
+    function showArtifactButton(cardId) {
+      const card = document.getElementById(cardId);
+      if (!card) return;
+      const footer = card.querySelector('.card-footer');
+      if (!footer) return;
+      
+      const oldBtn = footer.querySelector('.btn-view-artifact');
+      if (oldBtn) oldBtn.remove();
+      
+      const art = lastArtifacts[cardId];
+      if (art && (art.screenshot || art.video)) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'btn-view-artifact';
+        btn.style.cssText = 'background: linear-gradient(135deg, var(--gitsec-red) 0%, #e11d48 100%); border: none; color: #ffffff; padding: 0.55rem 1rem; border-radius: 0.5rem; font-family: var(--font-sans); font-size: 0.775rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 0.35rem; transition: var(--transition-smooth); box-shadow: 0 4px 10px rgba(244, 63, 94, 0.25); margin-right: auto; animation: pulse-glow 1.5s infinite alternate;';
+        btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg> Hata Detayı`;
+        btn.onclick = (e) => {
+          e.stopPropagation();
+          openArtifactModal(cardId);
+        };
+        
+        if (!document.getElementById('pulse-glow-style')) {
+          const style = document.createElement('style');
+          style.id = 'pulse-glow-style';
+          style.innerHTML = `
+            @keyframes pulse-glow {
+              0% { box-shadow: 0 0 4px rgba(244, 63, 94, 0.3); }
+              100% { box-shadow: 0 0 14px rgba(244, 63, 94, 0.75); }
+            }
+          `;
+          document.head.appendChild(style);
+        }
+        
+        footer.insertBefore(btn, footer.firstChild);
+      }
+    }
+
+    // Hata Kanıtı İzleyici Modalı Açma/Kapatma
+    function openArtifactModal(cardId) {
+      const art = lastArtifacts[cardId];
+      console.log(`[Dashboard] 📂 openArtifactModal çağrıldı. cardId: "${cardId}", lastArtifacts:`, JSON.stringify(art));
+      
+      if (!art || (!art.screenshot && !art.video)) {
+        showToast('Bu test için ekran görüntüsü veya video kanıtı bulunamadı. Tarayıcı konsolunu (F12) kontrol edin.', true);
+        return;
+      }
+      
+      const modal = document.getElementById('artifactModal');
+      const title = document.getElementById('artifactModalTitle');
+      const pathLabel = document.getElementById('artifactPathLabel');
+      const img = document.getElementById('artifactImg');
+      const video = document.getElementById('artifactVideo');
+      
+      const cardNameMap = {
+        'card-storage': 'Storage Provider',
+        'card-storage-validation': 'Storage Validation',
+        'card-storage-api-failures': 'Storage API Failures',
+        'card-storage-edge-cases': 'Storage Edge Cases',
+        'card-google-session': 'Google Session',
+        'card-scheduler': 'Daily Scheduler',
+        'card-scheduler-validation': 'Zamanlayıcı Doğrulama',
+        'card-restore': 'Restore Navigate',
+        'card-restore-validation': 'Restore Doğrulama',
+        'card-github-connect': 'GitHub Connect',
+        'card-github-include': 'GitHub Include',
+        'card-github-exclude': 'GitHub Exclude',
+        'card-github-backup': 'GitHub Backup',
+        'card-auth-login': 'Login E2E',
+        'card-auth-login-failures': 'Login Failures & Disconnect',
+        'card-auth-register': 'Register E2E',
+        'card-activity-log': 'Activity & Audit Logs',
+        'card-full-flow-auditor': 'Grand Integration Flow',
+        'card-activity-ui': 'Activity UI Logs'
+      };
+      
+      const testName = cardNameMap[cardId] || cardId;
+      title.innerText = `Hata Kanıtı: ${testName}`;
+      
+      const mainPath = art.screenshot || art.video || 'Bulunamadı';
+      pathLabel.innerText = `Kanıt Dosyası: ${mainPath}`;
+      
+      if (art.screenshot) {
+        const screenshotUrl = '/' + art.screenshot;
+        console.log(`[Dashboard] 🖼️ Screenshot URL: "${screenshotUrl}"`);
+        img.src = screenshotUrl;
+        img.style.display = 'block';
+        img.onerror = () => {
+          console.error(`[Dashboard] ❌ Screenshot yüklenemedi: "${screenshotUrl}"`);
+          img.alt = 'Ekran görüntüsü dosyası bulunamadı veya silinmiş. Yeni bir test koşun.';
+        };
+      } else {
+        img.src = '';
+        img.style.display = 'none';
+      }
+      
+      if (art.video) {
+        const videoUrl = '/' + art.video;
+        console.log(`[Dashboard] 🎬 Video URL: "${videoUrl}"`);
+        video.src = videoUrl;
+        video.load();
+        video.onerror = () => {
+          console.error(`[Dashboard] ❌ Video yüklenemedi: "${videoUrl}"`);
+        };
+      } else {
+        video.src = '';
+      }
+      
+      if (art.screenshot) {
+        switchArtifactTab('img');
+      } else if (art.video) {
+        switchArtifactTab('video');
+      }
+      
+      modal.style.display = 'flex';
+      setTimeout(() => {
+        modal.classList.add('active');
+      }, 10);
+    }
+
+    function closeArtifactModal() {
+      const modal = document.getElementById('artifactModal');
+      const video = document.getElementById('artifactVideo');
+      
+      if (video) {
+        video.pause();
+      }
+      
+      modal.classList.remove('active');
+      setTimeout(() => {
+        modal.style.display = 'none';
+      }, 300);
+    }
+
+    // Captcha Banner Control Functions
+    function showCaptchaAlert(msg) {
+      const banner = document.getElementById('captchaAlertBanner');
+      const text = document.getElementById('captchaAlertText');
+      if (banner && text) {
+        text.innerText = msg;
+        banner.classList.remove('hidden');
+      }
+    }
+
+    // Hide active captcha alert
+    function hideCaptchaAlert() {
+      const banner = document.getElementById('captchaAlertBanner');
+      if (banner) {
+        banner.classList.add('hidden');
+      }
+    }
+
+    // Glassmorphic Lightbox Preview Overlay Functions
+    function showLightbox(src, title = 'Hata Ekran Görüntüsü') {
+      const overlay = document.getElementById('lightboxOverlay');
+      const image = document.getElementById('lightboxImage');
+      const titleEl = document.getElementById('lightboxTitle');
+      if (overlay && image) {
+        image.src = src;
+        if (titleEl) titleEl.innerText = title;
+        overlay.classList.add('active');
+      }
+    }
+    
+    function closeLightbox(event) {
+      if (event) event.stopPropagation();
+      const overlay = document.getElementById('lightboxOverlay');
+      if (overlay) {
+        overlay.classList.remove('active');
+      }
+    }
+
+    // Collapsible .env Accordions Toggle
+    function toggleEnvAccordion(id) {
+      const item = document.getElementById(id);
+      if (item) {
+        item.classList.toggle('active');
+        item.classList.toggle('collapsed');
+      }
+    }
+
+    // Search and Filter logic for .env values
+    function filterEnvVars() {
+      const query = document.getElementById('envSearchInput').value.toLowerCase().trim();
+      const accordions = document.querySelectorAll('.env-accordion-item');
+      
+      accordions.forEach(acc => {
+        const groups = acc.querySelectorAll('.form-group');
+        let hasVisibleField = false;
+        
+        groups.forEach(group => {
+          const label = group.querySelector('label') ? group.querySelector('label').innerText.toLowerCase() : '';
+          const input = group.querySelector('input, select');
+          const val = input ? input.value.toLowerCase() : '';
+          
+          if (label.includes(query) || val.includes(query)) {
+            group.style.display = '';
+            hasVisibleField = true;
+          } else {
+            group.style.display = 'none';
+          }
+        });
+        
+        if (hasVisibleField || query === '') {
+          acc.style.display = '';
+          if (query !== '' && hasVisibleField) {
+            acc.classList.add('active');
+            acc.classList.remove('collapsed');
+          }
+        } else {
+          acc.style.display = 'none';
+        }
+      });
+    }
+
+    function switchArtifactTab(tab) {
+      artifactTab = tab;
+      const imgBtn = document.getElementById('btnArtifactImg');
+      const videoBtn = document.getElementById('btnArtifactVideo');
+      const imgContainer = document.getElementById('artifactImgContainer');
+      const videoContainer = document.getElementById('artifactVideoContainer');
+      
+      if (tab === 'img') {
+        imgBtn.classList.add('active');
+        videoBtn.classList.remove('active');
+        imgContainer.style.display = 'flex';
+        videoContainer.style.display = 'none';
+      } else {
+        imgBtn.classList.remove('active');
+        videoBtn.classList.add('active');
+        imgContainer.style.display = 'none';
+        videoContainer.style.display = 'flex';
+      }
     }
 
     // 7. Toast Bildirimi Gösterme
@@ -3487,7 +5343,12 @@
           'GITHUB_TEST_USER', 'GITHUB_TEST_PASSWORD',
           'WORKSPACE_ID', 'DASHBOARD_BASE_URL',
           'API_BASE_URL', 'GITHUB_MAIL_USER', 'GITHUB_MAIL_PASSWORD',
-          'E2E_STORAGE_PROVIDER'
+          'E2E_STORAGE_PROVIDER',
+          'GOOGLE_TEST_USER', 'GOOGLE_TEST_PASSWORD', 'GOOGLE_TOTP_SECRET',
+          'AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY', 'AWS_REGION', 'AWS_S3_BUCKET',
+          'AZURE_CONNECTION_STRING', 'AZURE_FOLDER_PATH',
+          'HUAWEI_ACCESS_KEY_ID', 'HUAWEI_SECRET_ACCESS_KEY', 'HUAWEI_BUCKET', 'HUAWEI_REGION',
+          'E2E_INCLUDE_MODE', 'E2E_EXCLUDE_MODE'
         ];
         
         envKeys.forEach(key => {
@@ -3518,13 +5379,18 @@
       }
     }
 
-    async function saveEnvVars() {
+    async function saveEnvVars(silent = false) {
       const envKeys = [
         'E2E_USER_EMAIL', 'E2E_USER_PASSWORD', 
         'GITHUB_TEST_USER', 'GITHUB_TEST_PASSWORD',
         'WORKSPACE_ID', 'DASHBOARD_BASE_URL',
         'API_BASE_URL', 'GITHUB_MAIL_USER', 'GITHUB_MAIL_PASSWORD',
-        'E2E_STORAGE_PROVIDER'
+        'E2E_STORAGE_PROVIDER',
+        'GOOGLE_TEST_USER', 'GOOGLE_TEST_PASSWORD', 'GOOGLE_TOTP_SECRET',
+        'AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY', 'AWS_REGION', 'AWS_S3_BUCKET',
+        'AZURE_CONNECTION_STRING', 'AZURE_FOLDER_PATH',
+        'HUAWEI_ACCESS_KEY_ID', 'HUAWEI_SECRET_ACCESS_KEY', 'HUAWEI_BUCKET', 'HUAWEI_REGION',
+        'E2E_INCLUDE_MODE', 'E2E_EXCLUDE_MODE'
       ];
       
       const envVars = {};
@@ -3544,7 +5410,9 @@
         
         const result = await response.json();
         if (response.ok) {
-          showToast('.env dosyası başarıyla güncellendi ve çalışma ortamına yüklendi!');
+          if (!silent) {
+            showToast('.env dosyası başarıyla güncellendi ve çalışma ortamına yüklendi!');
+          }
           
           // Dashboard altındaki genel ayarları da eşitleyelim
           if (envVars['WORKSPACE_ID'] !== undefined) {
@@ -3604,10 +5472,23 @@
         timezone: document.getElementById('schedulerTimezoneSelect').value,
         weeklyDays: Array.from(document.querySelectorAll('input[name="weeklyDayCheckbox"]:checked')).map(cb => cb.value),
         includeMode: document.getElementById('includeModeSelect') ? document.getElementById('includeModeSelect').value : 'one_repo',
-        excludeMode: document.getElementById('excludeModeSelect') ? document.getElementById('excludeModeSelect').value : 'one_repo'
+        excludeMode: document.getElementById('excludeModeSelect') ? document.getElementById('excludeModeSelect').value : 'one_repo',
+        workers: document.getElementById('workersCount') ? document.getElementById('workersCount').value : 1
       };
       localStorage.setItem('gitsec_scheduler_settings', JSON.stringify(settings));
       console.log('Ayarlar kaydedildi:', settings);
+      updateWorkerStats();
+    }
+
+    async function saveRunSettings() {
+      try {
+        saveSettings();
+        await saveEnvVars(true);
+        showToast('Koşum ayarları başarıyla kaydedildi!');
+      } catch (err) {
+        console.error('Koşum ayarları kaydedilirken hata oluştu:', err);
+        showToast('HATA: Koşum ayarları kaydedilemedi!', true);
+      }
     }
 
     function loadSettings() {
@@ -3693,6 +5574,16 @@
         }
         if (settings.excludeMode !== undefined && document.getElementById('excludeModeSelect')) {
           document.getElementById('excludeModeSelect').value = settings.excludeMode;
+        }
+
+        if (settings.workers !== undefined) {
+          const wVal = settings.workers;
+          if (document.getElementById('workersCount')) {
+            document.getElementById('workersCount').value = wVal;
+          }
+          if (document.getElementById('workersCountSlider')) {
+            document.getElementById('workersCountSlider').value = wVal;
+          }
         }
 
         onScheduleTypeChange();
@@ -3814,6 +5705,32 @@
       localStorage.setItem('gitsec_sidebar_collapsed', isCollapsed ? 'true' : 'false');
     }
 
+    function toggleFullscreenConsole() {
+      const container = document.getElementById('terminalContainer');
+      const btn = document.getElementById('btnToggleFullscreen');
+      if (!container || !btn) return;
+      
+      const isFullscreen = container.classList.toggle('fullscreen');
+      if (isFullscreen) {
+        btn.innerText = 'Geri Dön';
+        btn.style.borderColor = 'var(--gitsec-blue)';
+        btn.style.color = '#ffffff';
+        btn.style.boxShadow = '0 0 10px var(--gitsec-blue-glow)';
+      } else {
+        btn.innerText = 'Tam Ekran';
+        btn.style.borderColor = '';
+        btn.style.color = '';
+        btn.style.boxShadow = '';
+        // Normal ekrana döndüğünde yüksekliği localStorage'daki veya default yüksekliğe çekelim
+        const savedHeight = localStorage.getItem('gitsec_terminal_height');
+        container.style.height = savedHeight ? savedHeight + 'px' : '280px';
+      }
+      
+      // Kaydırma barını en alta çekelim
+      const screen = document.getElementById('terminalScreen');
+      if (screen) screen.scrollTop = screen.scrollHeight;
+    }
+
     // === Immediate Synchronous Execution to Prevent Layout/Theme/Tab Hydration Flashes ===
     
     // 1. Sidebar collapsed state setup
@@ -3864,7 +5781,7 @@
       });
 
       function doDrag(e) {
-        if (!isDragging) return;
+        if (!isDragging || terminalContainer.classList.contains('fullscreen')) return;
         const deltaY = startY - e.clientY;
         let newHeight = startHeight + deltaY;
         
@@ -3898,7 +5815,7 @@
       });
 
       function doTouchDrag(e) {
-        if (!isDragging) return;
+        if (!isDragging || terminalContainer.classList.contains('fullscreen')) return;
         const deltaY = startY - e.touches[0].clientY;
         let newHeight = startHeight + deltaY;
         
@@ -3922,12 +5839,78 @@
       }
     }
 
-    // Sayfa açılışında SSE, Env ve Google oturum durumunu yükleyelim
+    // Attach selectConsoleView to all cards dynamically on DOMContentLoaded
+    document.addEventListener('DOMContentLoaded', () => {
+      document.querySelectorAll('.test-card').forEach(card => {
+        const cardId = card.id;
+        if (cardId) {
+          card.addEventListener('click', (e) => {
+            if (e.target.closest('button') || e.target.closest('input') || e.target.closest('select') || e.target.closest('a')) {
+              return;
+            }
+            selectConsoleView(cardId);
+          });
+          card.style.cursor = 'pointer';
+        }
+      });
+    });
+
+    // Sayfa açılışında SSE, Env, Google oturum durumu ve E2E istatistiklerini yükleyelim
     window.addEventListener('load', () => {
       initSSE();
       loadEnvVars();
       updateGoogleSessionStatus();
+      updateStatsUI();
+      renderConsoleTabs();
+      updateWorkerStats();
     });
   </script>
+  <!-- Hata Kanıtı Oynatıcı ve İzleyici Modalı (Embedded Screenshot & Video Viewer) -->
+  <div id="artifactModal" class="modal-overlay" onclick="closeArtifactModal()" style="display: none; align-items: center; justify-content: center; z-index: 1100;">
+    <div class="modal-container" role="dialog" aria-modal="true" onclick="event.stopPropagation()" style="max-width: 900px; width: 90%; background: rgba(13, 17, 30, 0.96); border: 1px solid rgba(244, 63, 94, 0.25); box-shadow: 0 20px 50px rgba(0, 0, 0, 0.65), 0 0 30px rgba(244, 63, 94, 0.1); backdrop-filter: blur(25px); border-radius: 1rem; display: flex; flex-direction: column;">
+      <div class="modal-header" style="border-bottom: 1px solid rgba(255,255,255,0.08); padding: 1.25rem; display: flex; justify-content: space-between; align-items: center; background: rgba(244, 63, 94, 0.05);">
+        <div style="display: flex; align-items: center; gap: 0.65rem;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f43f5e" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" style="min-width: 20px;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+          <h3 id="artifactModalTitle" style="margin: 0; font-size: 1.15rem; font-weight: 700; color: #f43f5e; font-family: var(--font-sans);">Hata Kanıtı Detay İzleyici</h3>
+        </div>
+        <button type="button" class="btn-close-modal" onclick="closeArtifactModal()" style="background: none; border: none; color: var(--text-muted); font-size: 1.75rem; cursor: pointer; padding: 0; line-height: 1; transition: var(--transition-smooth);" onmouseover="this.style.color='var(--gitsec-red)'" onmouseout="this.style.color='var(--text-muted)'">&times;</button>
+      </div>
+      <div class="modal-body" style="padding: 1.5rem; display: flex; flex-direction: column; gap: 1.5rem; max-height: 75vh; overflow-y: auto;">
+        
+        <!-- Toggle Tabs inside modal (Screenshot vs Video) -->
+        <div style="display: flex; background: rgba(5,7,15,0.6); padding: 0.25rem; border-radius: 0.5rem; border: 1px solid var(--panel-border); width: fit-content; align-self: center; gap: 0.25rem;">
+          <button id="btnArtifactImg" class="terminal-btn active" onclick="switchArtifactTab('img')" style="padding: 0.45rem 1.25rem; font-size: 0.8rem; border-radius: 0.375rem; border: none; font-weight: 600; cursor: pointer;">Ekran Görüntüsü</button>
+          <button id="btnArtifactVideo" class="terminal-btn" onclick="switchArtifactTab('video')" style="padding: 0.45rem 1.25rem; font-size: 0.8rem; border-radius: 0.375rem; border: none; font-weight: 600; cursor: pointer;">E2E Video Kaydı</button>
+        </div>
+
+        <!-- Screenshot Content -->
+        <div id="artifactImgContainer" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.75rem;">
+          <img id="artifactImg" src="" alt="Test Hata Ekran Görüntüsü" style="max-width: 100%; max-height: 50vh; border-radius: 0.5rem; border: 1px solid rgba(255,255,255,0.08); box-shadow: 0 8px 24px rgba(0,0,0,0.3); background: #05070f; cursor: zoom-in;" onclick="showLightbox(this.src, document.getElementById('artifactModalTitle').innerText)" onerror="this.src='https://placehold.co/800x450/0d111e/f43f5e?text=Ekran+G%C3%B6r%C3%BCnt%C3%BCs%C3%BC+Y%C3%BCklenemedi'">
+          <span style="font-size: 0.725rem; color: var(--text-muted); text-align: center;">Hata anında tarayıcının otomatik çekilen ekran görüntüsü</span>
+        </div>
+
+        <!-- Video Content -->
+        <div id="artifactVideoContainer" style="display: none; flex-direction: column; align-items: center; justify-content: center; gap: 0.75rem;">
+          <video id="artifactVideo" src="" controls style="max-width: 100%; max-height: 50vh; border-radius: 0.5rem; border: 1px solid rgba(255,255,255,0.08); box-shadow: 0 8px 24px rgba(0,0,0,0.3); background: #05070f;"></video>
+          <span style="font-size: 0.725rem; color: var(--text-muted); text-align: center;">Tüm test koşusunun otomatik çekilen video kaydı</span>
+        </div>
+
+      </div>
+      <div style="padding: 1rem 1.5rem; border-top: 1px solid rgba(255,255,255,0.08); display: flex; justify-content: space-between; align-items: center; background: rgba(5,7,15,0.45); border-radius: 0 0 1rem 1rem;">
+        <span id="artifactPathLabel" style="font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-muted); word-break: break-all; max-width: 70%;">Dosya Yolu: Yükleniyor...</span>
+        <button type="button" class="btn-env-save" onclick="closeArtifactModal()" style="background: rgba(255,255,255,0.05); border: 1px solid var(--panel-border); color: var(--text-main); font-weight: 600; padding: 0.5rem 1.25rem; border-radius: 0.5rem; cursor: pointer; transition: var(--transition-smooth);" onmouseover="this.style.background='rgba(255,255,255,0.1)'" onmouseout="this.style.background='rgba(255,255,255,0.05)'">Kapat</button>
+      </div>
+    </div>
+  </div>
+  <!-- Glassmorphic Lightbox Preview Overlay -->
+  <div id="lightboxOverlay" class="lightbox-overlay" onclick="closeLightbox(event)">
+    <div class="lightbox-container" onclick="event.stopPropagation()">
+      <button class="btn-lightbox-close" onclick="closeLightbox(event)">✕</button>
+      <div class="lightbox-title-bar">
+        <span id="lightboxTitle">Hata Ekran Görüntüsü</span>
+      </div>
+      <img id="lightboxImage" class="lightbox-image" src="" alt="Kanıt" />
+    </div>
+  </div>
 </body>
 </html>

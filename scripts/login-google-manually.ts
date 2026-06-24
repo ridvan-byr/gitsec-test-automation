@@ -67,9 +67,38 @@ async function loginGoogle() {
     });
   });
 
+  // Google'ın otomasyon tespiti engeline ("Couldn't sign you in / may not be secure") 
+  // takılıp takılmadığını periyodik olarak kontrol eden arka plan denetimi (Senior QA)
+  const checkStuckInterval = setInterval(async () => {
+    try {
+      if (page.isClosed()) {
+        clearInterval(checkStuckInterval);
+        return;
+      }
+      const currentUrl = page.url();
+      const bodyText = await page.locator('body').innerText().catch(() => '');
+      const isStuck = currentUrl.includes('signin/rejected') || 
+                      bodyText.includes("Couldn't sign you in") || 
+                      bodyText.includes("may not be secure") || 
+                      bodyText.includes("Try using a different browser");
+      
+      if (isStuck) {
+        console.log('\n🚨🚨🚨 [GOOGLE OTURUMU YENİLEYİN - GÜVENLİK ENGELLENDİ] 🚨🚨🚨');
+        console.log('⚠️  Google, bu manuel giriş penceresini güvensiz tarayıcı (otomasyon) olarak algıladı ve girişi engelledi!');
+        console.log('💡 Google oturum hazırlığı ekranından (arayüzdeki "Google Session" kartı) oturumu yenilemeniz gerekmektedir.');
+        console.log('💡 Çözüm için tarayıcı penceresindeki "Try again" butonuna basarak tekrar giriş yapmayı deneyebilir,');
+        console.log('   veya Google Hesap ayarlarınızdan "Daha az güvenli uygulama erişimi" seçeneğini kontrol edebilirsiniz.\n');
+        clearInterval(checkStuckInterval);
+      }
+    } catch (e) {
+      clearInterval(checkStuckInterval);
+    }
+  }, 3000);
+
   // İki durumdan biri gerçekleşene kadar bekle (Giriş başarılı oldu veya tarayıcı kapatıldı)
   await Promise.race([waitForLoginRedirect, waitForWindowClose]);
   isDone = true;
+  clearInterval(checkStuckInterval);
 
   console.log('💾 Oturum bilgileri ve cookie\'ler kaydediliyor...');
   

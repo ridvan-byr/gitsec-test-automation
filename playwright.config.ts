@@ -7,6 +7,8 @@ import 'dotenv/config';
 export default defineConfig({
   testDir: './tests',
   testMatch: '**/*.spec.ts',
+  /* Global timeout for each test */
+  timeout: 60000,
   /* Tek akış: aynı anda tek test */
   fullyParallel: false,
   /* Fail the build on CI if you accidentally left test.only in the source code. */
@@ -17,23 +19,34 @@ export default defineConfig({
   workers: 1,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: 'html',
+  expect: {
+    timeout: 10000,
+  },
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
-    /* Base URL to use in actions like `await page.goto('')`. */
-    // baseURL: 'http://localhost:3000',
+    /* Base URL from .env */
+    baseURL: process.env.DASHBOARD_BASE_URL,
 
-    /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
-    trace: 'on-first-retry',
-    storageState: 'playwright/.auth/user-with-provider.json',
+    /* Hata durumunda ekran görüntüsü, video ve trace (iz kaydı) topla (CI/Local ayrımı yapıldı) */
+    trace: process.env.CI ? 'on-first-retry' : 'off',
+    screenshot: 'only-on-failure',
+    video: process.env.CI ? 'retain-on-failure' : 'off',
+    actionTimeout: 15000,
+    navigationTimeout: 20000,
   },
-  globalSetup: './global-setup.ts',
 
   /* Tek browser ile çalış: tekrar tekrar sayfa açılmasını engeller */
   projects: [
     {
+      name: 'setup',
+      testMatch: /auth\.setup\.ts/,
+    },
+    {
       name: 'chromium',
+      dependencies: ['setup'],
       use: { 
         ...devices['Desktop Chrome'],
+        storageState: 'playwright/.auth/user-with-provider.json',
         // Gerçek Chrome kullan (Playwright Chromium yerine) — Google bot algılamasını engeller
         channel: 'chrome',
         launchOptions: {

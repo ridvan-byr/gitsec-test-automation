@@ -31,7 +31,7 @@ export class RestorePage {
   }
 
   nextStepButton(): Locator {
-    return this.page.getByRole('button', { name: /^Next Step$/i });
+    return this.page.getByRole('button', { name: /Next Step/i });
   }
 
   async openTargetOrganizationSelect(): Promise<void> {
@@ -61,23 +61,31 @@ export class RestorePage {
 
   /** Combobox açıldıktan sonra liste boş mu dolu mu netleşene kadar bekler. */
   async waitForOrganizationListState(timeoutMs = 20_000): Promise<'empty' | 'has_orgs'> {
-    const deadline = Date.now() + timeoutMs;
-    while (Date.now() < deadline) {
-      if (await this.isNoOrganizationsAvailable()) {
-        return 'empty';
-      }
+    // API isteklerinin tamamlanması için ağın yatışmasını bekle
+    await this.page.waitForLoadState('networkidle', { timeout: 2000 }).catch(() => {});
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    let state: 'empty' | 'has_orgs' | null = null;
+    await expect(async () => {
       const count = await this.organizationOptions().count();
       if (count > 0) {
-        return 'has_orgs';
+        state = 'has_orgs';
+        return;
       }
       const itemCount = await this.page.locator('[data-slot="select-item"]').count();
       if (itemCount > 0 && !(await this.isNoOrganizationsAvailable())) {
-        return 'has_orgs';
+        state = 'has_orgs';
+        return;
       }
-      await this.page.waitForTimeout(350);
-    }
-    if (await this.isNoOrganizationsAvailable()) {
-      return 'empty';
+      if (await this.isNoOrganizationsAvailable()) {
+        state = 'empty';
+        return;
+      }
+      throw new Error("State not determined yet");
+    }).toPass({ timeout: timeoutMs, intervals: [300, 500, 1000] });
+
+    if (state !== null) {
+      return state;
     }
     throw new Error(
       '[restore] Organizasyon listesi zaman aşımı: "No organizations available" veya seçilebilir org görülmedi.'
@@ -120,6 +128,30 @@ export class RestorePage {
       await installBtn.scrollIntoViewIfNeeded().catch(() => {});
       await installBtn.click();
       await onInstallNewOrganization();
+
+      console.log('[restore] Yetkilendirme sonrası sayfa yenileniyor...');
+      await this.page.reload({ waitUntil: 'load' });
+
+      console.log('[restore] Sayfa yenilendikten sonra organizasyon seçimi bekleniyor...');
+      await this.openTargetOrganizationSelect();
+      const newListState = await this.waitForOrganizationListState(30000);
+      if (newListState === 'has_orgs') {
+        let option = this.organizationOptions().first();
+        await option.waitFor({ state: 'visible', timeout: 15000 });
+        const orgLabel = (await option.innerText()).replace(/\s+/g, ' ').trim();
+        console.log(`[restore] Yeni yetkilendirilen organizasyon seçiliyor: "${orgLabel}"`);
+        await option.click();
+      } else if (newListState === 'empty') {
+        console.log('[restore] Yeni yetkilendirme sonrası organizasyon bulunamadı. Seçim kutusu Escape ile kapatılıyor...');
+        await this.page.keyboard.press('Escape').catch(() => {});
+      }
+
+      const next = this.nextStepButton();
+      await expect(next).toBeEnabled({ timeout: 25000 });
+      await next.scrollIntoViewIfNeeded().catch(() => {});
+      await next.click();
+      console.log('[restore] Next Step tıklandı; sonraki adımlar için hazır.');
+      
       return 'installed_new_org';
     }
 

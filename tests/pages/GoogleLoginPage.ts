@@ -52,13 +52,32 @@ export class GoogleLoginPage {
     return this.page.isClosed();
   }
 
+  /** Google bot engellemesini kontrol eder ve engellenmişse hata fırlatıp testi durdurur. */
+  private async assertNotBlocked(): Promise<void> {
+    if (this.isGone()) return;
+    const url = this.page.url();
+    const bodyText = await this.page.locator('body').innerText().catch(() => '');
+
+    const isBlocked = url.includes('signin/rejected') || 
+                      bodyText.includes("Couldn't sign you in") || 
+                      bodyText.includes("may not be secure") || 
+                      bodyText.includes("Try using a different browser") ||
+                      bodyText.includes("Oturum açılamadı") ||
+                      bodyText.includes("güvenli olmayabilir") ||
+                      bodyText.includes("farklı bir tarayıcı");
+
+    if (isBlocked) {
+      console.log('\n🚨🚨🚨 [HATA - ENGELLENDİ] GOOGLE OTURUMUNU YENİLEYİN! 🚨🚨🚨');
+      console.log('💡 Google, Playwright tarayıcı kimliğini otomasyon olarak algılayıp girişi engelledi.');
+      console.log('💡 Lütfen arayüzdeki "Google Oturum Hazırlığı" (Google Session kartı) üzerinden Google oturumunu yenileyin.');
+      console.log('💡 Bu işlem, oturum çerezlerini (cookies) manuel girişle tazeleyecek ve testlerin sorunsuz geçmesini sağlayacaktır.\n');
+      throw new Error("Google login blocked by bot detection. Please refresh the session in Google Session Setup.");
+    }
+  }
+
   private async safePause(ms: number): Promise<void> {
     if (this.isGone()) return;
-    const start = Date.now();
-    while (Date.now() - start < ms) {
-      if (this.isGone()) return;
-      await this.page.waitForTimeout(100).catch(() => {});
-    }
+    await new Promise(resolve => setTimeout(resolve, ms));
   }
 
   /**
@@ -120,6 +139,7 @@ export class GoogleLoginPage {
    * E-posta adresini girer ve İleri'ye tıklar.
    */
   async enterEmail(email: string): Promise<void> {
+    await this.assertNotBlocked();
     console.log(`[google-login] E-posta giriliyor: ${email}`);
 
     await this.emailInput.waitFor({ state: 'visible', timeout: 15_000 });
@@ -132,12 +152,14 @@ export class GoogleLoginPage {
 
     // Şifre alanının gelmesini bekle
     await this.safePause(2000);
+    await this.assertNotBlocked();
   }
 
   /**
    * Şifreyi girer ve İleri'ye tıklar.
    */
   async enterPassword(password: string): Promise<void> {
+    await this.assertNotBlocked();
     console.log('[google-login] Şifre giriliyor...');
 
     await this.passwordInput.waitFor({ state: 'visible', timeout: 15_000 });
@@ -150,12 +172,14 @@ export class GoogleLoginPage {
 
     // 2FA veya izin ekranının gelmesini bekle
     await this.safePause(3000);
+    await this.assertNotBlocked();
   }
 
   /**
    * 2FA doğrulama yöntemini belirler.
    */
   async detectTwoFactorMethod(): Promise<'totp' | 'sms' | 'prompt' | 'none'> {
+    await this.assertNotBlocked();
     if (this.isGone()) return 'none';
 
     // TOTP input var mı?
@@ -220,6 +244,7 @@ export class GoogleLoginPage {
    * TOTP kodunu girer ve doğrulamayı tamamlar.
    */
   async enterTotpCode(secret: string): Promise<boolean> {
+    await this.assertNotBlocked();
     const code = GoogleLoginPage.generateTotpCode(secret);
     console.log(`[google-login] TOTP kodu üretildi: ${code}`);
 
@@ -236,6 +261,7 @@ export class GoogleLoginPage {
 
     // Sonucu bekle
     await this.safePause(3000);
+    await this.assertNotBlocked();
 
     if (this.isGone()) {
       console.log('[google-login] TOTP sonrası popup kapandı (başarılı redirect).');
@@ -348,8 +374,14 @@ export class GoogleLoginPage {
       console.log('[google-login] Onay butonu DOM\'da bulunamadı, yine de devam ediliyor.');
     }
 
-    // İlk ve ana kaydırma
-    await this.scrollToBottom();
+    // Eğer "Allow/Devam/Continue" butonu zaten sayfada görünür durumdaysa gereksiz kaydırma yapmaya gerek yok!
+    const isAllowBtnVisibleInitially = await allowBtn.isVisible().catch(() => false);
+    if (!isAllowBtnVisibleInitially) {
+      console.log('[google-login] Onay butonu görünür değil, aşağı kaydırılıyor...');
+      await this.scrollToBottom();
+    } else {
+      console.log('[google-login] Onay/Devam butonu zaten görünür durumda, ilk kaydırma atlanıyor.');
+    }
 
     // Bazen "Gelişmiş" / "Advanced" → "Go to app (unsafe)" akışı olur
     const advancedLink = this.page.getByRole('button', { name: /Advanced|Gelişmiş/i })
@@ -368,23 +400,39 @@ export class GoogleLoginPage {
         console.log('[google-login] "Go to app (unsafe)" tıklandı.');
         await this.safePause(2000);
 
-        // Advanced tıklandıktan sonra tekrar aşağı kaydır
-        await this.scrollToBottom();
+        // Advanced tıklandıktan sonra eğer onay/devam butonu görünür değilse aşağı kaydır
+        const isAllowBtnVisibleAfterAdvanced = await allowBtn.isVisible().catch(() => false);
+        if (!isAllowBtnVisibleAfterAdvanced) {
+          console.log('[google-login] Advanced sonrası onay butonu görünür değil, aşağı kaydırılıyor...');
+          await this.scrollToBottom();
+        }
       }
     }
 
     // Scope izin checkbox'ları (bazı uygulamalar tek tek izin ister)
-    const checkboxes = this.page.locator('input[type="checkbox"]:not(:checked)');
+    const checkboxes = this.page.locator('input[type="checkbox"]:not(:checked)')
+      .or(this.page.locator('[role="checkbox"][aria-checked="false"]'));
     const checkboxCount = await checkboxes.count().catch(() => 0);
     if (checkboxCount > 0) {
       console.log(`[google-login] ${checkboxCount} adet izin checkbox'ı işaretleniyor...`);
       for (let i = 0; i < checkboxCount; i++) {
-        await checkboxes.nth(i).check().catch(() => {});
+        const cb = checkboxes.nth(i);
+        const role = await cb.getAttribute('role').catch(() => null);
+        if (role === 'checkbox') {
+          // aria-checked false ise tıklayarak true yapalım
+          await cb.click().catch(() => {});
+        } else {
+          await cb.check().catch(() => {});
+        }
       }
       await this.safePause(500);
 
-      // Checkbox'lar işaretlendikten sonra tekrar aşağı kaydır (buton aktifleşsin)
-      await this.scrollToBottom();
+      // Checkbox'lar işaretlendikten sonra eğer onay/devam butonu görünür değilse aşağı kaydır
+      const isAllowBtnVisibleAfterCheckboxes = await allowBtn.isVisible().catch(() => false);
+      if (!isAllowBtnVisibleAfterCheckboxes) {
+        console.log('[google-login] Checkbox\'lar işaretlendikten sonra onay butonu görünür değil, aşağı kaydırılıyor...');
+        await this.scrollToBottom();
+      }
     }
 
     // Allow/İzin Ver butonuna tıkla
@@ -404,8 +452,14 @@ export class GoogleLoginPage {
         console.log('[google-login] İkinci onay ekranı kontrol ediliyor...');
         const secondAllow = this.page.getByRole('button', { name: /Allow|İzin ver|Confirm|Onayla|Devam/i }).first();
         if (await secondAllow.isVisible().catch(() => false)) {
-          console.log('[google-login] İkinci izin ekranı algılandı, aşağı kaydırılıyor...');
-          await this.scrollToBottom();
+          console.log('[google-login] İkinci onay ekranı algılandı.');
+          const isSecondAllowVisible = await secondAllow.isVisible().catch(() => false);
+          if (!isSecondAllowVisible) {
+            console.log('[google-login] İkinci onay butonu görünür değil, aşağı kaydırılıyor...');
+            await this.scrollToBottom();
+          } else {
+            console.log('[google-login] İkinci onay butonu zaten görünür durumda, kaydırma atlanıyor.');
+          }
           console.log('[google-login] İkinci izin ekranı — tekrar "Allow/Devam" tıklanıyor...');
           await secondAllow.scrollIntoViewIfNeeded().catch(() => {});
           await secondAllow.click({ force: true });
@@ -424,6 +478,7 @@ export class GoogleLoginPage {
    * Hesap seçme ekranında doğru hesabı seçer (zaten giriş yapılmışsa).
    */
   async handleAccountChooser(email: string): Promise<boolean> {
+    await this.assertNotBlocked();
     if (this.isGone()) return true;
 
     // Hesap seçme ekranı mı?
@@ -435,6 +490,7 @@ export class GoogleLoginPage {
       console.log(`[google-login] Hesap seçme ekranı — "${email}" seçiliyor...`);
       await accountOption.click();
       await this.safePause(2000);
+      await this.assertNotBlocked();
       return true;
     }
 
@@ -444,6 +500,7 @@ export class GoogleLoginPage {
       console.log('[google-login] "Başka bir hesap kullan" tıklanıyor...');
       await useAnother.click();
       await this.safePause(2000);
+      await this.assertNotBlocked();
       return false; // E-posta giriş ekranına dönecek
     }
 
@@ -539,6 +596,10 @@ export class GoogleLoginPage {
       const currentUrl = this.page.url();
       if (/accounts\.google\.com/i.test(currentUrl)) {
         console.log(`[google-login] ⚠️ Hala Google sayfasında: ${currentUrl}`);
+
+        // 🚨 Google "Couldn't sign you in" / "signin/rejected" durumunu kontrol et
+        await this.assertNotBlocked();
+
         // Son bir kez consent/redirect bekleme
         await this.page.waitForURL(/gitsec\.io/i, { timeout: 15_000 }).catch(() => {});
       }
@@ -546,9 +607,9 @@ export class GoogleLoginPage {
       console.log('[google-login] ✅ Google OAuth akışı tamamlandı.');
       return true;
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('[google-login] ❌ Google OAuth giriş hatası:', error);
-      return false;
+      throw error;
     }
   }
 }

@@ -1,5 +1,5 @@
 import { Page, Locator } from '@playwright/test';
-import { pollMicrosoftEmailOtp } from '../tests/support/microsoft-email-otp';
+import { pollMicrosoftEmailOtp } from '../support/microsoft-email-otp';
 
 export class OneDriveLoginPage {
   readonly page: Page;
@@ -41,11 +41,7 @@ export class OneDriveLoginPage {
 
   private async safePause(ms: number): Promise<void> {
     if (this.isGone()) return;
-    const start = Date.now();
-    while (Date.now() - start < ms) {
-      if (this.isGone()) return;
-      await this.page.waitForTimeout(100).catch(() => {});
-    }
+    await new Promise(resolve => setTimeout(resolve, ms));
   }
 
   /**
@@ -244,7 +240,10 @@ export class OneDriveLoginPage {
     console.log('[onedrive-login] "Stay signed in?" / "Oturumunuz açık kalsın mı?" ekranı kontrol ediliyor...');
 
     // Hem modern Fluent UI butonunu hem de eski submit inputunu destekleyen seçici grubu
-    const yesBtn = this.page.locator('#idSIButton9, button[data-testid="primaryButton"], input[type="submit"], input[value="Yes"], input[value="Evet"], button:has-text("Yes"), button:has-text("Evet")').first();
+    // Hem modern Fluent UI butonunu hem de eski submit inputunu destekleyen seçici grubu
+    const yesBtn = this.page.locator('#idSIButton9, button[data-testid="primaryButton"], input[type="submit"], input[value="Yes"], input[value="Evet"]')
+      .or(this.page.locator('button').filter({ hasText: /yes|evet/i }))
+      .first();
     const isBtnVisible = await yesBtn.waitFor({ state: 'visible', timeout: 15_000 })
       .then(() => true)
       .catch(() => false);
@@ -331,7 +330,9 @@ export class OneDriveLoginPage {
 
     console.log('[onedrive-login] Erişim izni ekranı bekleniyor...');
 
-    const acceptBtn = this.page.locator('#idBtn_Accept, #uc-accept, button[data-testid="primaryButton"], input[type="submit"][value*="Accept"], input[type="submit"][value*="Kabul"], input[type="submit"][value*="Yes"], input[type="submit"][value*="Evet"], button:has-text("Accept"), button:has-text("Kabul et"), button:has-text("İzin ver")').first();
+    const acceptBtn = this.page.locator('#idBtn_Accept, #uc-accept, button[data-testid="primaryButton"], input[type="submit"][value*="Accept"], input[type="submit"][value*="Kabul"], input[type="submit"][value*="Yes"], input[type="submit"][value*="Evet"]')
+      .or(this.page.locator('button').filter({ hasText: /accept|kabul et|izin ver/i }))
+      .first();
 
     const isBtnVisible = await acceptBtn.waitFor({ state: 'visible', timeout: 25_000 })
       .then(() => true)

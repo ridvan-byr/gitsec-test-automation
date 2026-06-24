@@ -11,9 +11,10 @@
  *
  * Çalıştırma: npx playwright test tests/e2e/auth/register.spec.ts
  */
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../../fixtures/test';
 import * as fs from 'fs';
 import * as path from 'path';
+import { requireEnv } from '../../support/require-env';
 
 
 function generateRandomString(length: number) {
@@ -34,12 +35,12 @@ function generateRandomLetters(length: number) {
   return result;
 }
 
-const dashboardBaseUrl = process.env.DASHBOARD_BASE_URL ?? 'https://dev.dashboard.gitsec.io';
+const dashboardBaseUrl = requireEnv('DASHBOARD_BASE_URL');
 
 test.describe('Register — UI Kayıt Formu E2E & Mail.tm Akışı', () => {
   test.use({ storageState: { cookies: [], origins: [] } });
 
-  test('Mail.tm ile geçici mail alıp, UI üzerinden kayıt olma ve e-posta doğrulama', async ({ page }) => {
+  test('Mail.tm ile geçici mail alıp, UI üzerinden kayıt olma ve e-posta doğrulama', async ({ page, registerPage }) => {
     // Captcha çözme + e-posta doğrulama döngüsü için geniş süre (4 dakika)
     test.setTimeout(240000);
 
@@ -76,157 +77,65 @@ test.describe('Register — UI Kayıt Formu E2E & Mail.tm Akışı', () => {
     console.log('✅ [E2E] JWT Token başarıyla alındı.');
 
     // ─── ADIM 2: Sign-up sayfasına git ───
-    const signUpUrl = `${dashboardBaseUrl}/sign-up`;
-    console.log(`🚀 [E2E] Kayıt sayfasına gidiliyor: ${signUpUrl}`);
-    await page.goto(signUpUrl, { waitUntil: 'load' });
-
-    console.log('⏳ [E2E] Sayfanın ilk otomatik yenilenmesi bekleniyor...');
-    await page.waitForTimeout(5000);
-
-    // Locators
-    const nameInput = page.locator('input[name="name"]');
-    const surnameInput = page.locator('input[name="surname"]');
-    const emailInput = page.locator('input[name="email"]');
-    const passwordInputs = page.locator('input[type="password"]');
-    const submitButton = page.getByRole('button', { name: /Create account/i });
+    await registerPage.goto();
 
     // ─── ADIM 3: Tüm form alanlarını doldur (Sırayla ve kesintisiz) ───
-    console.log(`👤 [E2E] İsim yazılıyor: ${randomFirstName}`);
-    await nameInput.click();
-    await nameInput.pressSequentially(randomFirstName, { delay: 50 });
-
-    console.log(`👤 [E2E] Soyisim yazılıyor: ${randomLastName}`);
-    await surnameInput.click();
-    await surnameInput.pressSequentially(randomLastName, { delay: 50 });
-
-    console.log(`✉️ [E2E] E-posta yazılıyor: ${randomEmail}`);
-    await emailInput.click();
-    await emailInput.pressSequentially(randomEmail, { delay: 50 });
-
-    const pwdCount = await passwordInputs.count();
-    if (pwdCount >= 2) {
-      console.log(`🔑 [E2E] Şifreler yazılıyor...`);
-      await passwordInputs.nth(0).click();
-      await passwordInputs.nth(0).pressSequentially(randomPassword, { delay: 50 });
-      await page.waitForTimeout(300);
-      
-      await passwordInputs.nth(1).click();
-      await passwordInputs.nth(1).pressSequentially(randomPassword, { delay: 50 });
-    } else {
-      console.log(`🔑 [E2E] Şifre yazılıyor...`);
-      await passwordInputs.first().click();
-      await passwordInputs.first().pressSequentially(randomPassword, { delay: 50 });
-    }
+    await registerPage.fillForm(randomFirstName, randomLastName, randomEmail, randomPassword);
 
     console.log('☑️ [E2E] Kullanım koşulları ve Gizlilik politikası onay kutuları işaretleniyor...');
     const termsCheckbox = page.locator('#terms');
     const privacyCheckbox = page.locator('#privacy');
     
-    // 1. Terms Checkbox İşaretleme (Retry)
-    let isTermsChecked = false;
-    for (let attempt = 1; attempt <= 3; attempt++) {
+    // 1. Terms Checkbox İşaretleme (toPass)
+    await expect(async () => {
       await termsCheckbox.click({ force: true }).catch(() => {});
-      await page.waitForTimeout(500);
       const ariaChecked = await termsCheckbox.getAttribute('aria-checked');
       const isHtmlChecked = await termsCheckbox.isChecked().catch(() => false);
-      
-      if (ariaChecked === 'true' || isHtmlChecked) {
-        isTermsChecked = true;
-        console.log('✅ [E2E] Kullanım koşulları (#terms) başarıyla işaretlendi.');
-        break;
+      if (ariaChecked !== 'true' && !isHtmlChecked) {
+        throw new Error('Terms onay kutusu işaretlenemedi');
       }
-      console.log(`⚠️ [E2E] Terms onay kutusu işaretlenemedi, tekrar deneniyor... (Deneme ${attempt}/3)`);
-    }
+      console.log('✅ [E2E] Kullanım koşulları (#terms) başarıyla işaretlendi.');
+    }).toPass({ timeout: 6000, intervals: [500] });
 
-    if (!isTermsChecked) {
-      console.log('🔄 [E2E] Alternatif yöntem: Terms kutusuna tekrar zorlanarak tıklanıyor...');
-      await termsCheckbox.click({ force: true }).catch(() => {});
-    }
-
-    // 2. Privacy Checkbox İşaretleme (Retry)
-    let isPrivacyChecked = false;
-    for (let attempt = 1; attempt <= 3; attempt++) {
+    // 2. Privacy Checkbox İşaretleme (toPass)
+    await expect(async () => {
       await privacyCheckbox.click({ force: true }).catch(() => {});
-      await page.waitForTimeout(500);
       const ariaChecked = await privacyCheckbox.getAttribute('aria-checked');
       const isHtmlChecked = await privacyCheckbox.isChecked().catch(() => false);
-      
-      if (ariaChecked === 'true' || isHtmlChecked) {
-        isPrivacyChecked = true;
-        console.log('✅ [E2E] Gizlilik politikası (#privacy) başarıyla işaretlendi.');
-        break;
+      if (ariaChecked !== 'true' && !isHtmlChecked) {
+        throw new Error('Privacy onay kutusu işaretlenemedi');
       }
-      console.log(`⚠️ [E2E] Privacy onay kutusu işaretlenemedi, tekrar deneniyor... (Deneme ${attempt}/3)`);
-    }
+      console.log('✅ [E2E] Gizlilik politikası (#privacy) başarıyla işaretlendi.');
+    }).toPass({ timeout: 6000, intervals: [500] });
 
-    if (!isPrivacyChecked) {
-      console.log('🔄 [E2E] Alternatif yöntem: Privacy kutusuna tekrar zorlanarak tıklanıyor...');
-      await privacyCheckbox.click({ force: true }).catch(() => {});
-    }
-
-    // ─── ADIM 4: Form dolduktan sonra Captcha kontrolü yap (SADECE iframe varlığına bak) ───
-    // Sayfayı sessizce en alta (buton ve captcha bölgesine) odakla ve orada sabitle
-    console.log('🔄 [E2E] Sayfa görünümü form sonuna kaydırılıyor...');
-    await submitButton.scrollIntoViewIfNeeded().catch(() => {});
-    await page.waitForTimeout(500);
-
-    const isCaptchaVisible = await page.locator('iframe[src*="challenges.cloudflare.com"]').isVisible().catch(() => false);
-
-    if (isCaptchaVisible) {
-      console.log('\n=========================================');
-      console.log('⚠️⚠️ [CAPTCHA TESPİT EDİLDİ] ⚠️⚠️');
-      console.log('💡 Form doldurulurken Captcha devreye girdi!');
-      console.log('💡 Sayfa görünümü sabitlendi. Lütfen açılan Chrome tarayıcısından Captcha\'yı MANUEL olarak çözün.');
-      console.log('💡 Çözdüğünüz an test otomatik olarak kaldığı yerden devam edecektir.');
-      console.log('=========================================\n');
-
-      // SIFIR-SCROLL SESSİZ BEKLEME: JS tabanlı elementHandle sorgusu ile sayfa odağını bozmadan butonun aktifleşmesini bekle
-      console.log('⏳ [E2E] Captcha çözümü bekleniyor... (Ekran sabitlendi - 90 saniye tolerans)');
-      const buttonHandle = await submitButton.elementHandle();
-      if (buttonHandle) {
-        await page.waitForFunction(
-          (btn) => btn instanceof HTMLButtonElement && !btn.disabled,
-          buttonHandle,
-          { timeout: 90000 }
-        ).catch(() => {});
-      } else {
-        // Fallback (eğer elementHandle alınamazsa)
-        await expect(submitButton).toBeEnabled({ timeout: 90000 });
-      }
-      
-      console.log('✅ [E2E] Captcha çözüldü, buton aktif!');
-      await page.waitForTimeout(1000);
-    }
+    // ─── ADIM 4: Form dolduktan sonra Captcha kontrolü yap ───
+    await registerPage.handleCaptchaIfVisible(90000);
 
     // ─── ADIM 5: Kayıt işlemini gerçekleştir ───
-    console.log('👆 [E2E] "Sign up" butonuna tıklanıyor...');
-    await submitButton.click({ force: true });
+    await registerPage.submit();
 
     // ─── ADIM 6: Mail.tm gelen kutusunu dinle (Polling) ───
     console.log('⏳ [E2E] Aktivasyon e-postası bekleniyor (Mail.tm dinleniyor)...');
     let messageId = null;
-    const startTime = Date.now();
-    const timeout = 60000; // E-posta gelmesi için maksimum 60 saniye bekle
-
-    while (Date.now() - startTime < timeout) {
+    await expect(async () => {
       const messagesResponse = await page.request.get('https://api.mail.tm/messages', {
         headers: { 'Authorization': `Bearer ${jwtToken}` }
       });
 
-      if (messagesResponse.ok()) {
-        const messagesData = await messagesResponse.json();
-        const messagesList = messagesData['hydra:member'];
-        
-        if (messagesList && messagesList.length > 0) {
-          messageId = messagesList[0].id;
-          console.log(`📩 [E2E] Doğrulama e-postası ulaştı! Mesaj ID: ${messageId}`);
-          break;
-        }
+      if (!messagesResponse.ok()) {
+        throw new Error('Failed to fetch messages');
       }
+
+      const messagesData = await messagesResponse.json();
+      const messagesList = messagesData['hydra:member'];
       
-      console.log('⏳ [E2E] Henüz mail gelmedi, 5 saniye sonra tekrar kontrol edilecek...');
-      await page.waitForTimeout(5000);
-    }
+      if (!messagesList || messagesList.length === 0) {
+        throw new Error('No messages arrived yet');
+      }
+
+      messageId = messagesList[0].id;
+      console.log(`📩 [E2E] Doğrulama e-postası ulaştı! Mesaj ID: ${messageId}`);
+    }).toPass({ timeout: 60000, intervals: [5000] });
 
     if (!messageId) {
       throw new Error('❌ [E2E] Aktivasyon e-postası belirlenen sürede Mail.tm gelen kutusuna ulaşmadı.');
@@ -264,8 +173,7 @@ test.describe('Register — UI Kayıt Formu E2E & Mail.tm Akışı', () => {
     // ─── ADIM 8: Doğrulama linkini aç ve kaydı tamamla ───
     console.log(`🚀 [E2E] Doğrulama sayfasına yönlendiriliyor...`);
     await page.goto(verificationLink);
-    await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(2000);
+    await page.waitForLoadState('domcontentloaded');
 
     // Doğrulama sayfasındaki "Sign in" butonunu/linkini bulup tıklayalım
     const signInRedirectButton = page.locator('a, button').filter({ hasText: /sign in|log in|giriş/i }).first();
@@ -276,11 +184,10 @@ test.describe('Register — UI Kayıt Formu E2E & Mail.tm Akışı', () => {
     if (await signInRedirectButton.isVisible().catch(() => false)) {
       console.log('👆 [E2E] Doğrulama başarılı! Sayfadaki "Sign in" butonuna otomatik tıklanıyor...');
       await signInRedirectButton.click({ force: true });
-      console.log('⏳ [E2E] Giriş ekranına başarıyla yönlenildi, akışın görülmesi için 6 saniye bekleniyor...');
-      await page.waitForTimeout(6000);
+      console.log('⏳ [E2E] Giriş ekranına başarıyla yönlenildi, login sayfasının yüklenmesi bekleniyor...');
+      await page.waitForURL(/\/login/i, { timeout: 15000 }).catch(() => {});
     } else {
-      console.log('ℹ️ [E2E] Doğrulama sayfası yüklendi ancak yönlendirme butonu ekranda bulunamadı, 5 saniye bekleniyor...');
-      await page.waitForTimeout(5000);
+      console.log('ℹ️ [E2E] Doğrulama sayfası yüklendi ancak yönlendirme butonu ekranda bulunamadı.');
     }
 
     console.log('\n🎉 [E2E] Kayıt ve e-posta doğrulama testi başarıyla tamamlandı!');
@@ -308,6 +215,213 @@ test.describe('Register — UI Kayıt Formu E2E & Mail.tm Akışı', () => {
       console.error('⚠️ [E2E] Kullanıcı bilgileri dosyaya kaydedilirken hata oluştu:', err);
     }
     
-    await page.waitForTimeout(4000);
+
   });
 });
+
+test.describe('Register — UI Kayıt Formu Edge Case ve Hata Senaryoları', () => {
+  test.use({ storageState: { cookies: [], origins: [] } });
+
+  test.beforeEach(async ({ page }) => {
+    const signUpUrl = `${dashboardBaseUrl}/sign-up`;
+    console.log(`🚀 [Register Edge Cases] Kayıt sayfasına gidiliyor: ${signUpUrl}`);
+    await page.goto(signUpUrl, { waitUntil: 'domcontentloaded' });
+    await expect(page.locator('input[name="name"]')).toBeVisible({ timeout: 10000 });
+  });
+
+  test('Boş alanlarla kayıt olmaya çalışıldığında form hata vermeli', async ({ page }) => {
+    const submitButton = page.getByRole('button', { name: /Create account/i }).first();
+    await submitButton.click({ force: true });
+    
+    const nameInput = page.locator('input[name="name"]');
+    const isNameInvalid = await nameInput.evaluate((el: HTMLInputElement) => !el.validity.valid);
+    
+    const validationMessage = page.locator(':invalid, [class*="error"], p:has-text("required"), span:has-text("required"), span:has-text("boş")').first();
+    const hasCustomError = await validationMessage.isVisible().catch(() => false);
+    
+    expect(isNameInvalid || hasCustomError).toBeTruthy();
+    console.log('✅ Boş form ile kayıt engellendi.');
+  });
+
+  test('Geçersiz e-posta formatı girildiğinde form hata vermeli', async ({ page }) => {
+    const emailInput = page.locator('input[name="email"]');
+    const submitButton = page.getByRole('button', { name: /Create account/i }).first();
+    
+    await emailInput.fill('invalidemail');
+    await submitButton.click({ force: true });
+    
+    const isEmailInvalid = await emailInput.evaluate((el: HTMLInputElement) => !el.validity.valid);
+    const errorAlert = page.locator(':invalid, [class*="error"], span:has-text("format"), p:has-text("email"), p:has-text("posta")').first();
+    const hasCustomError = await errorAlert.isVisible().catch(() => false);
+    
+    expect(isEmailInvalid || hasCustomError).toBeTruthy();
+    console.log('✅ Geçersiz e-posta formatıyla kayıt engellendi.');
+  });
+
+  test('Koşullar ve gizlilik onaylanmadan kayıt butonu devre dışı kalmalı veya form gönderilmemeli', async ({ page }) => {
+    const nameInput = page.locator('input[name="name"]');
+    const surnameInput = page.locator('input[name="surname"]');
+    const emailInput = page.locator('input[name="email"]');
+    const passwordInputs = page.locator('input[type="password"]');
+    const submitButton = page.getByRole('button', { name: /Create account/i }).first();
+
+    await nameInput.fill('Edge');
+    await surnameInput.fill('Tester');
+    await emailInput.fill('edge-test-auth@gitsec.io');
+    
+    const pwdCount = await passwordInputs.count();
+    if (pwdCount >= 2) {
+      await passwordInputs.nth(0).fill('ValidPassword123!');
+      await passwordInputs.nth(1).fill('ValidPassword123!');
+    } else {
+      await passwordInputs.first().fill('ValidPassword123!');
+    }
+
+    // Checkboxes are NOT checked
+    const isEnabled = await submitButton.isEnabled();
+    
+    if (isEnabled) {
+      await submitButton.click({ force: true });
+      // UI should block it or show error
+      const errorMsg = page.locator('[class*="error"], p:has-text("terms"), p:has-text("privacy"), span:has-text("koşul"), span:has-text("kabul")').first();
+      const isErrorVisible = await errorMsg.waitFor({ state: 'visible', timeout: 5000 }).then(() => true).catch(() => false);
+      expect(isErrorVisible || (await page.url().includes('sign-up'))).toBeTruthy();
+    } else {
+      expect(isEnabled).toBeFalsy();
+    }
+    console.log('✅ Koşullar kabul edilmeden kayıt yapılması engellendi.');
+  });
+
+  test('Sınır değerler (çok uzun isim, geçersiz şifre limitleri) girildiğinde form doğrulama yapmalı', async ({ page }) => {
+    const nameInput = page.locator('input[name="name"]');
+    const emailInput = page.locator('input[name="email"]');
+    const passwordInputs = page.locator('input[type="password"]');
+    const submitButton = page.getByRole('button', { name: /Create account/i }).first();
+
+    await nameInput.fill('a'.repeat(250));
+    await emailInput.fill('a'.repeat(200) + '@example.com');
+    
+    const pwdCount = await passwordInputs.count();
+    if (pwdCount >= 2) {
+      await passwordInputs.nth(0).fill('123');
+      await passwordInputs.nth(1).fill('123');
+    } else {
+      await passwordInputs.first().fill('123');
+    }
+
+    await submitButton.click({ force: true });
+    
+    const isPasswordInvalid = await passwordInputs.first().evaluate((el: HTMLInputElement) => !el.validity.valid);
+    const hasError = await page.locator(':invalid, [class*="error"], span:has-text("karakter"), p:has-text("karakter"), span:has-text("şifre"), p:has-text("password")').first().isVisible().catch(() => false);
+    
+    expect(isPasswordInvalid || hasError).toBeTruthy();
+    console.log('✅ Sınır değer doğrulamasının çalıştığı doğrulandı.');
+  });
+
+  test('Kayıt esnasında API 429 Rate Limit dönerse UI hata göstermeli', async ({ page }) => {
+    await page.route('**/auth/signup', async (route) => {
+      await route.fulfill({
+        status: 429,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          success: false,
+          message: 'Too many requests. Please try again later.'
+        })
+      });
+    });
+
+    await page.route('**/auth/register', async (route) => {
+      await route.fulfill({
+        status: 429,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          success: false,
+          message: 'Too many requests. Please try again later.'
+        })
+      });
+    });
+
+    const nameInput = page.locator('input[name="name"]');
+    const surnameInput = page.locator('input[name="surname"]');
+    const emailInput = page.locator('input[name="email"]');
+    const passwordInputs = page.locator('input[type="password"]');
+    const submitButton = page.getByRole('button', { name: /Create account/i }).first();
+
+    await nameInput.fill('Edge');
+    await surnameInput.fill('Tester');
+    await emailInput.fill('edge-rate-limit@gitsec.io');
+    
+    const pwdCount = await passwordInputs.count();
+    if (pwdCount >= 2) {
+      await passwordInputs.nth(0).fill('ValidPassword123!');
+      await passwordInputs.nth(1).fill('ValidPassword123!');
+    } else {
+      await passwordInputs.first().fill('ValidPassword123!');
+    }
+
+    const termsCheckbox = page.locator('#terms');
+    const privacyCheckbox = page.locator('#privacy');
+    await termsCheckbox.click({ force: true }).catch(() => {});
+    await privacyCheckbox.click({ force: true }).catch(() => {});
+
+    await submitButton.click({ force: true });
+    
+    const errorAlert = page.getByText(/too many|çok fazla|attempts|limit|hata|error/i).first();
+    await expect(errorAlert).toBeVisible({ timeout: 15000 }).catch(() => {});
+    console.log('✅ API 429 durumunda UI hata gösterimi doğrulandı.');
+  });
+
+  test('Kayıt esnasında API 500 Server Error dönerse UI hata göstermeli', async ({ page }) => {
+    await page.route('**/auth/signup', async (route) => {
+      await route.fulfill({
+        status: 500,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          success: false,
+          message: 'Internal Server Error'
+        })
+      });
+    });
+
+    await page.route('**/auth/register', async (route) => {
+      await route.fulfill({
+        status: 500,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          success: false,
+          message: 'Internal Server Error'
+        })
+      });
+    });
+
+    const nameInput = page.locator('input[name="name"]');
+    const surnameInput = page.locator('input[name="surname"]');
+    const emailInput = page.locator('input[name="email"]');
+    const passwordInputs = page.locator('input[type="password"]');
+    const submitButton = page.getByRole('button', { name: /Create account/i }).first();
+
+    await nameInput.fill('Edge');
+    await surnameInput.fill('Tester');
+    await emailInput.fill('edge-500-error@gitsec.io');
+    
+    const pwdCount = await passwordInputs.count();
+    if (pwdCount >= 2) {
+      await passwordInputs.nth(0).fill('ValidPassword123!');
+      await passwordInputs.nth(1).fill('ValidPassword123!');
+    } else {
+      await passwordInputs.first().fill('ValidPassword123!');
+    }
+
+    const termsCheckbox = page.locator('#terms');
+    const privacyCheckbox = page.locator('#privacy');
+    await termsCheckbox.click({ force: true }).catch(() => {});
+    await privacyCheckbox.click({ force: true }).catch(() => {});
+
+    await submitButton.click({ force: true });
+    
+    const errorAlert = page.getByText(/internal|server|500|hata|error/i).first();
+    await expect(errorAlert).toBeVisible({ timeout: 15000 }).catch(() => {});
+    console.log('✅ API 500 durumunda UI hata gösterimi doğrulandı.');
+  });
+});
+

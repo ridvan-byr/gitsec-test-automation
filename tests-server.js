@@ -7,8 +7,7 @@ const PORT = process.env.PORT || 3000;
 
 // Aktif bağlantıları saklayacağımız küme
 const clients = new Set();
-let activeProcess = null;
-let testRunning = false;
+const activeProcesses = new Map(); // cardId -> process
 
 // Bağlı tüm istemcilere veri gönderme yardımcı fonksiyonu
 function broadcast(event, data) {
@@ -61,6 +60,35 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  // 1c. Test Sonuçları Çıktıları (Screenshots, Videos, Traces)
+  if (req.url.startsWith('/test-results/')) {
+    try {
+      const decodedUrl = decodeURIComponent(req.url);
+      const relativePath = decodedUrl.replace(/^\/test-results\//, '');
+      // Path traversal saldırılarını önlemek için temizleyelim
+      const safePath = path.normalize(relativePath).replace(/^(\.\.(\/|\\|$))+/, '');
+      const filePath = path.join(__dirname, 'test-results', safePath);
+
+      if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
+        let contentType = 'application/octet-stream';
+        if (filePath.endsWith('.png')) contentType = 'image/png';
+        if (filePath.endsWith('.webm')) contentType = 'video/webm';
+        if (filePath.endsWith('.zip')) contentType = 'application/zip';
+        if (filePath.endsWith('.html')) contentType = 'text/html';
+        if (filePath.endsWith('.json')) contentType = 'application/json';
+
+        serveStaticFile(res, filePath, contentType);
+      } else {
+        res.writeHead(404, { 'Content-Type': 'text/plain' });
+        res.end('Artifact Not Found');
+      }
+    } catch (e) {
+      res.writeHead(500, { 'Content-Type': 'text/plain' });
+      res.end('Server Error: ' + e.message);
+    }
+    return;
+  }
+
   // 2. Canlı Log Akışı (SSE)
   if (req.url === '/api/logs') {
     res.writeHead(200, {
@@ -72,7 +100,7 @@ const server = http.createServer((req, res) => {
     clients.add(res);
 
     // İlk bağlantıda durum bildirme
-    res.write(`event: status\ndata: ${JSON.stringify({ running: testRunning })}\n\n`);
+    res.write(`event: status\ndata: ${JSON.stringify({ running: activeProcesses.size > 0, runningCardIds: Array.from(activeProcesses.keys()) })}\n\n`);
 
     req.on('close', () => {
       clients.delete(res);
@@ -94,20 +122,35 @@ const server = http.createServer((req, res) => {
           tag, headed, testFile, timezone, workspaceId, baseUrl,
           scheduleName, scheduleTime, includeCode, includePr, includeIssues,
           scheduleType, weeklyDay, monthlyDay, cronExpression,
-          includeMode, excludeMode
+          includeMode, excludeMode, workers, cardId
         } = JSON.parse(body || '{}');
 
-        if (testRunning) {
+        const maxWorkers = parseInt(workers) || 1;
+        if (activeProcesses.size >= maxWorkers) {
           res.writeHead(400, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ error: 'Zaten aktif bir test çalışıyor!' }));
+          res.end(JSON.stringify({ error: `Maksimum paralel çalışan test sınırına (${maxWorkers}) ulaşıldı!` }));
           return;
         }
 
-        testRunning = true;
-        broadcast('status', { running: true });
+        const targetCardId = cardId || 'generic-test';
+        if (activeProcesses.has(targetCardId)) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Bu test zaten şu anda çalışıyor!' }));
+          return;
+        }
 
         // Playwright argümanlarını derleyelim
-        const args = ['playwright', 'test'];
+        const playwrightCliPath = path.join(__dirname, 'node_modules', 'playwright', 'cli.js');
+        const runWithNode = fs.existsSync(playwrightCliPath);
+        let cmd = 'npx';
+        const args = [];
+
+        if (runWithNode) {
+          cmd = 'node';
+          args.push(playwrightCliPath, 'test');
+        } else {
+          args.push('playwright', 'test');
+        }
         
         if (testFile) {
           args.push(testFile);
@@ -118,74 +161,15 @@ const server = http.createServer((req, res) => {
         if (headed) {
           args.push('--headed');
         }
+        args.push('--workers', '1');
 
-        console.log(`[Server] Başlatılan komut: npx ${args.join(' ')}`);
-        broadcast('log', `[DASHBOARD] Komut başlatılıyor: npx ${args.join(' ')}\n`);
+        console.log(`[Server] Başlatılan komut: ${cmd} ${args.join(' ')}`);
+        broadcast('log', { cardId: targetCardId, text: `[DASHBOARD] Komut başlatılıyor: ${cmd} ${args.join(' ')}\n` });
 
-        // Ortam değişkenlerini hazırlayalım
+        // Ortam değişkenlerini hazırlayalım (Öncelikle .env dosyasındaki güncel değerleri okuyalım)
         const runEnv = { ...process.env, FORCE_COLOR: '1' };
-        if (timezone) {
-          runEnv.E2E_TIMEZONE = timezone;
-          console.log(`[Server] E2E_TIMEZONE eklendi: ${timezone}`);
-        }
-        if (workspaceId) {
-          runEnv.WORKSPACE_ID = workspaceId;
-          console.log(`[Server] WORKSPACE_ID eklendi: ${workspaceId}`);
-        }
-        if (baseUrl) {
-          runEnv.DASHBOARD_BASE_URL = baseUrl;
-          console.log(`[Server] DASHBOARD_BASE_URL eklendi: ${baseUrl}`);
-        }
-        if (scheduleName) {
-          runEnv.E2E_SCHEDULE_NAME = scheduleName;
-          console.log(`[Server] E2E_SCHEDULE_NAME eklendi: ${scheduleName}`);
-        }
-        if (scheduleTime) {
-          runEnv.E2E_SCHEDULE_TIME = scheduleTime;
-          console.log(`[Server] E2E_SCHEDULE_TIME eklendi: ${scheduleTime}`);
-        }
-        if (includeCode !== undefined) {
-          runEnv.E2E_INCLUDE_CODE = String(includeCode);
-          console.log(`[Server] E2E_INCLUDE_CODE eklendi: ${includeCode}`);
-        }
-        if (includePr !== undefined) {
-          runEnv.E2E_INCLUDE_PR = String(includePr);
-          console.log(`[Server] E2E_INCLUDE_PR eklendi: ${includePr}`);
-        }
-        if (includeIssues !== undefined) {
-          runEnv.E2E_INCLUDE_ISSUES = String(includeIssues);
-          console.log(`[Server] E2E_INCLUDE_ISSUES eklendi: ${includeIssues}`);
-        }
-        if (scheduleType) {
-          runEnv.E2E_SCHEDULE_TYPE = scheduleType;
-          console.log(`[Server] E2E_SCHEDULE_TYPE eklendi: ${scheduleType}`);
-        }
-        if (weeklyDay) {
-          runEnv.E2E_WEEKDAY = weeklyDay;
-          console.log(`[Server] E2E_WEEKDAY eklendi: ${weeklyDay}`);
-        }
-        if (monthlyDay) {
-          runEnv.E2E_MONTHDAY = monthlyDay;
-          console.log(`[Server] E2E_MONTHDAY eklendi: ${monthlyDay}`);
-        }
-        if (cronExpression) {
-          runEnv.E2E_CRON_EXPR = cronExpression;
-          console.log(`[Server] E2E_CRON_EXPR eklendi: ${cronExpression}`);
-        }
-        if (includeMode) {
-          runEnv.E2E_INCLUDE_MODE = includeMode;
-          console.log(`[Server] E2E_INCLUDE_MODE eklendi: ${includeMode}`);
-        }
-        if (excludeMode) {
-          runEnv.E2E_EXCLUDE_MODE = excludeMode;
-          console.log(`[Server] E2E_EXCLUDE_MODE eklendi: ${excludeMode}`);
-        }
-
-        // Windows ortamında npx spawn edildiğinde bazen env değişkenleri alt süreçlere (Playwright) aktarılamayabilir.
-        // Bu yüzden değerleri doğrudan .env dosyasına yazarak Playwright'ın "dotenv" kütüphanesiyle bunu %100 kararlılıkla okumasını garanti ediyoruz.
         try {
           const envPath = path.join(__dirname, '.env');
-          let currentVars = {};
           if (fs.existsSync(envPath)) {
             const content = fs.readFileSync(envPath, 'utf8');
             const lines = content.split(/\r?\n/);
@@ -196,52 +180,51 @@ const server = http.createServer((req, res) => {
               if (eqIdx > 0) {
                 const key = trimmed.slice(0, eqIdx).trim();
                 const val = trimmed.slice(eqIdx + 1).trim();
-                currentVars[key] = val;
+                runEnv[key] = val;
               }
             }
           }
-          
-          if (includeMode) {
-            currentVars['E2E_INCLUDE_MODE'] = includeMode;
-          }
-          if (excludeMode) {
-            currentVars['E2E_EXCLUDE_MODE'] = excludeMode;
-          }
-
-          let output = '# Gitsec Test Automation - Cevre Degiskenleri\n';
-          for (const [key, val] of Object.entries(currentVars)) {
-            if (key && val !== undefined) {
-              output += `${key}=${val}\n`;
-              process.env[key] = val; // Sunucu belleğinde güncelle
-              runEnv[key] = val;      // Playwright sürecine geçir
-            }
-          }
-          fs.writeFileSync(envPath, output, 'utf8');
-          console.log(`[Server] .env dosyası başarıyla güncellendi: E2E_INCLUDE_MODE=${includeMode}, E2E_EXCLUDE_MODE=${excludeMode}`);
-        } catch (envErr) {
-          console.error('[Server] .env güncellenirken hata oluştu:', envErr.message);
+        } catch (e) {
+          console.error('[Server] .env okunurken hata oluştu:', e.message);
         }
 
-        activeProcess = spawn('npx', args, {
-          shell: true,
+        if (timezone) runEnv.E2E_TIMEZONE = timezone;
+        if (workspaceId) runEnv.WORKSPACE_ID = workspaceId;
+        if (baseUrl) runEnv.DASHBOARD_BASE_URL = baseUrl;
+        if (scheduleName) runEnv.E2E_SCHEDULE_NAME = scheduleName;
+        if (scheduleTime) runEnv.E2E_SCHEDULE_TIME = scheduleTime;
+        if (includeCode !== undefined) runEnv.E2E_INCLUDE_CODE = String(includeCode);
+        if (includePr !== undefined) runEnv.E2E_INCLUDE_PR = String(includePr);
+        if (includeIssues !== undefined) runEnv.E2E_INCLUDE_ISSUES = String(includeIssues);
+        if (scheduleType) runEnv.E2E_SCHEDULE_TYPE = scheduleType;
+        if (weeklyDay) runEnv.E2E_WEEKDAY = weeklyDay;
+        if (monthlyDay) runEnv.E2E_MONTHDAY = monthlyDay;
+        if (cronExpression) runEnv.E2E_CRON_EXPR = cronExpression;
+        if (includeMode) runEnv.E2E_INCLUDE_MODE = includeMode;
+        if (excludeMode) runEnv.E2E_EXCLUDE_MODE = excludeMode;
+
+        const proc = spawn(cmd, args, {
+          shell: !runWithNode,
           cwd: __dirname,
           env: runEnv
         });
 
-        activeProcess.stdout.on('data', data => {
-          broadcast('log', data.toString());
+        activeProcesses.set(targetCardId, proc);
+        broadcast('status', { running: true, runningCardIds: Array.from(activeProcesses.keys()) });
+
+        proc.stdout.on('data', data => {
+          broadcast('log', { cardId: targetCardId, text: data.toString() });
         });
 
-        activeProcess.stderr.on('data', data => {
-          broadcast('log', data.toString());
+        proc.stderr.on('data', data => {
+          broadcast('log', { cardId: targetCardId, text: data.toString() });
         });
 
-        activeProcess.on('close', code => {
-          console.log(`[Server] Test tamamlandı, çıkış kodu: ${code}`);
-          testRunning = false;
-          activeProcess = null;
-          broadcast('status', { running: false });
-          broadcast('done', { success: code === 0, code });
+        proc.on('close', code => {
+          console.log(`[Server] Test tamamlandı, cardId: ${targetCardId}, çıkış kodu: ${code}`);
+          activeProcesses.delete(targetCardId);
+          broadcast('status', { running: activeProcesses.size > 0, runningCardIds: Array.from(activeProcesses.keys()) });
+          broadcast('done', { cardId: targetCardId, success: code === 0, code });
         });
 
         res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -260,11 +243,46 @@ const server = http.createServer((req, res) => {
       const googleSessionPath = path.join(__dirname, 'playwright', '.auth', 'google-session.json');
       const exists = fs.existsSync(googleSessionPath);
       let mtime = null;
+      let expired = false;
+      let expiredReason = '';
+
       if (exists) {
         mtime = fs.statSync(googleSessionPath).mtime;
+        try {
+          const sessionData = JSON.parse(fs.readFileSync(googleSessionPath, 'utf8'));
+          const cookies = sessionData.cookies || [];
+          const now = Date.now() / 1000; // current time in seconds
+          
+          // Google'ın kritik oturum çerezleri
+          const criticalCookieNames = ['SID', 'HSID', 'SSID', 'SAPISID', 'APISID'];
+          const googleCookies = cookies.filter(c => criticalCookieNames.includes(c.name) && c.domain.includes('google.com'));
+          
+          if (googleCookies.length === 0) {
+            expired = true;
+            expiredReason = 'Kritik Google oturum çerezleri bulunamadı.';
+          } else {
+            // Süresi dolmuş çerez var mı?
+            const expiredCookie = googleCookies.find(c => c.expires && c.expires < now);
+            if (expiredCookie) {
+              expired = true;
+              expiredReason = `Oturum çerezi (${expiredCookie.name}) süresi dolmuş.`;
+            }
+          }
+          
+          // Dosya yaşını kontrol et (14 günden eskiyse expired/warning say)
+          const fileAgeDays = (Date.now() - mtime.getTime()) / (1000 * 60 * 60 * 24);
+          if (fileAgeDays > 14 && !expired) {
+            expired = true;
+            expiredReason = 'Oturum dosyası 14 günden eski olduğu için zaman aşımına uğramış olabilir.';
+          }
+        } catch (e) {
+          expired = true;
+          expiredReason = 'Oturum dosyası okunamadı veya bozuk.';
+        }
       }
+
       res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ exists, mtime }));
+      res.end(JSON.stringify({ exists, mtime, expired, expiredReason }));
     } catch (err) {
       res.writeHead(500, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: err.message }));
@@ -274,39 +292,39 @@ const server = http.createServer((req, res) => {
 
   // 3c. Google Manuel Giriş Tetikleme (API)
   if (req.url === '/api/google-login' && req.method === 'POST') {
-    if (testRunning) {
+    if (activeProcesses.has('card-google-session')) {
       res.writeHead(400, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'Zaten aktif bir test veya işlem çalışıyor!' }));
+      res.end(JSON.stringify({ error: 'Zaten aktif bir Google oturum açma işlemi çalışıyor!' }));
       return;
     }
 
-    testRunning = true;
-    broadcast('status', { running: true });
-
+    const cardId = 'card-google-session';
     const scriptPath = path.join(__dirname, 'scripts', 'login-google-manually.ts');
     console.log(`[Server] Başlatılan Google Manuel Giriş komutu: npx tsx ${scriptPath}`);
-    broadcast('log', `[DASHBOARD] Google Manuel Oturum Açma aracı başlatılıyor...\n`);
+    broadcast('log', { cardId, text: `[DASHBOARD] Google Manuel Oturum Açma aracı başlatılıyor...\n` });
 
-    activeProcess = spawn('npx', ['tsx', 'scripts/login-google-manually.ts'], {
+    const proc = spawn('npx', ['tsx', 'scripts/login-google-manually.ts'], {
       shell: true,
       cwd: __dirname,
       env: { ...process.env, FORCE_COLOR: '1' }
     });
 
-    activeProcess.stdout.on('data', data => {
-      broadcast('log', data.toString());
+    activeProcesses.set(cardId, proc);
+    broadcast('status', { running: true, runningCardIds: Array.from(activeProcesses.keys()) });
+
+    proc.stdout.on('data', data => {
+      broadcast('log', { cardId, text: data.toString() });
     });
 
-    activeProcess.stderr.on('data', data => {
-      broadcast('log', data.toString());
+    proc.stderr.on('data', data => {
+      broadcast('log', { cardId, text: data.toString() });
     });
 
-    activeProcess.on('close', code => {
+    proc.on('close', code => {
       console.log(`[Server] Google login aracı tamamlandı, çıkış kodu: ${code}`);
-      testRunning = false;
-      activeProcess = null;
-      broadcast('status', { running: false });
-      broadcast('done', { success: code === 0, code });
+      activeProcesses.delete(cardId);
+      broadcast('status', { running: activeProcesses.size > 0, runningCardIds: Array.from(activeProcesses.keys()) });
+      broadcast('done', { cardId, success: code === 0, code });
     });
 
     res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -316,20 +334,46 @@ const server = http.createServer((req, res) => {
 
   // 4. Test Durdurma (API)
   if (req.url === '/api/stop' && req.method === 'POST') {
-    if (activeProcess) {
-      // Windows ortamında alt süreç ağacını öldürmek için taskkill kullanalım
-      if (process.platform === 'win32') {
-        spawn('taskkill', ['/pid', activeProcess.pid, '/f', '/t']);
+    let body = '';
+    req.on('data', chunk => {
+      body += chunk.toString();
+    });
+
+    req.on('end', () => {
+      const { cardId } = JSON.parse(body || '{}');
+      
+      const killProcess = (proc, cId) => {
+        if (process.platform === 'win32') {
+          spawn('taskkill', ['/pid', proc.pid, '/f', '/t']);
+        } else {
+          proc.kill('SIGINT');
+        }
+        broadcast('log', { cardId: cId, text: '\n[DASHBOARD] Test süreci kullanıcı tarafından durduruldu.\n' });
+      };
+
+      if (cardId) {
+        const proc = activeProcesses.get(cardId);
+        if (proc) {
+          killProcess(proc, cardId);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: true, message: `Test durduruldu: ${cardId}` }));
+        } else {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: `Çalışan aktif test bulunamadı: ${cardId}` }));
+        }
       } else {
-        activeProcess.kill('SIGINT');
+        if (activeProcesses.size > 0) {
+          for (const [cId, proc] of activeProcesses.entries()) {
+            killProcess(proc, cId);
+          }
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ success: true, message: 'Tüm test süreçleri durduruldu.' }));
+        } else {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Çalışan aktif test bulunamadı.' }));
+        }
       }
-      broadcast('log', '\n[DASHBOARD] Test süreci kullanıcı tarafından durduruldu.\n');
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ success: true, message: 'Test durduruldu.' }));
-    } else {
-      res.writeHead(400, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'Çalışan aktif test bulunamadı.' }));
-    }
+    });
     return;
   }
 

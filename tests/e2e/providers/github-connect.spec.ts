@@ -1,117 +1,287 @@
 import { test, expect } from '../../fixtures/test';
-import { ProviderPage } from '../../../pages/ProviderPage';
-import { GithubLoginPage } from '../../../pages/GithubLoginPage';
+import { ProviderPage } from '../../pages/ProviderPage';
+import { GithubLoginPage } from '../../pages/GithubLoginPage';
 import type { Page } from '@playwright/test';
+import { requireEnv } from '../../support/require-env';
+import { checkIfOnGithubMainPageAndClose } from '../../support/github-oauth-helpers';
 
-function requireEnv(name: string): string {
-  const value = process.env[name];
-  if (!value) {
-    throw new Error(`Missing required environment variable: ${name}`);
-  }
-  return value;
-}
+async function handleUninstallIfAlreadyInstalled(
+  popup: Page,
+  page: Page,
+  providerPage: ProviderPage
+): Promise<Page> {
+  if (popup.isClosed()) return popup;
 
-// GitHub settings/installations sayfasına veya ana sayfasına ulaşıldığını kontrol eden ve popup'ı kapatıp testi bitiren yardımcı fonksiyon
-async function checkIfOnGithubMainPageAndClose(popup: Page): Promise<boolean> {
-  if (popup.isClosed()) return true;
-  
   const u = popup.url();
+  const isGithubUrl = /github\.com/i.test(u);
+  if (!isGithubUrl) {
+    return popup;
+  }
+
+  const uninstallBtn = popup.locator('button')
+    .filter({ hasText: /Uninstall|Kaldır|Yüklemeyi kaldır|Yüklemeyi Kaldır/i })
+    .or(popup.locator('input[type="submit"][value*="Uninstall"]'))
+    .or(popup.locator('input[type="submit"][value*="Kaldır"]'))
+    .or(popup.locator('input[type="submit"][value*="Yüklemeyi kaldır"]'))
+    .or(popup.locator('button[value*="Uninstall"]'))
+    .or(popup.locator('button[value*="Kaldır"]'))
+    .first();
+  const hasUninstall = await uninstallBtn.waitFor({ state: 'visible', timeout: 5000 }).then(() => true).catch(() => false);
   
-  // Kullanıcının ekran görüntüsünde belirttiği "github.com/settings/installations" veya türevi yetki sayfalarını yakalar
-  const isGithubAuthorizedPage = 
-    /settings\/installations/i.test(u) || 
-    /github\.com\/settings\/installations/i.test(u) || 
-    /github\.com\/apps\/[^/]+\/installations/i.test(u) ||
+  if (hasUninstall) {
+    console.log('⚠️ [UYARI] GitHub uygulaması başka bir hesap veya çalışma alanında zaten kurulu. Temiz bir test için uygulama kaldırılıyor...');
+    
+    // Accept confirm dialogs automatically
+    popup.on('dialog', async dialog => {
+      console.log(`[github] 👆 [ONAY] GitHub onay penceresi kabul ediliyor... (Mesaj: "${dialog.message()}")`);
+      await dialog.accept().catch(() => {});
+    });
+
+    await uninstallBtn.scrollIntoViewIfNeeded().catch(() => {});
+    await uninstallBtn.click({ force: true });
+    
+    console.log('⏳ [BEKLEME] Uygulamanın kaldırılması (Uninstall) bekleniyor...');
+    await expect(uninstallBtn).toBeHidden({ timeout: 15000 }).catch(() => {});
+    if (!popup.isClosed()) {
+      await popup.close().catch(() => {});
+    }
+
+    console.log('🔄 [YENİLEME] GitSec "Add Provider" sayfası yeniden yükleniyor...');
+    await page.reload({ waitUntil: 'load' });
+
+    console.log('👆 [TIKLAMA] Yeni bir yetkilendirme penceresi açmak için GitHub seçeneğine tekrar tıklanıyor...');
+    const [newPopup] = await Promise.all([page.waitForEvent('popup'), providerPage.selectGithub()]);
+    await newPopup.waitForLoadState('domcontentloaded');
+    await newPopup.waitForURL(/.*github\.com.*/);
+    return newPopup;
+  }
+
+  const isGithubHomeOrDashboard = 
     /github\.com\/?$/i.test(u) || 
     /github\.com\/dashboard/i.test(u) || 
-    /github\.com\/home/i.test(u) || 
-    (u.includes('github.com') && 
-     !u.includes('/login') && 
-     !u.includes('/sessions/two-factor'));
+    /github\.com\/home/i.test(u);
 
-  if (isGithubAuthorizedPage) {
-    console.log(`🎉 [OAuth] Hedef GitHub yetki/kurulum sayfasına ulaşıldı: "${u}"`);
-    console.log('ℹ️ Yetkilendirme/Kurulum başarılı sayıldı. Popup güvenli bir şekilde kapatılıyor...');
-    await popup.close().catch(() => {});
-    console.log('✅ GitHub bağlantısı başarıyla doğrulandı ve test sonlandırıldı.');
-    return true;
+  if (isGithubHomeOrDashboard) {
+    console.log('⚠️ [UYARI] GitHub ana sayfasına/paneline yönlendirildi. Uygulamayı kaldırmak için doğrudan entegrasyon ayarlarına gidiliyor...');
+    await popup.goto('https://github.com/settings/installations', { waitUntil: 'domcontentloaded' }).catch(() => {});
+
+    const configureLink = popup.locator('a[href*="/settings/installations/"]').first();
+    const hasConfigureLink = await configureLink.waitFor({ state: 'visible', timeout: 5000 }).then(() => true).catch(() => false);
+    if (hasConfigureLink) {
+      console.log('👆 [TIKLAMA] Kurulu uygulama yapılandırma bağlantısı bulundu, tıklanıyor...');
+      await configureLink.click();
+      await popup.waitForLoadState('domcontentloaded');
+      
+      const innerUninstallBtn = popup.locator('button')
+        .filter({ hasText: /Uninstall|Kaldır|Yüklemeyi kaldır|Yüklemeyi Kaldır/i })
+        .or(popup.locator('input[type="submit"][value*="Uninstall"]'))
+        .or(popup.locator('input[type="submit"][value*="Kaldır"]'))
+        .or(popup.locator('input[type="submit"][value*="Yüklemeyi kaldır"]'))
+        .or(popup.locator('button[value*="Uninstall"]'))
+        .or(popup.locator('button[value*="Kaldır"]'))
+        .first();
+      const hasInnerUninstall = await innerUninstallBtn.waitFor({ state: 'visible', timeout: 5000 }).then(() => true).catch(() => false);
+      if (hasInnerUninstall) {
+        console.log('⚠️ [UYARI] Uygulama, GitHub ayarlar sayfası üzerinden kaldırılıyor...');
+        popup.on('dialog', async dialog => {
+          console.log(`[github] 👆 [ONAY] GitHub onay penceresi kabul ediliyor... (Mesaj: "${dialog.message()}")`);
+          await dialog.accept().catch(() => {});
+        });
+        await innerUninstallBtn.scrollIntoViewIfNeeded().catch(() => {});
+        await innerUninstallBtn.click({ force: true });
+        await expect(innerUninstallBtn).toBeHidden({ timeout: 15000 }).catch(() => {});
+      }
+    } else {
+      console.log('🔍 [KONTROL] Mevcut aktif kurulumlar listesinde herhangi bir öğe bulunamadı.');
+    }
+
+    if (!popup.isClosed()) {
+      await popup.close().catch(() => {});
+    }
+
+    console.log('🔄 [YENİLEME] GitSec "Add Provider" sayfası yeniden yükleniyor...');
+    await page.reload({ waitUntil: 'load' });
+
+    console.log('👆 [TIKLAMA] Temiz bir popup açmak için GitHub butonuna tekrar tıklanıyor...');
+    const [newPopup] = await Promise.all([page.waitForEvent('popup'), providerPage.selectGithub()]);
+    await newPopup.waitForLoadState('domcontentloaded');
+    await newPopup.waitForURL(/.*github\.com.*/);
+    return newPopup;
   }
-  return false;
+
+  return popup;
+}
+
+async function verifyDashboardConnection(providerPage: ProviderPage) {
+  console.log('🔍 [KONTROL] GitHub sağlayıcısının GitSec paneli üzerinde aktifleştiği doğrulanıyor...');
+  await expect(async () => {
+    const url = providerPage.page.url();
+    if (url.includes('/repositories/github')) {
+      console.log('🎉 [BAŞARILI] GitHub bağlantısı başarıyla doğrulandı (Kullanıcı /repositories/github sayfasına yönlendirildi).');
+      return;
+    }
+
+    const isConnected = await providerPage.isGithubAlreadyConnectedOnAddProvider();
+    if (isConnected) return;
+
+    console.log('⏳ [BEKLEME] GitHub sağlayıcısı henüz aktifleşmedi, sayfa yenileniyor...');
+    if (!url.includes('/repositories/add')) {
+      await providerPage.goToAddProviderPage().catch(() => {});
+    } else {
+      await providerPage.page.reload({ waitUntil: 'load' });
+    }
+    throw new Error('Not connected yet');
+  }).toPass({ timeout: 40000, intervals: [3000] });
+  console.log('🎉 [BAŞARILI] GitHub sağlayıcı bağlantısı başarıyla doğrulandı.');
 }
 
 test.describe('Provider Entegrasyonları', () => {
-  test.setTimeout(90000);
+  test.setTimeout(240000);
 
-  test('GitHub provider bagli olsa da popup acilip kapanmali', async ({ page }) => {
-    const githubUsername = process.env.GITHUB_TEST_USER ?? requireEnv('E2E_USER_EMAIL');
-    const githubPassword = process.env.GITHUB_TEST_PASSWORD ?? requireEnv('E2E_USER_PASSWORD');
+  test('GitHub provider bagli olsa da popup acilip kapanmali', { tag: '@critical' }, async ({ page }) => {
+    const githubUsername = requireEnv('GITHUB_TEST_USER');
+    const githubPassword = requireEnv('GITHUB_TEST_PASSWORD');
     const providerPage = new ProviderPage(page);
 
-    console.log('🚀 1. Dashboard ana sayfasına gidiliyor...');
+    console.log('🚀 [GİRİŞ] 1. GitSec Dashboard ana sayfasına gidiliyor...');
     await providerPage.navigateToDashboard();
 
-    console.log('👆 2. Sidebar üzerinden Add Provider sayfasına geçiliyor...');
+    console.log('📍 [NAVİGASYON] 2. Sol menü (Sidebar) üzerinden "Add Provider" sayfasına geçiliyor...');
     await providerPage.goToAddProviderPage();
 
-    console.log('👆 3. Github seçeneğine tıklanıyor ve Popup bekleniyor...');
-    const [popup] = await Promise.all([page.waitForEvent('popup'), providerPage.selectGithub()]);
+    const isAlreadyConnected = await providerPage.isGithubAlreadyConnectedOnAddProvider();
+    console.log(`🔍 [KONTROL] GitHub mevcut bağlantı durumu kontrol edildi: ${isAlreadyConnected ? 'BAĞLI (Active)' : 'BAĞLI DEĞİL'}`);
 
-    const popupGithubPage = new GithubLoginPage(popup);
-    console.log('🔗 4. GitHub Popup Penceresinin yüklenmesi bekleniyor...');
+    if (isAlreadyConnected) {
+      console.log('⚠️ [UYARI] GitHub bağlantısı zaten kurulu. Temiz bir test akışı sağlamak için mevcut bağlantı kaldırılıyor (Remove)...');
+      page.once('dialog', async dialog => {
+        console.log(`[dialog] 👆 [ONAY] GitSec onay penceresi kabul ediliyor... (Mesaj: "${dialog.message()}")`);
+        await dialog.accept().catch(() => {});
+      });
+      const githubRow = page.getByRole('row', { name: /GitHub/i }).first();
+      const removeBtn = githubRow.locator('button, [role="button"]').filter({ hasText: /Remove|Kaldır/i }).first();
+      if (await removeBtn.isVisible().catch(() => false)) {
+        await removeBtn.click();
+        
+        // Custom confirmation modal check
+        const confirmBtn = page.locator('button').filter({ hasText: /Confirm|Remove|Yes|Kaldır|Evet/i }).first();
+        if (await confirmBtn.isVisible().catch(() => false)) {
+          await confirmBtn.click().catch(() => {});
+        }
+        
+        console.log('⏳ [BEKLEME] Bağlantının kaldırılması (Remove) bekleniyor...');
+        await expect(async () => {
+          await page.reload({ waitUntil: 'load' });
+          const isConnected = await providerPage.isGithubAlreadyConnectedOnAddProvider();
+          expect(isConnected).toBe(false);
+        }).toPass({ timeout: 15000, intervals: [2000] });
+      }
+    }
+
+    console.log('👆 [TIKLAMA] 3. "GitHub" seçeneğine tıklanıyor ve popup penceresi açılması bekleniyor...');
+    let [popup] = await Promise.all([page.waitForEvent('popup'), providerPage.selectGithub()]);
+
+    let popupGithubPage = new GithubLoginPage(popup);
+    console.log('⏳ [BEKLEME] 4. GitHub popup penceresinin yüklenmesi bekleniyor... (Yönlendirme: github.com)');
     await popup.waitForLoadState('domcontentloaded');
     await popup.waitForURL(/.*github\.com.*/);
 
+    // EĞER ZATEN KURULUYSA (başka bir hesap/workspace için veya testi sıfırlamak için) UNINSTALL EDELİM:
+    popup = await handleUninstallIfAlreadyInstalled(popup, page, providerPage);
+    popupGithubPage = new GithubLoginPage(popup);
+
     // İlk yüklemede aranan sayfaya yönlendirildiyse erken çıkış yap
     if (await checkIfOnGithubMainPageAndClose(popup)) {
+      await verifyDashboardConnection(providerPage);
       return;
     }
 
     const loginInput = popup.locator('input[name="login"]');
     if (await loginInput.isVisible().catch(() => false)) {
-      console.log('🔒 5. GitHub Login ekranına şifre yazılıyor...');
+      console.log(`🚀 [GİRİŞ] 5. GitHub login formu tespit edildi. Kullanıcı adı ve şifre giriliyor... (Hesap: ${githubUsername})`);
       const loginOk = await popupGithubPage.loginAndHandleTwoFactor(githubUsername, githubPassword);
       if (!loginOk) {
-        console.log('❌ GitHub 2FA otomasyonla geçilemedi; test OAuth adımını atlıyor.');
-        return;
+        throw new Error('❌ GitHub login veya 2FA otomasyonla geçilemedi.');
       }
     } else {
-      console.log('ℹ️ Login ekranı görünmedi (zaten oturum açık/yetkili olabilir).');
+      console.log('🔍 [KONTROL] GitHub login formu çıkmadı. (Oturum zaten açık olabilir)');
       const twoFaOk = await popupGithubPage.handleTwoFactorAuthentication();
       if (!twoFaOk) {
-        console.log('❌ Açık oturumda 2FA otomasyonla geçilemedi.');
-        return;
+        throw new Error('❌ Açık oturumda 2FA otomasyonla geçilemedi.');
       }
     }
 
     // Giriş/2FA/Mail doğrulama sonrasında hedeflenen sayfaya atıldıysa hemen erken çıkış yap
+    popup = await handleUninstallIfAlreadyInstalled(popup, page, providerPage);
+    popupGithubPage = new GithubLoginPage(popup);
+
     if (await checkIfOnGithubMainPageAndClose(popup)) {
+      await verifyDashboardConnection(providerPage);
       return;
     }
 
-    console.log('📦 6. Install → sudo e-posta → Install...');
+    console.log('📦 [İŞLEM] 6. GitHub Uygulama İzinleri ve Kurulum (Install) akışı başlatılıyor...');
     const flowOk = await popupGithubPage.completePermissionsInstallFlow();
-
+    if (!flowOk) {
+      throw new Error('❌ GitHub izin/kurulum akışı tamamlanamadı.');
+      }
+    
     // Akış tamamlandıktan sonra hedeflenen sayfaya atıldıysa popup'ı kapat ve bitir
     if (await checkIfOnGithubMainPageAndClose(popup)) {
+      await verifyDashboardConnection(providerPage);
       return;
     }
 
     if (popup.isClosed()) {
-      console.log('✅ Popup kapandı.');
-    } else if (flowOk) {
-      await popup.waitForEvent('close', { timeout: 30_000 }).catch(() => {});
+      console.log('🎉 [BAŞARILI] Popup penceresi başarıyla kapandı.');
     } else {
       const u = popup.url();
       const onInstallations =
         /github\.com\/settings\/installations/.test(u) || /github\.com\/apps\/[^/]+\/installations/.test(u);
       if (onInstallations) {
-        console.log('ℹ️ GitHub installations; popup kapatılıyor.');
+        console.log('🧹 [OTURUM] GitHub installations ayarlar sayfasına gelindi, popup kapatılıyor...');
         if (!popup.isClosed()) await popup.close();
       } else {
-        console.log('ℹ️ Install butonu yok, URL:', u);
+        throw new Error(`❌ Install butonu yok ve akış tamamlanamadı. (Son URL: ${u})`);
       }
     }
 
-    console.log('✅ Popup akışı tamamlandı, test burada sonlanıyor.');
+    await verifyDashboardConnection(providerPage);
+    console.log('🎉 [BAŞARILI] GitHub bağlantı/popup test akışı başarıyla tamamlandı.');
+  });
+
+  test('GitHub Bağla butonuna çoklu spam tıklama yapıldığında tek bir OAuth penceresi açılmalı', async ({ page }) => {
+    const providerPage = new ProviderPage(page);
+    await providerPage.navigateToDashboard();
+    await providerPage.goToAddProviderPage();
+
+    const githubActionButton = page.locator('button, [role="button"]')
+      .filter({ hasText: /Install the GitSec app and grant repository permissions|Configure App/i })
+      .first();
+
+    await githubActionButton.waitFor({ state: 'visible', timeout: 20000 });
+
+    const popups: any[] = [];
+    page.context().on('page', (p) => {
+      popups.push(p);
+    });
+
+    // Spam click the button 5 times very rapidly
+    for (let i = 0; i < 5; i++) {
+      githubActionButton.click({ force: true }).catch(() => {});
+    }
+
+    await expect(page.locator('main').first()).toBeVisible({ timeout: 10000 });
+
+    // Verify we didn't open multiple OAuth windows (maximum 1 popup page)
+    console.log(`ℹ️ Açılan popup sayısı: ${popups.length}`);
+    expect(popups.length).toBeLessThanOrEqual(1);
+    
+    // Cleanup popups
+    for (const p of popups) {
+      if (!p.isClosed()) {
+        await p.close().catch(() => {});
+      }
+    }
   });
 });

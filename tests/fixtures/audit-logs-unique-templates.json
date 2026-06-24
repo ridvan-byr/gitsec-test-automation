@@ -1,0 +1,272 @@
+[
+  {
+    "category": "Auth",
+    "action": "Logged In",
+    "normalizedDescription": "{actor} logged in successfully.",
+    "exampleDescription": "Gitsec Testt logged in successfully.",
+    "exampleActor": "Gitsec Testt",
+    "exampleIpAddress": "78.189.48.21",
+    "expandedDetailsText": "EVENT ID\n10121\nIP ADDRESS\n78.189.48.21\nUSER AGENT\nMozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36\nTIMESTAMP\n2026-06-04 15:07:35\nDESCRIPTION\nGitsec Testt logged in successfully.\nDETAILS\nOPERATOR\nOPERATOR NAME\nGitsec\nOPERATOR SURNAME\nTestt\nGENERAL\nEMAIL\n-\nLOGIN METHOD\n-"
+  },
+  {
+    "category": "Schedule",
+    "action": "Triggered Manually",
+    "normalizedDescription": "Backup schedule named gitsectest-cmd/{repoName} - {datetime} was manually triggered by {actor}.",
+    "exampleDescription": "Backup schedule named gitsectest-cmd/e2e-restore-1780564621000 - 2026-06-04 11:54:53 was manually triggered by Gitsec Testt.",
+    "exampleActor": "Gitsec Testt",
+    "exampleIpAddress": "78.189.48.21",
+    "expandedDetailsText": "EVENT ID\n10118\nIP ADDRESS\n78.189.48.21\nUSER AGENT\nMozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.7727.15 Safari/537.36\nTIMESTAMP\n2026-06-04 14:54:57\nDESCRIPTION\nBackup schedule named gitsectest-cmd/e2e-restore-1780564621000 - 2026-06-04 11:54:53 was manually triggered by Gitsec Testt.\nDETAILS\nOPERATOR\nOPERATOR NAME\nGitsec\nOPERATOR SURNAME\nTestt\nREPOSITORY\nREPOSITORY ID\n3387\nSCHEDULE\nSCHEDULE ID\n1699\nSCHEDULE TYPE\nBackup\nSTORAGE\nSTORAGE PROVIDERS\n-\nGENERAL\nSCHEDULE\ngitsectest-cmd/e2e-restore-1780564621000 - 2026-06-04 11:54:53\nWORKSPACE\nGitsec's Default Workspace\nREPOSITORY\ngitsectest-cmd/e2e-restore-1780564621000\nTRIGGER SOURCE\nManual"
+  },
+  {
+    "category": "Backup",
+    "action": "Started",
+    "normalizedDescription": "Backup started for Repository named gitsectest-cmd/{repoName}.",
+    "exampleDescription": "Backup started for Repository named gitsectest-cmd/e2e-restore-1780564621000.",
+    "exampleActor": "Gitsec Testt",
+    "exampleIpAddress": "78.189.48.21",
+    "expandedDetailsText": "EVENT ID\n10117\nIP ADDRESS\n78.189.48.21\nUSER AGENT\nMozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.7727.15 Safari/537.36\nTIMESTAMP\n2026-06-04 14:54:56\nDESCRIPTION\nBackup started for Repository named gitsectest-cmd/e2e-restore-1780564621000.\nDETAILS\nOPERATOR\nOPERATOR NAME\nGitsec\nOPERATOR SURNAME\nTestt\nREPOSITORY\nREPOSITORY ID\n3387\nSCHEDULE\nSCHEDULE ID\n1699\nGENERAL\nWORKSPACE\nGitsec's Default Workspace\nREPOSITORY\ngitsectest-cmd/e2e-restore-1780564621000\nEXECUTION ID\n0\nTRIGGER TYPE\nOnDemand\nCORRELATION ID\n00000000-0000-0000-0000-000000000000\nTRIGGER SOURCE\nOnDemand"
+  },
+  {
+    "category": "Repository",
+    "action": "Included",
+    "normalizedDescription": "{actor} included repository gitsectest-cmd/{repoName} in the active backup scope.",
+    "exampleDescription": "Gitsec Testt included repository gitsectest-cmd/e2e-restore-1780564621000 in the active backup scope.",
+    "exampleActor": "Gitsec Testt",
+    "exampleIpAddress": "78.189.48.21",
+    "expandedDetailsText": "EVENT ID\n10116\nIP ADDRESS\n78.189.48.21\nUSER AGENT\nMozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.7727.15 Safari/537.36\nTIMESTAMP\n2026-06-04 14:54:53\nDESCRIPTION\nGitsec Testt included repository gitsectest-cmd/e2e-restore-1780564621000 in the active backup scope.\nDETAILS\nOPERATOR\nOPERATOR NAME\nGitsec\nOPERATOR SURNAME\nTestt\nREPOSITORY\nREPOSITORY ID\n3387\nGENERAL\nPROVIDER\nGitHub\nWORKSPACE\nGitsec's Default Workspace\nREPOSITORY\ngitsectest-cmd/e2e-restore-1780564621000"
+  },
+  {
+    "category": "Repository",
+    "action": "Synchronized",
+    "normalizedDescription": "Repository named gitsectest-cmd/{repoName} has been synchronized.",
+    "exampleDescription": "Repository named gitsectest-cmd/e2e-restore-1780564621000 has been synchronized.",
+    "exampleActor": "—",
+    "exampleIpAddress": "",
+    "expandedDetailsText": "EVENT ID\n10101\nIP ADDRESS\nN/A\nUSER AGENT\n—\nTIMESTAMP\n2026-06-04 12:47:46\nDESCRIPTION\nRepository named gitsectest-cmd/e2e-restore-1780564621000 has been synchronized.\nDETAILS\nREPOSITORY\nREPOSITORY ID\n3387\nGENERAL\nPROVIDER\nGitHub\nWORKSPACE\nGitsec's Default Workspace\nREPOSITORY\ngitsectest-cmd/e2e-restore-1780564621000\nBRANCH COUNT\n0\nDEFAULT BRANCH\nmain"
+  },
+  {
+    "category": "Github Integration",
+    "action": "Authorized",
+    "normalizedDescription": "GitHub integration authorized by {actor}.",
+    "exampleDescription": "GitHub integration authorized by Gitsec Testt.",
+    "exampleActor": "Gitsec Testt",
+    "exampleIpAddress": "",
+    "expandedDetailsText": "EVENT ID\n10075\nIP ADDRESS\nN/A\nUSER AGENT\n—\nTIMESTAMP\n2026-06-04 12:47:43\nDESCRIPTION\nGitHub integration authorized by Gitsec Testt.\nDETAILS\nOPERATOR\nOPERATOR ID\n797\nOPERATOR NAME\nGitsec\nOPERATOR SURNAME\nTestt\nINSTALLATION\nINSTALLATION ID\n569\nINSTALLATION TYPE\nBackup\nGENERAL\nPROVIDER\nGitHub\nGITHUB USERNAME\ngitsectest-cmd\nEXTERNAL INSTALLATION ID\n137934975"
+  },
+  {
+    "category": "Github Integration",
+    "action": "Disconnected",
+    "normalizedDescription": "GitHub integration has been disconnected.",
+    "exampleDescription": "GitHub integration has been disconnected.",
+    "exampleActor": "—",
+    "exampleIpAddress": "",
+    "expandedDetailsText": "EVENT ID\n10071\nIP ADDRESS\nN/A\nUSER AGENT\n—\nTIMESTAMP\n2026-06-04 12:39:37\nDESCRIPTION\nGitHub integration has been disconnected.\nDETAILS\nGENERAL\nPROVIDER\nGitHub\nINSTALLATION\ngitsectest-cmd"
+  },
+  {
+    "category": "Repository",
+    "action": "Excluded",
+    "normalizedDescription": "{actor} excluded repository gitsectest-cmd/{actor} from the active backup scope.",
+    "exampleDescription": "Gitsec Testt excluded repository gitsectest-cmd/tunahantest from the active backup scope.",
+    "exampleActor": "Gitsec Testt",
+    "exampleIpAddress": "78.189.48.21",
+    "expandedDetailsText": "EVENT ID\n10067\nIP ADDRESS\n78.189.48.21\nUSER AGENT\nMozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36\nTIMESTAMP\n2026-06-04 12:36:50\nDESCRIPTION\nGitsec Testt excluded repository gitsectest-cmd/tunahantest from the active backup scope.\nDETAILS\nOPERATOR\nOPERATOR NAME\nGitsec\nOPERATOR SURNAME\nTestt\nREPOSITORY\nREPOSITORY ID\n3144\nGENERAL\nPROVIDER\nGitHub\nWORKSPACE\nGitsec's Default Workspace\nREPOSITORY\ngitsectest-cmd/tunahantest"
+  },
+  {
+    "category": "Storage Provider",
+    "action": "Added",
+    "normalizedDescription": "Storage provider {providerType}-E2E-{timestamp} ({providerType}) has been added by {actor}.",
+    "exampleDescription": "Storage provider OneDrive-E2E-1780564759600 (OneDrivePersonal) has been added by Gitsec Testt.",
+    "exampleActor": "Gitsec Testt",
+    "exampleIpAddress": "78.189.48.21",
+    "expandedDetailsText": "EVENT ID\n10064\nIP ADDRESS\n78.189.48.21\nUSER AGENT\nMozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.7727.15 Safari/537.36\nTIMESTAMP\n2026-06-04 12:20:22\nDESCRIPTION\nStorage provider OneDrive-E2E-1780564759600 (OneDrivePersonal) has been added by Gitsec Testt.\nDETAILS\nOPERATOR\nOPERATOR NAME\nGitsec\nOPERATOR SURNAME\nTestt\nPROVIDER\nPROVIDER ID\n243\nPROVIDER NAME\nOneDrive-E2E-1780564759600\nGENERAL\nBUCKET\n-\nREGION\n-\nPROVIDER\nOneDrivePersonal\nDEFAULT PATH\n-"
+  },
+  {
+    "category": "Storage Provider",
+    "action": "Creation Test Succeeded",
+    "normalizedDescription": "System connection test passed for storage provider {providerType}-E2E-{timestamp} ({providerType}) during creation.",
+    "exampleDescription": "System connection test passed for storage provider OneDrive-E2E-1780564759600 (OneDrivePersonal) during creation.",
+    "exampleActor": "—",
+    "exampleIpAddress": "78.189.48.21",
+    "expandedDetailsText": "EVENT ID\n10065\nIP ADDRESS\n78.189.48.21\nUSER AGENT\nMozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.7727.15 Safari/537.36\nTIMESTAMP\n2026-06-04 12:20:22\nDESCRIPTION\nSystem connection test passed for storage provider OneDrive-E2E-1780564759600 (OneDrivePersonal) during creation.\nDETAILS\nPROVIDER\nPROVIDER ID\n243\nPROVIDER NAME\nOneDrive-E2E-1780564759600\nGENERAL\nPROVIDER\nOneDrivePersonal"
+  },
+  {
+    "category": "Storage Provider",
+    "action": "Test Succeeded",
+    "normalizedDescription": "{actor} successfully tested the connection to {providerType} storage provider .",
+    "exampleDescription": "Gitsec Testt successfully tested the connection to OneDrivePersonal storage provider .",
+    "exampleActor": "Gitsec Testt",
+    "exampleIpAddress": "78.189.48.21",
+    "expandedDetailsText": "EVENT ID\n10063\nIP ADDRESS\n78.189.48.21\nUSER AGENT\nMozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.7727.15 Safari/537.36\nTIMESTAMP\n2026-06-04 12:20:02\nDESCRIPTION\nGitsec Testt successfully tested the connection to OneDrivePersonal storage provider .\nDETAILS\nOPERATOR\nOPERATOR NAME\nGitsec\nOPERATOR SURNAME\nTestt\nPROVIDER\nPROVIDER ID\n0\nPROVIDER NAME\n-\nGENERAL\nPROVIDER\nOneDrivePersonal"
+  },
+  {
+    "category": "Storage Provider",
+    "action": "O Auth Connected",
+    "normalizedDescription": "OAuth authorization for {providerType} completed successfully by {actor}. Account:",
+    "exampleDescription": "OAuth authorization for OneDrivePersonal completed successfully by Gitsec Testt. Account:",
+    "exampleActor": "Gitsec Testt",
+    "exampleIpAddress": "78.189.48.21",
+    "expandedDetailsText": "EVENT ID\n10062\nIP ADDRESS\n78.189.48.21\nUSER AGENT\nnode\nTIMESTAMP\n2026-06-04 12:19:50\nDESCRIPTION\nOAuth authorization for OneDrivePersonal completed successfully by Gitsec Testt. Account:\nDETAILS\nOPERATOR\nOPERATOR NAME\nGitsec\nOPERATOR SURNAME\nTestt\nPROVIDER\nPROVIDER ID\n0\nGENERAL\nSCOPES\n-\nPROVIDER\nOneDrivePersonal\nACCOUNT NAME\n-"
+  },
+  {
+    "category": "Storage Provider",
+    "action": "Deleted",
+    "normalizedDescription": "Storage provider named {providerType} has been deleted by {actor}.",
+    "exampleDescription": "Storage provider named OneDrivePersonal has been deleted by Gitsec Testt.",
+    "exampleActor": "Gitsec Testt",
+    "exampleIpAddress": "78.189.48.21",
+    "expandedDetailsText": "EVENT ID\n10061\nIP ADDRESS\n78.189.48.21\nUSER AGENT\nMozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.7727.15 Safari/537.36\nTIMESTAMP\n2026-06-04 12:19:13\nDESCRIPTION\nStorage provider named OneDrivePersonal has been deleted by Gitsec Testt.\nDETAILS\nOPERATOR\nOPERATOR NAME\nGitsec\nOPERATOR SURNAME\nTestt\nPROVIDER\nPROVIDER ID\n239\nGENERAL\nBUCKET\nGitSec.io\nREGION\n-\nPROVIDER\nOneDrivePersonal\nRELATED BACKUP INFO\n-\nRELATED REPOSITORY INFO\n-"
+  },
+  {
+    "category": "Restore",
+    "action": "Succeeded",
+    "normalizedDescription": "Restore from repository named gitsectest-cmd/{actor} to target repository named gitsectest-cmd/{repoName} completed successfully.",
+    "exampleDescription": "Restore from repository named gitsectest-cmd/tunahantest to target repository named gitsectest-cmd/e2e-restore-1780564621000 completed successfully.",
+    "exampleActor": "—",
+    "exampleIpAddress": "",
+    "expandedDetailsText": "EVENT ID\n10058\nIP ADDRESS\nN/A\nUSER AGENT\n—\nTIMESTAMP\n2026-06-04 12:18:42\nDESCRIPTION\nRestore from repository named gitsectest-cmd/tunahantest to target repository named gitsectest-cmd/e2e-restore-1780564621000 completed successfully.\nDETAILS\nOPERATOR\nOPERATOR NAME\n-\nOPERATOR SURNAME\n-\nTARGET\nTARGET REPOSITORY\ngitsectest-cmd/e2e-restore-1780564621000\nSOURCE\nSOURCE REPOSITORY\ngitsectest-cmd/tunahantest\nSOURCE REPOSITORY ID\n3144\nGENERAL\nDURATION\n00:01:33\nWORKSPACE\nGitsec's Default Workspace\nSNAPSHOT ID\n-\nEXECUTION ID\n10457\nCORRELATION ID\n50e1520c-c15e-4bb2-b551-f39174610e0a\nTRIGGER SOURCE\nOnDemand"
+  },
+  {
+    "category": "Workspace",
+    "action": "Repository Added",
+    "normalizedDescription": "Repository named {repoName} has been added to workspace named {actor}'s Default Workspace.",
+    "exampleDescription": "Repository named e2e-restore-1780564621000 has been added to workspace named Gitsec's Default Workspace.",
+    "exampleActor": "—",
+    "exampleIpAddress": "",
+    "expandedDetailsText": "EVENT ID\n10047\nIP ADDRESS\nN/A\nUSER AGENT\n—\nTIMESTAMP\n2026-06-04 12:17:18\nDESCRIPTION\nRepository named e2e-restore-1780564621000 has been added to workspace named Gitsec's Default Workspace.\nDETAILS\nREPOSITORY\nREPOSITORY ID\n3387\nINSTALLATION\nINSTALLATION ID\n550\nGENERAL\nPROVIDER\nGitHub\nWORKSPACE\nGitsec's Default Workspace\nREPOSITORY\ne2e-restore-1780564621000\nVISIBILITY\nPrivate\nINSTALLATION\ngitsectest-cmd"
+  },
+  {
+    "category": "Repository",
+    "action": "Created",
+    "normalizedDescription": "Repository named gitsectest-cmd/{repoName} has been created.",
+    "exampleDescription": "Repository named gitsectest-cmd/e2e-restore-1780564621000 has been created.",
+    "exampleActor": "—",
+    "exampleIpAddress": "",
+    "expandedDetailsText": "EVENT ID\n10046\nIP ADDRESS\nN/A\nUSER AGENT\n—\nTIMESTAMP\n2026-06-04 12:17:18\nDESCRIPTION\nRepository named gitsectest-cmd/e2e-restore-1780564621000 has been created.\nDETAILS\nOPERATOR\nOPERATOR ID\n0\nOPERATOR NAME\n-\nOPERATOR SURNAME\n-\nOPERATOR ROLE NAME\n-\nREPOSITORY\nREPOSITORY ID\n3387\nWORKSPACE\nWORKSPACE ID\n0\nGENERAL\nREPOSITORY\ngitsectest-cmd/e2e-restore-1780564621000\nDESCRIPTION\nE2E Toplu Entegrasyon Restore açıklaması.\nDEFAULT BRANCH\nmain"
+  },
+  {
+    "category": "Restore",
+    "action": "Target New Repository",
+    "normalizedDescription": "{actor} initiated a restore of gitsectest-cmd/{actor} to a new repository gitsectest-cmd/{repoName}.",
+    "exampleDescription": "Gitsec Testt initiated a restore of gitsectest-cmd/tunahantest to a new repository gitsectest-cmd/e2e-restore-1780564621000.",
+    "exampleActor": "Gitsec Testt",
+    "exampleIpAddress": "78.189.48.21",
+    "expandedDetailsText": "EVENT ID\n10045\nIP ADDRESS\n78.189.48.21\nUSER AGENT\nMozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.7727.15 Safari/537.36\nTIMESTAMP\n2026-06-04 12:17:08\nDESCRIPTION\nGitsec Testt initiated a restore of gitsectest-cmd/tunahantest to a new repository gitsectest-cmd/e2e-restore-1780564621000.\nDETAILS\nOPERATOR\nOPERATOR NAME\nGitsec\nOPERATOR SURNAME\nTestt\nWORKSPACE\nWORKSPACE ID\n823\nTARGET\nTARGET REPOSITORY\ngitsectest-cmd/e2e-restore-1780564621000\nSOURCE\nSOURCE REPOSITORY\ngitsectest-cmd/tunahantest\nSOURCE REPOSITORY ID\n3144\nGENERAL\nWORKSPACE\nGitsec's Default Workspace\nSNAPSHOT ID\n-\nEXECUTION ID\n10457\nCORRELATION ID\n50e1520c-c15e-4bb2-b551-f39174610e0a"
+  },
+  {
+    "category": "Restore",
+    "action": "Started",
+    "normalizedDescription": "Restore started from repository named gitsectest-cmd/{actor} to target repository named gitsectest-cmd/{repoName}.",
+    "exampleDescription": "Restore started from repository named gitsectest-cmd/tunahantest to target repository named gitsectest-cmd/e2e-restore-1780564621000.",
+    "exampleActor": "Gitsec Testt",
+    "exampleIpAddress": "78.189.48.21",
+    "expandedDetailsText": "EVENT ID\n10044\nIP ADDRESS\n78.189.48.21\nUSER AGENT\nMozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.7727.15 Safari/537.36\nTIMESTAMP\n2026-06-04 12:17:08\nDESCRIPTION\nRestore started from repository named gitsectest-cmd/tunahantest to target repository named gitsectest-cmd/e2e-restore-1780564621000.\nDETAILS\nOPERATOR\nOPERATOR NAME\nGitsec\nOPERATOR SURNAME\nTestt\nRESTORE\nRESTORE TYPE\nNewRepository\nTARGET\nTARGET REPOSITORY\ngitsectest-cmd/e2e-restore-1780564621000\nSOURCE\nSOURCE REPOSITORY\ngitsectest-cmd/tunahantest\nSOURCE REPOSITORY ID\n3144\nGENERAL\nRISK LEVEL\n-\nWORKSPACE\nGitsec's Default Workspace\nSNAPSHOT ID\n-\nEXECUTION ID\n10457\nCORRELATION ID\n50e1520c-c15e-4bb2-b551-f39174610e0a"
+  },
+  {
+    "category": "Backup",
+    "action": "Cancelled",
+    "normalizedDescription": "Backup cancelled for Repository named gitsectest-cmd/{actor}.",
+    "exampleDescription": "Backup cancelled for Repository named gitsectest-cmd/tunahantest.",
+    "exampleActor": "Gitsec Testt",
+    "exampleIpAddress": "78.189.48.21",
+    "expandedDetailsText": "EVENT ID\n10037\nIP ADDRESS\n78.189.48.21\nUSER AGENT\nMozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36\nTIMESTAMP\n2026-06-04 12:12:23\nDESCRIPTION\nBackup cancelled for Repository named gitsectest-cmd/tunahantest.\nDETAILS\nOPERATOR\nOPERATOR NAME\nGitsec\nOPERATOR SURNAME\nTestt\nREPOSITORY\nREPOSITORY ID\n3144\nGENERAL\nREASON\n-\nWORKSPACE\nGitsec's Default Workspace\nREPOSITORY\ngitsectest-cmd/tunahantest\nCANCELLED BY\nGitsec\nEXECUTION ID\n10454\nCORRELATION ID\nde9db460-dbdd-4dba-a15c-2b2630808165"
+  },
+  {
+    "category": "Backup",
+    "action": "Failed",
+    "normalizedDescription": "Backup failed for Repository named gitsectest-cmd/{actor}.",
+    "exampleDescription": "Backup failed for Repository named gitsectest-cmd/tunahantest.",
+    "exampleActor": "—",
+    "exampleIpAddress": "",
+    "expandedDetailsText": "EVENT ID\n10036\nIP ADDRESS\nN/A\nUSER AGENT\n—\nTIMESTAMP\n2026-06-04 12:12:22\nDESCRIPTION\nBackup failed for Repository named gitsectest-cmd/tunahantest.\nDETAILS\nOPERATOR\nOPERATOR NAME\n-\nOPERATOR SURNAME\n-\nREPOSITORY\nREPOSITORY ID\n3144\nGENERAL\nERROR TYPE\nBACKUP_FAILED\nWORKSPACE\nGitsec's Default Workspace\nREPOSITORY\ngitsectest-cmd/tunahantest\nEXECUTION ID\n10455\nERROR MESSAGE\nBackup failed\nCORRELATION ID\n2c9039c0-1dd7-4c37-9424-fa1a11bb71b5\nTRIGGER SOURCE\nOnDemand"
+  },
+  {
+    "category": "Backup",
+    "action": "Succeeded",
+    "normalizedDescription": "Backup completed successfully for repository gitsectest-cmd/{actor}. Storage providers: {actor}-dev-us-east-1, {actor}-dev-eu-central-1, AWS-{providerType}-E2E-{timestamp}, Azure-Blob-E2E-{timestamp}, Huawei-OBS-E2E-{timestamp}.",
+    "exampleDescription": "Backup completed successfully for repository gitsectest-cmd/tunahantest. Storage providers: gitsec-dev-us-east-1, gitsec-dev-eu-central-1, AWS-S3-E2E-1780561064848, Azure-Blob-E2E-1780561093819, Huawei-OBS-E2E-1780561131988.",
+    "exampleActor": "—",
+    "exampleIpAddress": "",
+    "expandedDetailsText": "EVENT ID\n9999\nIP ADDRESS\nN/A\nUSER AGENT\n—\nTIMESTAMP\n2026-06-04 11:31:38\nDESCRIPTION\nBackup completed successfully for repository gitsectest-cmd/tunahantest. Storage providers: gitsec-dev-us-east-1, gitsec-dev-eu-central-1, AWS-S3-E2E-1780561064848, Azure-Blob-E2E-1780561093819, Huawei-OBS-E2E-1780561131988.\nDETAILS\nOPERATOR\nOPERATOR NAME\n-\nOPERATOR SURNAME\n-\nREPOSITORY\nREPOSITORY ID\n3144\nSTORAGE\nSTORAGE PROVIDERS\ngitsec-dev-us-east-1, gitsec-dev-eu-central-1, AWS-S3-E2E-1780561064848, Azure-Blob-E2E-1780561093819, Huawei-OBS-E2E-1780561131988\nGENERAL\nSIZE\n-\nDURATION\n00:01:28\nWORKSPACE\nGitsec's Default Workspace\nREPOSITORY\ngitsectest-cmd/tunahantest\nSNAPSHOT ID\naba269de-dda1-48ad-bdc6-19225f317a63\nEXECUTION ID\n10442\nCORRELATION ID\naba269de-dda1-48ad-bdc6-19225f317a63\nTRIGGER SOURCE\nScheduled"
+  },
+  {
+    "category": "Schedule",
+    "action": "Triggered By Timer",
+    "normalizedDescription": "Backup schedule named Act-Sched-{timestamp} was automatically triggered by the timer. Storage providers: {actor}-dev-us-east-1, {actor}-dev-eu-central-1, AWS-{providerType}-E2E-{timestamp}, Azure-Blob-E2E-{timestamp}, Huawei-OBS-E2E-{timestamp}.",
+    "exampleDescription": "Backup schedule named Act-Sched-1780555050174 was automatically triggered by the timer. Storage providers: gitsec-dev-us-east-1, gitsec-dev-eu-central-1, AWS-S3-E2E-1780561064848, Azure-Blob-E2E-1780561093819, Huawei-OBS-E2E-1780561131988.",
+    "exampleActor": "—",
+    "exampleIpAddress": "",
+    "expandedDetailsText": "EVENT ID\n9998\nIP ADDRESS\nN/A\nUSER AGENT\n—\nTIMESTAMP\n2026-06-04 11:31:38\nDESCRIPTION\nBackup schedule named Act-Sched-1780555050174 was automatically triggered by the timer. Storage providers: gitsec-dev-us-east-1, gitsec-dev-eu-central-1, AWS-S3-E2E-1780561064848, Azure-Blob-E2E-1780561093819, Huawei-OBS-E2E-1780561131988.\nDETAILS\nREPOSITORY\nREPOSITORY ID\n3144\nSCHEDULE\nSCHEDULE ID\n1661\nSCHEDULE TYPE\nBackup\nSTORAGE\nSTORAGE PROVIDERS\ngitsec-dev-us-east-1, gitsec-dev-eu-central-1, AWS-S3-E2E-1780561064848, Azure-Blob-E2E-1780561093819, Huawei-OBS-E2E-1780561131988\nGENERAL\nSCHEDULE\nAct-Sched-1780555050174\nWORKSPACE\nGitsec's Default Workspace\nREPOSITORY\ngitsectest-cmd/tunahantest\nTRIGGER SOURCE\nTimer"
+  },
+  {
+    "category": "Schedule",
+    "action": "Deleted",
+    "normalizedDescription": "Backup schedule named Act-Sched-{timestamp} has been deleted by {actor}.",
+    "exampleDescription": "Backup schedule named Act-Sched-1780555819222 has been deleted by Gitsec Testt.",
+    "exampleActor": "Gitsec Testt",
+    "exampleIpAddress": "78.189.48.21",
+    "expandedDetailsText": "EVENT ID\n9808\nIP ADDRESS\n78.189.48.21\nUSER AGENT\nMozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.7727.15 Safari/537.36\nTIMESTAMP\n2026-06-04 09:51:23\nDESCRIPTION\nBackup schedule named Act-Sched-1780555819222 has been deleted by Gitsec Testt.\nDETAILS\nOPERATOR\nOPERATOR NAME\nGitsec\nOPERATOR SURNAME\nTestt\nREPOSITORY\nREPOSITORY ID\n3144\nSCHEDULE\nSCHEDULE ID\n1666\nSCHEDULE TYPE\nBackup\nGENERAL\nSCHEDULE\nAct-Sched-1780555819222\nWORKSPACE\nGitsec's Default Workspace\nREPOSITORY\ngitsectest-cmd/tunahantest"
+  },
+  {
+    "category": "Schedule",
+    "action": "Created",
+    "normalizedDescription": "Backup schedule named Act-Sched-{timestamp} has been created by {actor}.",
+    "exampleDescription": "Backup schedule named Act-Sched-1780555819222 has been created by Gitsec Testt.",
+    "exampleActor": "Gitsec Testt",
+    "exampleIpAddress": "78.189.48.21",
+    "expandedDetailsText": "EVENT ID\n9807\nIP ADDRESS\n78.189.48.21\nUSER AGENT\nMozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.7727.15 Safari/537.36\nTIMESTAMP\n2026-06-04 09:51:11\nDESCRIPTION\nBackup schedule named Act-Sched-1780555819222 has been created by Gitsec Testt.\nDETAILS\nOPERATOR\nOPERATOR NAME\nGitsec\nOPERATOR SURNAME\nTestt\nREPOSITORY\nREPOSITORY ID\n3144\nSCHEDULE\nSCHEDULE ID\n1666\nSCHEDULE TYPE\nBackup\nGENERAL\nSCHEDULE\nAct-Sched-1780555819222\nWORKSPACE\nGitsec's Default Workspace\nREPOSITORY\ngitsectest-cmd/tunahantest\nCRON EXPRESSION\n0 30 08 * * ?"
+  },
+  {
+    "category": "Storage Provider",
+    "action": "Test Failed",
+    "normalizedDescription": "Connection test for storage provider named {providerType} performed by {actor} has failed.",
+    "exampleDescription": "Connection test for storage provider named HuaweiObs performed by Gitsec Testt has failed.",
+    "exampleActor": "Gitsec Testt",
+    "exampleIpAddress": "78.189.48.21",
+    "expandedDetailsText": "EVENT ID\n9449\nIP ADDRESS\n78.189.48.21\nUSER AGENT\nMozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.7727.15 Safari/537.36\nTIMESTAMP\n2026-06-03 11:43:15\nDESCRIPTION\nConnection test for storage provider named HuaweiObs performed by Gitsec Testt has failed.\nDETAILS\nOPERATOR\nOPERATOR NAME\nGitsec\nOPERATOR SURNAME\nTestt\nGENERAL\nSTEP\nConnectivity\nPROVIDER\nHuaweiObs\nERROR TYPE\nConnectivity\nERROR MESSAGE\nFailed to establish storage connection.: Forbidden - <?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><Error><Code>InvalidAccessKeyId</Code><Message>The OBS Access Key Id you provided does not exist in our records.</Message><RequestId>0000019E8CA6B0D74405DDBB197B1BF0</RequestId><HostId>Z9v+cC1sRnaWw6x0vi8pxxYA0YVnKxbYHUPAFpnxkX8sLV44u5b02Z+ailn2wCnR</HostId><AccessKeyId>your-huawei-access-key-id</AccessKeyId></Error>"
+  },
+  {
+    "category": "Auth",
+    "action": "Logged Out",
+    "normalizedDescription": "{actor} logged out successfully.",
+    "exampleDescription": "Gitsec Testt logged out successfully.",
+    "exampleActor": "Gitsec Testt",
+    "exampleIpAddress": "78.189.48.21",
+    "expandedDetailsText": "EVENT ID\n9436\nIP ADDRESS\n78.189.48.21\nUSER AGENT\nnode\nTIMESTAMP\n2026-06-03 10:19:24\nDESCRIPTION\nGitsec Testt logged out successfully.\nDETAILS\nOPERATOR\nOPERATOR NAME\nGitsec\nOPERATOR SURNAME\nTestt\nGENERAL\nEMAIL\n-"
+  },
+  {
+    "category": "Workspace",
+    "action": "Repository Removed",
+    "normalizedDescription": "Repository named {repoName} has been removed from workspace named {actor}'s Default Workspace.",
+    "exampleDescription": "Repository named e2e-restore-1779271344733 has been removed from workspace named Gitsec's Default Workspace.",
+    "exampleActor": "—",
+    "exampleIpAddress": "",
+    "expandedDetailsText": "EVENT ID\n8432\nIP ADDRESS\nN/A\nUSER AGENT\n—\nTIMESTAMP\n2026-05-23 00:39:35\nDESCRIPTION\nRepository named e2e-restore-1779271344733 has been removed from workspace named Gitsec's Default Workspace.\nDETAILS\nREPOSITORY\nREPOSITORY ID\n3140\nINSTALLATION\nINSTALLATION ID\n550\nGENERAL\nPROVIDER\nGitHub\nWORKSPACE\nGitsec's Default Workspace\nREPOSITORY\ne2e-restore-1779271344733"
+  },
+  {
+    "category": "Restore",
+    "action": "Cancelled",
+    "normalizedDescription": "Restore operation was cancelled by {actor}. Reason:",
+    "exampleDescription": "Restore operation was cancelled by Gitsec. Reason:",
+    "exampleActor": "Gitsec Testt",
+    "exampleIpAddress": "78.189.48.21",
+    "expandedDetailsText": "EVENT ID\n7112\nIP ADDRESS\n78.189.48.21\nUSER AGENT\nMozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36\nTIMESTAMP\n2026-05-20 13:06:03\nDESCRIPTION\nRestore operation was cancelled by Gitsec. Reason:\nDETAILS\nOPERATOR\nOPERATOR NAME\nGitsec\nOPERATOR SURNAME\nTestt\nSOURCE\nSOURCE REPOSITORY ID\n0\nGENERAL\nJOB ID\n00000000-0000-0000-0000-000000000000\nREASON\n-\nWORKSPACE\nGitsec's Default Workspace\nCANCELLED BY\nGitsec\nEXECUTION ID\n10279\nCORRELATION ID\n3054f5d4-08ed-4218-8884-0580c3f4506d"
+  },
+  {
+    "category": "Storage Provider",
+    "action": "Enabled",
+    "normalizedDescription": "Storage provider deneme ({providerType}) has been enabled by {actor}.",
+    "exampleDescription": "Storage provider deneme (GoogleDrive) has been enabled by Gitsec Testt.",
+    "exampleActor": "Gitsec Testt",
+    "exampleIpAddress": "78.189.48.21",
+    "expandedDetailsText": "EVENT ID\n6873\nIP ADDRESS\n78.189.48.21\nUSER AGENT\nMozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36\nTIMESTAMP\n2026-05-20 09:38:43\nDESCRIPTION\nStorage provider deneme (GoogleDrive) has been enabled by Gitsec Testt.\nDETAILS\nOPERATOR\nOPERATOR NAME\nGitsec\nOPERATOR SURNAME\nTestt\nPROVIDER\nPROVIDER ID\n167\nPROVIDER NAME\ndeneme\nGENERAL\nPROVIDER\nGoogleDrive"
+  },
+  {
+    "category": "Storage Provider",
+    "action": "Disabled",
+    "normalizedDescription": "Storage provider deneme ({providerType}) has been disabled by {actor}.",
+    "exampleDescription": "Storage provider deneme (GoogleDrive) has been disabled by Gitsec Testt.",
+    "exampleActor": "Gitsec Testt",
+    "exampleIpAddress": "78.189.48.21",
+    "expandedDetailsText": "EVENT ID\n6872\nIP ADDRESS\n78.189.48.21\nUSER AGENT\nMozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36\nTIMESTAMP\n2026-05-20 09:38:41\nDESCRIPTION\nStorage provider deneme (GoogleDrive) has been disabled by Gitsec Testt.\nDETAILS\nOPERATOR\nOPERATOR NAME\nGitsec\nOPERATOR SURNAME\nTestt\nPROVIDER\nPROVIDER ID\n167\nPROVIDER NAME\ndeneme\nGENERAL\nPROVIDER\nGoogleDrive"
+  }
+]

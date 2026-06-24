@@ -1,5 +1,9 @@
 import { test as base, expect } from '@playwright/test';
-import * as path from 'path';
+import { LoginPage } from '../pages/LoginPage';
+import { RegisterPage } from '../pages/RegisterPage';
+import { ProviderPage } from '../pages/ProviderPage';
+import { StoragePage } from '../pages/StoragePage';
+import { RestorePage } from '../pages/RestorePage';
 
 // Tespit edilen arka plan hatalarının veri yapısı
 interface DetectedError {
@@ -8,7 +12,15 @@ interface DetectedError {
   message: string;
 }
 
-export const test = base.extend({
+interface GitSecFixtures {
+  loginPage: LoginPage;
+  registerPage: RegisterPage;
+  providerPage: ProviderPage;
+  storagePage: StoragePage;
+  restorePage: RestorePage;
+}
+
+export const test = base.extend<GitSecFixtures>({
   page: async ({ page }, use) => {
     const errors: DetectedError[] = [];
 
@@ -21,7 +33,7 @@ export const test = base.extend({
       });
     });
 
-    // 2. Konsola düşen tüm Hata ve Uyarıları dinle
+    // 2. Konsola düşen tüm Hataları dinle (Uyarılar bilerek atlandı)
     page.on('console', (msg) => {
       const type = msg.type();
       if (type === 'error') {
@@ -30,25 +42,22 @@ export const test = base.extend({
           source: page.url(),
           message: msg.text()
         });
-      } else if (type === 'warning') {
-        // Geliştirici uyarılarını ve deprecation uyarılarını da yakalayalım
-        errors.push({
-          type: 'ConsoleWarning',
-          source: page.url(),
-          message: msg.text()
-        });
       }
     });
 
-    // 3. Ağ (Network) isteklerinde oluşan hataları dinle (Sunucu kesintileri, timeout vb.)
+    // 3. Ağ (Network) isteklerinde oluşan hataları dinle (Sunucu kesintileri, timeout vb. - İptal edilen Next.js istekleri hariç)
     page.on('requestfailed', (request) => {
-      // Chrome uzantıları veya dış analytics isteklerini raporu kirletmemesi için filtreleyebiliriz
       const url = request.url();
-      if (!url.startsWith('chrome-extension://') && !url.includes('google-analytics')) {
+      const errText = request.failure()?.errorText || '';
+      if (
+        !url.startsWith('chrome-extension://') &&
+        !url.includes('google-analytics') &&
+        errText !== 'net::ERR_ABORTED'
+      ) {
         errors.push({
           type: 'NetworkFailure',
           source: url,
-          message: request.failure()?.errorText || 'Network request failed'
+          message: errText || 'Network request failed'
         });
       }
     });
@@ -95,14 +104,28 @@ export const test = base.extend({
         console.log(`       --------------------------------------------------------------`);
       });
       console.log(`======================================================================\n`);
-      
-      // Hataları daha belirgin kılmak adına testi başarısız da sayabiliriz. 
-      // Ancak şu aşamada loglayıp raporlamak ve analiz etmek çok daha esnektir.
+      // Gizli hataları görünmez bırakmamak için testi fail et.
+      expect(errors, 'Background JS/console/network errors were detected during test execution').toHaveLength(0);
     } else {
       console.log(`✅ TEMİZ RAPOR: Harika! Test esnasında arayüzde hiçbir gizli JS hatası,`);
       console.log(`   konsol uyarısı veya çöken API isteği (Network/400-500) TESPİT EDİLMEDİ.`);
       console.log(`======================================================================\n`);
     }
+  },
+  loginPage: async ({ page }, use) => {
+    await use(new LoginPage(page));
+  },
+  registerPage: async ({ page }, use) => {
+    await use(new RegisterPage(page));
+  },
+  providerPage: async ({ page }, use) => {
+    await use(new ProviderPage(page));
+  },
+  storagePage: async ({ page }, use) => {
+    await use(new StoragePage(page));
+  },
+  restorePage: async ({ page }, use) => {
+    await use(new RestorePage(page));
   }
 });
 
