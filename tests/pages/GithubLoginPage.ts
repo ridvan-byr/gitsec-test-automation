@@ -651,7 +651,20 @@ export class GithubLoginPage {
     async completePermissionsInstallFlow(): Promise<boolean> {
         const url = this.page.url();
         if (/settings\/installations\/\d+$/i.test(url)) {
-            console.log(`[github] Uygulama zaten kurulu görünüyor (URL: ${url}). Kaydet veya yetkilendirme adımı kontrol ediliyor...`);
+            console.log(`[github] Uygulama zaten kurulu görünüyor (URL: ${url}).`);
+            const match = url.match(/settings\/installations\/(\d+)$/i);
+            if (match) {
+                const instId = match[1];
+                const apiBaseUrl = process.env.API_BASE_URL || 'https://staging.api.gitsec.io';
+                const callbackUrl = `${apiBaseUrl}/api/installations/callback?installation_id=${instId}&setup_action=install`;
+                console.log(`[github] Doğrudan Callback URL'ine yönlendiriliyor: ${callbackUrl}`);
+                
+                await this.page.goto(callbackUrl).catch(() => {});
+                await this.page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => {});
+                await this.page.close().catch(() => {});
+                return true;
+            }
+            
             const saveBtn = this.page.locator('button, input[type="submit"]').filter({ hasText: /Save|Kaydet/i }).or(
                 this.page.locator('input[type="submit"][value*="Save"]').or(this.page.locator('input[type="submit"][value*="Kaydet"]'))
             ).first();

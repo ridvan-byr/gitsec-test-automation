@@ -490,29 +490,71 @@ test.describe('Backups Restore - Form ve Sınır Doğrulama (Validation)', () =>
   test.beforeEach(async ({ page }) => {
     providerPage = new ProviderPage(page);
     restorePage = new RestorePage(page);
+    const workspaceId = requireEnv('WORKSPACE_ID');
+    const dashboardBaseUrl = requireEnv('DASHBOARD_BASE_URL');
 
-    const { allRepos, includedRepos } = await collectAllProviderRepositories(page, providerPage);
+    // 1. Restore sayfasına git
+    console.log('[e2e] Restore sayfasına gidiliyor...');
+    await page.goto(`${dashboardBaseUrl}/${workspaceId}/restore`, { waitUntil: 'networkidle' });
 
-    await providerPage.goToBackupsViaSidebar();
-    const table = page.locator('table').first();
-    await table.waitFor({ state: 'visible', timeout: 30000 });
+    // 2. Restore Wizard butonuna tıkla
+    console.log('[e2e] Restore Wizard butonu aranıyor ve tıklanıyor...');
+    const wizardBtn = page.getByRole('button', { name: 'Restore Wizard' }).first();
+    await wizardBtn.waitFor({ state: 'visible', timeout: 15000 });
+    
+    const dialog = page.locator('div[role="dialog"]').first();
+    await expect(async () => {
+      await wizardBtn.click({ force: true });
+      await expect(dialog).toBeVisible({ timeout: 4000 });
+    }).toPass({ timeout: 15000, intervals: [1000] });
 
-    let restoreBtn = await findAndPrepareValidRestoreRow(page, providerPage, table, allRepos, includedRepos, false);
+    // 3. Select Repository combobox'ına tıkla
+    console.log('[e2e] Source Repository combobox seçiliyor...');
+    await page.waitForTimeout(1000);
+    const combobox = page.locator('div[role="dialog"] button[role="combobox"]').first();
+    await combobox.waitFor({ state: 'visible', timeout: 15000 });
+    await expect(async () => {
+      await combobox.click({ force: true });
+    }).toPass({ timeout: 10000 });
 
-    if (!restoreBtn) {
-      console.log('[e2e] Completed satırlarında uygun repo bulunamadı. Partially Completed filtresi ile deneniyor...');
-      await applyStatusFilter(page, 'Partially Completed');
-      restoreBtn = await findAndPrepareValidRestoreRow(page, providerPage, table, allRepos, includedRepos, true);
+    // 4. Dropdown listesindeki seçenekleri tara
+    console.log('[e2e] Dropdown seçenekleri yükleniyor...');
+    const listbox = page.locator('[role="listbox"], [role="menu"], [class*="select-content"], [data-radix-popper-content-wrapper]').first();
+    await listbox.waitFor({ state: 'visible', timeout: 15000 });
+
+    const optionLocators = listbox.locator('[role="option"], [data-slot="select-item"]');
+    const count = await optionLocators.count();
+    
+    let targetOption: Locator | null = null;
+    let targetOptionText = '';
+
+    for (let i = 0; i < count; i++) {
+      const opt = optionLocators.nth(i);
+      const text = await opt.innerText().catch(() => '');
+      
+      // Eğer seçenekte "Excluded" ibaresi YOKSA, bu include edilmiş (restore edilebilir) bir depodur
+      if (text && !text.includes('Excluded')) {
+        targetOption = opt;
+        targetOptionText = text;
+        break;
+      }
     }
 
-    if (!restoreBtn) {
-      console.log('⚠️ [UYARI] Restore edilebilecek aktif/include edilebilir repository yedeği bulunamadı. Test skip ediliyor.');
-      test.skip(true, 'Restore edilebilecek aktif/include edilebilir repository yedeği bulunamadı.');
+    // 5. Eğer hepsi Exclude ise testi sonlandır (skip et)
+    if (!targetOption) {
+      console.log('⚠️ [UYARI] Seçilebilir tüm repository\'ler "Excluded" durumunda. Restore edilebilecek uygun bir yedek bulunamadı. Test sonlandırılıyor.');
+      test.skip(true, 'Restore edilebilecek aktif/include edilebilir repository bulunamadı.');
       return;
     }
 
-    console.log('[e2e] Restore butonu bulundu, tıklanıyor...');
-    await clickRestoreControl(restoreBtn);
+    console.log(`🎉 [EŞLEŞME] Restore edilebilir repository seçiliyor: "${targetOptionText.trim()}"`);
+    await targetOption.click({ force: true });
+
+    // 6. Continue butonuna tıkla
+    const continueBtn = page.getByRole('button', { name: 'Continue' }).first();
+    await expect(continueBtn).toBeEnabled({ timeout: 10000 });
+    await continueBtn.click();
+    console.log('[e2e] Wizard: Continue tıklandı, organizasyon seçimi adımına geçiliyor.');
 
     await expect(page).toHaveURL(/\/restore(\/|\?)/, { timeout: 25000 });
 
@@ -539,13 +581,7 @@ test.describe('Backups Restore - Form ve Sınır Doğrulama (Validation)', () =>
     });
 
     // 2. Adım: Yedek seçimi
-    const backupTrigger = page.locator('[data-slot="select-trigger"]').filter({ hasText: /Select a backup/i }).first();
-    if (await backupTrigger.isVisible().catch(() => false)) {
-      await backupTrigger.click();
-      const backupOptions = page.getByRole('option').or(page.locator('[data-slot="select-item"]')).filter({ hasNotText: /Select a backup/i });
-      await backupOptions.first().waitFor({ state: 'visible', timeout: 10000 });
-      await backupOptions.first().click();
-    }
+    await restorePage.selectBackupSourceIfVisible();
     const nextBtn = page.getByRole('button', { name: /^Next/i });
     await nextBtn.click();
 
@@ -597,13 +633,7 @@ test.describe('Backups Restore - Form ve Sınır Doğrulama (Validation)', () =>
     });
 
     // 2. Adım: Yedek seçimi
-    const backupTrigger = page.locator('[data-slot="select-trigger"]').filter({ hasText: /Select a backup/i }).first();
-    if (await backupTrigger.isVisible().catch(() => false)) {
-      await backupTrigger.click();
-      const backupOptions = page.getByRole('option').or(page.locator('[data-slot="select-item"]')).filter({ hasNotText: /Select a backup/i });
-      await backupOptions.first().waitFor({ state: 'visible', timeout: 10000 });
-      await backupOptions.first().click();
-    }
+    await restorePage.selectBackupSourceIfVisible();
     const nextBtn = page.getByRole('button', { name: /^Next/i });
     await nextBtn.click();
 
@@ -646,13 +676,7 @@ test.describe('Backups Restore - Form ve Sınır Doğrulama (Validation)', () =>
     });
 
     // 2. Adım: Yedek seçimi
-    const backupTrigger = page.locator('[data-slot="select-trigger"]').filter({ hasText: /Select a backup/i }).first();
-    if (await backupTrigger.isVisible().catch(() => false)) {
-      await backupTrigger.click();
-      const backupOptions = page.getByRole('option').or(page.locator('[data-slot="select-item"]')).filter({ hasNotText: /Select a backup/i });
-      await backupOptions.first().waitFor({ state: 'visible', timeout: 10000 });
-      await backupOptions.first().click();
-    }
+    await restorePage.selectBackupSourceIfVisible();
     const nextBtn = page.getByRole('button', { name: /^Next/i });
     await nextBtn.click();
 
@@ -703,13 +727,7 @@ test.describe('Backups Restore - Form ve Sınır Doğrulama (Validation)', () =>
     });
 
     // 2. Adım: Yedek seçimi
-    const backupTrigger = page.locator('[data-slot="select-trigger"]').filter({ hasText: /Select a backup/i }).first();
-    if (await backupTrigger.isVisible().catch(() => false)) {
-      await backupTrigger.click();
-      const backupOptions = page.getByRole('option').or(page.locator('[data-slot="select-item"]')).filter({ hasNotText: /Select a backup/i });
-      await backupOptions.first().waitFor({ state: 'visible', timeout: 10000 });
-      await backupOptions.first().click();
-    }
+    await restorePage.selectBackupSourceIfVisible();
     const nextBtn = page.getByRole('button', { name: /^Next/i });
     await nextBtn.click();
 
@@ -774,19 +792,14 @@ test.describe('Backups Restore - Form ve Sınır Doğrulama (Validation)', () =>
   });
 
   test('Aynı depo için devam eden bir geri yükleme varken ikinci kez restore tetiklendiğinde API 409 Conflict dönmelidir', async ({ page }) => {
+    (page as any).ignoredErrors = [/restore\/schedules\/trigger/, /status of 409/];
     // 1. Adım: Hedef organizasyonu tamamla
     await restorePage.completeTargetOrganizationStep(async () => {
       await handleGithubOAuthPopup(page, providerPage);
     });
 
     // 2. Adım: Yedek seçimi
-    const backupTrigger = page.locator('[data-slot="select-trigger"]').filter({ hasText: /Select a backup/i }).first();
-    if (await backupTrigger.isVisible().catch(() => false)) {
-      await backupTrigger.click();
-      const backupOptions = page.getByRole('option').or(page.locator('[data-slot="select-item"]')).filter({ hasNotText: /Select a backup/i });
-      await backupOptions.first().waitFor({ state: 'visible', timeout: 10000 });
-      await backupOptions.first().click();
-    }
+    await restorePage.selectBackupSourceIfVisible();
     const nextBtn = page.getByRole('button', { name: /^Next/i });
     await nextBtn.click();
 

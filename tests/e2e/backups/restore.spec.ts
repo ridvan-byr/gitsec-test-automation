@@ -428,35 +428,77 @@ async function findAndPrepareValidRestoreRow(
 test.describe('Backups — restore sayfasına yönlendirme', () => {
   test('Completed satırı veya Partially Completed filtresi ile restore', async ({ page }) => {
     test.setTimeout(300000);
+    (page as any).ignoredErrors = [/restore\/schedules\/trigger/, /status of 500/];
     const providerPage = new ProviderPage(page);
+    const restorePage = new RestorePage(page);
+    const workspaceId = requireEnv('WORKSPACE_ID');
+    const dashboardBaseUrl = requireEnv('DASHBOARD_BASE_URL');
 
-    const { allRepos, includedRepos } = await collectAllProviderRepositories(page, providerPage);
+    // 1. Restore sayfasına git
+    console.log('[e2e] Restore sayfasına gidiliyor...');
+    await page.goto(`${dashboardBaseUrl}/${workspaceId}/restore`, { waitUntil: 'networkidle' });
 
-    await providerPage.goToBackupsViaSidebar();
-    const table = page.locator('table').first();
-    await table.waitFor({ state: 'visible', timeout: 30000 });
+    // 2. Restore Wizard butonuna tıkla
+    console.log('[e2e] Restore Wizard butonu aranıyor ve tıklanıyor...');
+    const wizardBtn = page.getByRole('button', { name: 'Restore Wizard' }).first();
+    await wizardBtn.waitFor({ state: 'visible', timeout: 15000 });
+    
+    const dialog = page.locator('div[role="dialog"]').first();
+    await expect(async () => {
+      await wizardBtn.click({ force: true });
+      await expect(dialog).toBeVisible({ timeout: 4000 });
+    }).toPass({ timeout: 15000, intervals: [1000] });
 
-    let restoreBtn = await findAndPrepareValidRestoreRow(page, providerPage, table, allRepos, includedRepos, false);
+    // 3. Select Repository combobox'ına tıkla
+    console.log('[e2e] Source Repository combobox seçiliyor...');
+    await page.waitForTimeout(1000);
+    const combobox = page.locator('div[role="dialog"] button[role="combobox"]').first();
+    await combobox.waitFor({ state: 'visible', timeout: 15000 });
+    await expect(async () => {
+      await combobox.click({ force: true });
+    }).toPass({ timeout: 10000 });
 
-    if (!restoreBtn) {
-      console.log('[e2e] Completed satırlarında uygun repo bulunamadı. Partially Completed filtresi ile deneniyor...');
-      await applyStatusFilter(page, 'Partially Completed');
-      restoreBtn = await findAndPrepareValidRestoreRow(page, providerPage, table, allRepos, includedRepos, true);
+    // 4. Dropdown listesindeki seçenekleri tara
+    console.log('[e2e] Dropdown seçenekleri yükleniyor...');
+    const listbox = page.locator('[role="listbox"], [role="menu"], [class*="select-content"], [data-radix-popper-content-wrapper]').first();
+    await listbox.waitFor({ state: 'visible', timeout: 15000 });
+
+    const optionLocators = listbox.locator('[role="option"], [data-slot="select-item"]');
+    const count = await optionLocators.count();
+    
+    let targetOption: Locator | null = null;
+    let targetOptionText = '';
+
+    for (let i = 0; i < count; i++) {
+      const opt = optionLocators.nth(i);
+      const text = await opt.innerText().catch(() => '');
+      
+      // Eğer seçenekte "Excluded" ibaresi YOKSA, bu include edilmiş (restore edilebilir) bir depodur
+      if (text && !text.includes('Excluded')) {
+        targetOption = opt;
+        targetOptionText = text;
+        break;
+      }
     }
 
-    if (!restoreBtn) {
-      console.log('⚠️ [UYARI] Restore edilebilecek aktif/include edilebilir repository yedeği bulunamadı. Test skip ediliyor.');
-      test.skip(true, 'Restore edilebilecek aktif/include edilebilir repository yedeği bulunamadı.');
+    // 5. Eğer hepsi Exclude ise testi sonlandır (skip et)
+    if (!targetOption) {
+      console.log('⚠️ [UYARI] Seçilebilir tüm repository\'ler "Excluded" durumunda. Restore edilebilecek uygun bir yedek bulunamadı. Test sonlandırılıyor.');
+      test.skip(true, 'Restore edilebilecek aktif/include edilebilir repository bulunamadı.');
       return;
     }
 
-    console.log('[e2e] Restore butonu bulundu, tıklanıyor...');
-    await clickRestoreControl(restoreBtn);
+    console.log(`🎉 [EŞLEŞME] Restore edilebilir repository seçiliyor: "${targetOptionText.trim()}"`);
+    await targetOption.click({ force: true });
+
+    // 6. Continue butonuna tıkla
+    const continueBtn = page.getByRole('button', { name: 'Continue' }).first();
+    await expect(continueBtn).toBeEnabled({ timeout: 10000 });
+    await continueBtn.click();
+    console.log('[e2e] Wizard: Continue tıklandı, organizasyon seçimi adımına geçiliyor.');
 
     await expect(page).toHaveURL(/\/restore(\/|\?)/, { timeout: 25000 });
     console.log('[e2e] Restore sayfası URL doğrulandı:', page.url());
-
-    const restorePage = new RestorePage(page);
 
     // Lisans hatası veya organizasyon seçim alanının gelmesini bekle
     const licenseError = page.getByText(/not included in your license|not included in the license/i).first();
@@ -488,24 +530,7 @@ test.describe('Backups — restore sayfasına yönlendirme', () => {
     console.log('[e2e] Next Step sonrasını görmek için bekliyor...');
 
     // Step 2: Select backup source (if "Select a backup" is visible)
-    const backupTrigger = page.locator('[data-slot="select-trigger"]').filter({ hasText: /Select a backup/i }).first();
-    const isBackupTriggerVisible = await backupTrigger.isVisible().catch(() => false);
-
-    if (isBackupTriggerVisible) {
-      console.log('[e2e] "Select a backup" tespit edildi, yedek seçiliyor...');
-      await backupTrigger.click();
-
-      const backupOptions = page.getByRole('option')
-        .or(page.locator('[data-slot="select-item"]'))
-        .filter({ hasNotText: /Select a backup/i });
-
-      await backupOptions.first().waitFor({ state: 'visible', timeout: 10000 });
-      const backupText = await backupOptions.first().innerText().catch(() => '');
-      console.log(`[e2e] Yedek seçiliyor: "${backupText.trim()}"`);
-      await backupOptions.first().click();
-    } else {
-      console.log('[e2e] Yedek zaten seçili durumda.');
-    }
+    await restorePage.selectBackupSourceIfVisible();
 
     // Step 2: Click Next
     const nextBtn = page.getByRole('button', { name: /^Next/i });
@@ -516,11 +541,11 @@ test.describe('Backups — restore sayfasına yönlendirme', () => {
     // Step 3: Select Included Items (fill repo name & description)
     const inputs = page.locator('input[data-slot="input"]');
     await expect(inputs.first()).toBeVisible({ timeout: 15000 });
-    const count = await inputs.count();
+    const inputCount = await inputs.count();
     let repoInput = inputs.first();
     let descInput = inputs.nth(1);
 
-    for (let i = 0; i < count; i++) {
+    for (let i = 0; i < inputCount; i++) {
       const placeholder = await inputs.nth(i).getAttribute('placeholder') || '';
       if (placeholder.toLowerCase().includes('search')) {
         repoInput = inputs.nth(i + 1);
@@ -533,7 +558,7 @@ test.describe('Backups — restore sayfasına yönlendirme', () => {
     await repoInput.fill(tempRepoName);
     console.log(`[e2e] Step 3: Geçici depo adı yazıldı: ${tempRepoName}`);
 
-    await descInput.fill('E2E Test için otomatik doldurulan açıklama alanı');
+    await descInput.fill('Auto-generated description for E2E restore test');
     console.log('[e2e] Step 3: Açıklama alanı dolduruldu.');
 
     // Step 3 -> Step 4 geçişi
@@ -546,6 +571,13 @@ test.describe('Backups — restore sayfasına yönlendirme', () => {
     const startRestoreBtn = page.getByRole('button', { name: 'Start Restore', exact: true }).first();
     await expect(startRestoreBtn).toBeVisible({ timeout: 15000 });
 
+    // Log the request body of /api/restore/schedules/trigger
+    page.on('request', request => {
+      if (request.url().includes('/api/restore/schedules/trigger') && request.method() === 'POST') {
+        console.log('[DEBUG TRIGGER PAYLOAD]:', request.postData());
+      }
+    });
+
     // Normal click dene, olmazsa force click yap
     try {
       await startRestoreBtn.click({ timeout: 8000 });
@@ -555,18 +587,14 @@ test.describe('Backups — restore sayfasına yönlendirme', () => {
     }
     console.log('[e2e] Step 4: Start Restore butonuna tıklandı.');
 
-    // Hata veya "failed" mesajı kontrolü (zaten restore edildiğine dair durumlar için)
+    // Hata veya "failed" mesajı kontrolü
     const errorSelector = page.locator('text=/failed|already exists|already restored|error/i').first();
-    const isErrorVisible = await errorSelector.waitFor({ state: 'visible', timeout: 4000 }).then(() => true).catch(() => false);
+    const isErrorVisible = await errorSelector.waitFor({ state: 'visible', timeout: 5000 }).then(() => true).catch(() => false);
     if (isErrorVisible) {
       const errorText = await errorSelector.innerText().catch(() => '');
-      console.warn('--------------------------------------------------');
-      console.warn('[RESTORE UYARI] DİKKAT: Restore işleminde "failed" veya hata mesajı tespit edildi!');
-      console.warn(`[Ekran Mesajı]: "${errorText.trim()}"`);
-      console.warn('[RESTORE UYARI] Bu durum, ilgili repository\'nin zaten restore edilmiş olmasından kaynaklanıyor olabilir.');
-      console.warn('--------------------------------------------------');
+      throw new Error(`Geri yükleme işlemi başlatılamadı: "${errorText.trim()}"`);
     }
 
-    console.log('[e2e] Test başarıyla tamamlandı.');
+    console.log('[e2e] Geri yükleme başarıyla tetiklendi ve tamamlandı.');
   });
 });

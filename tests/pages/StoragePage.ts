@@ -98,17 +98,16 @@ export class StoragePage {
     await this.page.waitForURL(new RegExp(`/${workspaceId}/storage`), { timeout: 20000 });
     await this.page.waitForLoadState('load').catch(() => {});
     await this.page.waitForLoadState('domcontentloaded').catch(() => {});
+    await this.page.waitForLoadState('networkidle').catch(() => {});
     await expect(this.page.locator('main').first()).toBeVisible({ timeout: 10000 });
   }
 
   async clickAddStorageProvider(): Promise<void> {
-    console.log('[POM] "Add Storage Provider" butonuna tıklanıyor...');
-    const addStorageBtn = this.page.locator('a[href*="/storage/add"]')
-      .or(this.page.getByRole('link', { name: /Add Storage Provider/i }))
-      .first();
-
-    await addStorageBtn.waitFor({ state: 'visible', timeout: 15000 });
-    await addStorageBtn.click();
+    console.log('[POM] Doğrudan URL ile "Add Storage Provider" sayfasına gidiliyor...');
+    await this.page.goto(`${dashboardBaseUrl}/${workspaceId}/storage/add`, { waitUntil: 'load' }).catch(err => {
+      if (!err.message.includes('net::ERR_ABORTED')) throw err;
+      console.log('⚠️ [POM] page.goto aborted, but continuing to wait for target URL...');
+    });
     await this.page.waitForURL(new RegExp(`/${workspaceId}/storage/add`), { timeout: 30000 });
     
     await this.page.waitForLoadState('load').catch(() => {});
@@ -120,7 +119,7 @@ export class StoragePage {
     console.log('[POM] AWS S3 sağlayıcı kartı seçiliyor...');
     const awsCard = this.page.locator('h3:visible, h4:visible, p:visible, div:visible, span:visible, button:visible, a:visible')
       .filter({ hasText: /^AWS S3$/ })
-      .or(this.page.getByText('Amazon Simple Storage Service').locator('visible=true'))
+      .or(this.page.getByText('Amazon Simple Storage Service').filter({ visible: true }))
       .first();
 
     await awsCard.waitFor({ state: 'visible', timeout: 15000 });
@@ -152,7 +151,7 @@ export class StoragePage {
     console.log('[POM] Azure Blob Storage sağlayıcı kartı seçiliyor...');
     const azureCard = this.page.locator('h3:visible, h4:visible, p:visible, div:visible, span:visible, button:visible, a:visible')
       .filter({ hasText: /^Azure Blob Storage$/ })
-      .or(this.page.getByText('Microsoft Azure Blob Storage').locator('visible=true'))
+      .or(this.page.getByText('Microsoft Azure Blob Storage').filter({ visible: true }))
       .first();
 
     await azureCard.waitFor({ state: 'visible', timeout: 15000 });
@@ -184,7 +183,7 @@ export class StoragePage {
     console.log('[POM] Huawei OBS sağlayıcı kartı seçiliyor...');
     const huaweiCard = this.page.locator('h3:visible, h4:visible, p:visible, div:visible, span:visible, button:visible, a:visible')
       .filter({ hasText: /^Huawei OBS$/ })
-      .or(this.page.getByText('Huawei Object Storage Service').locator('visible=true'))
+      .or(this.page.getByText('Huawei Object Storage Service').filter({ visible: true }))
       .first();
 
     await huaweiCard.waitFor({ state: 'visible', timeout: 15000 });
@@ -378,13 +377,13 @@ export class StoragePage {
         await listbox.waitFor({ state: 'visible', timeout: 5000 }).catch(() => {});
         
         let regionKeyword = region;
-        if (region.toLowerCase().includes('turkey') || region.toLowerCase().includes('türkiye')) {
-          regionKeyword = 'Türk';
+        if (region.toLowerCase().includes('turkey') || region.toLowerCase().includes('türkiye') || region.toLowerCase().includes('tr-west-1')) {
+          regionKeyword = 'Türk|Turkey';
         }
 
         const option = listbox.getByRole('option', { name: new RegExp(`(${regionKeyword}|${region})`, 'i') })
           .or(listbox.locator('[role="option"]').filter({ hasText: new RegExp(`(${regionKeyword}|${region})`, 'i') }))
-          .or(listbox.getByText(regionKeyword, { exact: false }))
+          .or(listbox.getByText(new RegExp(`(${regionKeyword})`, 'i')))
           .first();
         await option.waitFor({ state: 'visible', timeout: 8000 });
         await option.click({ force: true });

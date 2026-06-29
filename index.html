@@ -2666,6 +2666,10 @@
             <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
             <span class="nav-label">.env Yapılandırması</span>
           </button>
+          <button class="nav-item" onclick="window.open('/docs', '_blank')" style="justify-content: space-between; width: 100%;">
+            <span class="nav-label">Dokümantasyon</span>
+            <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 0.95rem; height: 0.95rem; min-width: 0.95rem; opacity: 0.6; margin-left: auto;"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+          </button>
         </div>
         
         <div class="sidebar-footer">
@@ -2795,9 +2799,24 @@
             </div>
             
             <div class="card-content">
-              <p style="color: var(--text-muted); font-size: 0.8125rem; line-height: 1.5; margin-bottom: 0.75rem;">
+              <p id="scheduler-desc" style="color: var(--text-muted); font-size: 0.8125rem; line-height: 1.5; margin-bottom: 0.75rem; min-height: 3.25rem;">
                 Otomatik veri yedekleme görevlerini planlamayı sağlar; zamanlama sıklığını Günlük (Daily), Haftalık (Weekly), Aylık (Monthly) veya Özel (Cron) olarak yapılandırır.
               </p>
+              
+              <div class="card-select-group" style="margin-top: 0.5rem; margin-bottom: 0.75rem;">
+                <label for="schedulerModeSelect" style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Zamanlayıcı Kapsamı (Scope)</label>
+                <div class="gitsec-select-wrapper no-left-icon">
+                  <select id="schedulerModeSelect" class="gitsec-select" style="padding-left: 0.875rem;" onchange="updateCardUI('card-scheduler', 'schedulerModeSelect', 'scheduler-desc'); saveSettings()">
+                    <option value="happy_path">Normal Planlama Akışı (Happy Path)</option>
+                    <option value="validation">Form Doğrulama & Sınır Koşulları (Validation)</option>
+                    <option value="all">Tüm Zamanlayıcı Testleri (Hepsi)</option>
+                  </select>
+                  <span class="select-chevron-right">
+                    <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                  </span>
+                </div>
+              </div>
+
               <button type="button" id="btnToggleScheduler" class="btn-toggle-details" onclick="toggleSchedulerDetails()">
                 <span>Detayları Düzenle</span>
                 <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
@@ -2807,31 +2826,6 @@
             <div class="card-footer">
               <span class="card-meta">schedulers.spec.ts</span>
               <button class="btn-run" onclick="runSchedulerTest()">
-                <span>Çalıştır</span>
-              </button>
-            </div>
-          </div>
-
-          <!-- Scheduler Validation Card -->
-          <div id="card-scheduler-validation" class="test-card">
-            <div class="card-header">
-              <div class="card-title-group">
-                <span class="card-tag">Zamanlayıcı Doğrulaması</span>
-                <h3 class="card-title">Zamanlayıcı Doğrulama</h3>
-              </div>
-              <div class="card-status-dot"></div>
-            </div>
-            <div class="card-content">
-              <p style="color: var(--text-muted); font-size: 0.8125rem; line-height: 1.5;">
-                Zamanlayıcı oluşturma formundaki zorunlu alanların (isim, süre vb.) validasyon kurallarını ve aynı isimle mükerrer kayıt oluşturma çakışmalarını denetler.
-              </p>
-            </div>
-            <div class="card-content">
-              <!-- Spacer -->
-            </div>
-            <div class="card-footer">
-              <span class="card-meta">schedulers-validation.spec.ts</span>
-              <button class="btn-run" onclick="runTest('', 'card-scheduler-validation', 'tests/e2e/backups/schedulers-validation.spec.ts')">
                 <span>Çalıştır</span>
               </button>
             </div>
@@ -2847,35 +2841,27 @@
               <div class="card-status-dot"></div>
             </div>
             <div class="card-content">
-              <p style="color: var(--text-muted); font-size: 0.8125rem; line-height: 1.5;">
+              <p id="restore-desc" style="color: var(--text-muted); font-size: 0.8125rem; line-height: 1.5; min-height: 3.25rem;">
                 Daha önce oluşturulmuş yedeklerin geri yükleme (restore) sihirbazını test eder; adımların doğruluğunu ve kullanıcı yönlendirmelerini doğrular.
               </p>
+              
+              <div class="card-select-group" style="margin-top: 0.75rem;">
+                <label for="restoreModeSelect" style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Restore Kapsamı (Scope)</label>
+                <div class="gitsec-select-wrapper no-left-icon">
+                  <select id="restoreModeSelect" class="gitsec-select" style="padding-left: 0.875rem;" onchange="updateCardUI('card-restore', 'restoreModeSelect', 'restore-desc'); saveSettings()">
+                    <option value="happy_path">Normal Geri Yükleme Akışı (Happy Path)</option>
+                    <option value="validation">Form Doğrulama & Sınır Koşulları (Validation)</option>
+                    <option value="all">Tüm Geri Yükleme Testleri (Hepsi)</option>
+                  </select>
+                  <span class="select-chevron-right">
+                    <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                  </span>
+                </div>
+              </div>
             </div>
             <div class="card-footer">
               <span class="card-meta">restore.spec.ts</span>
               <button class="btn-run" onclick="runTest('', 'card-restore', 'tests/e2e/backups/restore.spec.ts')">
-                <span>Çalıştır</span>
-              </button>
-            </div>
-          </div>
-
-          <!-- Restore Validation Card -->
-          <div id="card-restore-validation" class="test-card">
-            <div class="card-header">
-              <div class="card-title-group">
-                <span class="card-tag">Geri Yükleme Doğrulaması</span>
-                <h3 class="card-title">Geri Yükleme Doğrulama</h3>
-              </div>
-              <div class="card-status-dot"></div>
-            </div>
-            <div class="card-content">
-              <p style="color: var(--text-muted); font-size: 0.8125rem; line-height: 1.5;">
-                Geri yükleme sihirbazındaki veri giriş sınırlarını (boş depo adı, geçersiz karakterler vb.) ve çakışan aynı isimli depoların geri yükleme denemelerindeki hata yönetimini test eder.
-              </p>
-            </div>
-            <div class="card-footer">
-              <span class="card-meta">restore-validation.spec.ts</span>
-              <button class="btn-run" onclick="runTest('', 'card-restore-validation', 'tests/e2e/backups/restore-validation.spec.ts')">
                 <span>Çalıştır</span>
               </button>
             </div>
@@ -2918,14 +2904,14 @@
               <div class="card-status-dot"></div>
             </div>
             <div class="card-content">
-              <p style="color: var(--text-muted); font-size: 0.8125rem; line-height: 1.5;">
+              <p id="include-desc" style="color: var(--text-muted); font-size: 0.8125rem; line-height: 1.5; min-height: 3.25rem;">
                 Yedekleme kapsamına alınması istenen belirli depoların (repository) seçilmesini, listelerin doğru güncellenmesini ve dahil etme (include) kurallarını doğrular.
               </p>
               
               <div class="card-select-group" style="margin-top: 0.75rem;">
                 <label for="includeModeSelect" style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Include Kapsamı (Scope)</label>
                 <div class="gitsec-select-wrapper no-left-icon">
-                  <select id="includeModeSelect" class="gitsec-select" style="padding-left: 0.875rem;" onchange="saveSettings()">
+                  <select id="includeModeSelect" class="gitsec-select" style="padding-left: 0.875rem;" onchange="updateCardUI('card-github-include', 'includeModeSelect', 'include-desc'); saveSettings()">
                     <option value="one_repo">Tek Bir Depoyu Dahil Et (One Repo)</option>
                     <option value="one_page">Sayfadaki Tüm Depoları Dahil Et (One Page)</option>
                     <option value="all_pages">Tüm Sayfalardaki Depoları Dahil Et (All Pages)</option>
@@ -2954,16 +2940,15 @@
               <div class="card-status-dot"></div>
             </div>
             <div class="card-content">
-              <p style="color: var(--text-muted); font-size: 0.8125rem; line-height: 1.5;">
+              <p id="exclude-desc" style="color: var(--text-muted); font-size: 0.8125rem; line-height: 1.5; min-height: 3.25rem;">
                 Yedekleme planının dışında tutulması istenen depoların hariç tutulma (exclude) filtrelerini ve arama/seçim mekanizmalarını doğrular.
               </p>
               
               <div class="card-select-group" style="margin-top: 0.75rem;">
                 <label for="excludeModeSelect" style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Exclude Kapsamı (Scope)</label>
                 <div class="gitsec-select-wrapper no-left-icon">
-                  <select id="excludeModeSelect" class="gitsec-select" style="padding-left: 0.875rem;" onchange="saveSettings()">
+                  <select id="excludeModeSelect" class="gitsec-select" style="padding-left: 0.875rem;" onchange="updateCardUI('card-github-exclude', 'excludeModeSelect', 'exclude-desc'); saveSettings()">
                     <option value="one_repo">Tek Bir Depoyu Hariç Tut (One Repo)</option>
-                    <option value="one_page">Sayfadaki Tüm Depoları Hariç Tut (One Page)</option>
                     <option value="all_pages">Tüm Sayfalardaki Depoları Hariç Tut (All Pages)</option>
                   </select>
                   <span class="select-chevron-right">
@@ -2990,9 +2975,23 @@
               <div class="card-status-dot"></div>
             </div>
             <div class="card-content">
-              <p style="color: var(--text-muted); font-size: 0.8125rem; line-height: 1.5;">
+              <p id="backup-desc" style="color: var(--text-muted); font-size: 0.8125rem; line-height: 1.5; min-height: 3.25rem;">
                 Entegre edilmiş GitHub depoları için manuel veya otomatik tetiklenen yedekleme işlemlerinin başlatılmasını ve arka plandaki yedekleme durumunu doğrular.
               </p>
+              
+              <div class="card-select-group" style="margin-top: 0.75rem;">
+                <label for="backupModeSelect" style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Backup Kapsamı (Scope)</label>
+                <div class="gitsec-select-wrapper no-left-icon">
+                  <select id="backupModeSelect" class="gitsec-select" style="padding-left: 0.875rem;" onchange="updateCardUI('card-github-backup', 'backupModeSelect', 'backup-desc'); saveSettings()">
+                    <option value="happy_path">Normal Yedekleme Akışı (Happy Path)</option>
+                    <option value="edge_cases">Hata Yönetimi & Limitler (Edge Cases)</option>
+                    <option value="all">Tüm Yedekleme Testleri (Hepsi)</option>
+                  </select>
+                  <span class="select-chevron-right">
+                    <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                  </span>
+                </div>
+              </div>
             </div>
             <div class="card-footer">
               <span class="card-meta">github-repositories-backup.spec.ts</span>
@@ -3017,35 +3016,27 @@
               <div class="card-status-dot"></div>
             </div>
             <div class="card-content">
-              <p style="color: var(--text-muted); font-size: 0.8125rem; line-height: 1.5;">
+              <p id="login-desc" style="color: var(--text-muted); font-size: 0.8125rem; line-height: 1.5; min-height: 3.25rem;">
                 GitSec platformuna kullanıcı giriş formunun alan doğrulamalarını, geçersiz giriş denemelerindeki hata mesajlarını ve başarılı girişteki yönlendirmeleri test eder.
               </p>
+              
+              <div class="card-select-group" style="margin-top: 0.75rem;">
+                <label for="loginModeSelect" style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Giriş Kapsamı (Scope)</label>
+                <div class="gitsec-select-wrapper no-left-icon">
+                  <select id="loginModeSelect" class="gitsec-select" style="padding-left: 0.875rem;" onchange="updateCardUI('card-auth-login', 'loginModeSelect', 'login-desc'); saveSettings()">
+                    <option value="happy_path">Normal Giriş Akışı (Happy Path)</option>
+                    <option value="failures">Giriş Hataları & Kesintiler (Failures)</option>
+                    <option value="all">Tüm Giriş Testleri (Hepsi)</option>
+                  </select>
+                  <span class="select-chevron-right">
+                    <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                  </span>
+                </div>
+              </div>
             </div>
             <div class="card-footer">
               <span class="card-meta">login.spec.ts</span>
               <button class="btn-run" onclick="runTest('', 'card-auth-login', 'tests/e2e/auth/login.spec.ts')">
-                <span>Çalıştır</span>
-              </button>
-            </div>
-          </div>
-
-          <!-- Login Failures Card -->
-          <div id="card-auth-login-failures" class="test-card">
-            <div class="card-header">
-              <div class="card-title-group">
-                <span class="card-tag">Uç Durum Testi</span>
-                <h3 class="card-title">Giriş Hataları & Bağlantı Kesintisi</h3>
-              </div>
-              <div class="card-status-dot"></div>
-            </div>
-            <div class="card-content">
-              <p style="color: var(--text-muted); font-size: 0.8125rem; line-height: 1.5;">
-                Giriş işlemi sırasında yaşanabilecek ağ kopmaları veya sunucu hataları (HTTP 500 gibi) altında uygulamanın kararlılığını ve kullanıcıya gösterilen hata uyarılarını test eder.
-              </p>
-            </div>
-            <div class="card-footer">
-              <span class="card-meta">login-failures.spec.ts</span>
-              <button class="btn-run" onclick="runTest('', 'card-auth-login-failures', 'tests/e2e/auth/login-failures.spec.ts')">
                 <span>Çalıştır</span>
               </button>
             </div>
@@ -3090,11 +3081,11 @@
             </div>
             
             <div class="card-content">
-              <p style="color: var(--text-muted); font-size: 0.8125rem; line-height: 1.5; margin-bottom: 0.5rem;">
+              <p id="storage-desc" style="color: var(--text-muted); font-size: 0.8125rem; line-height: 1.5; margin-bottom: 0.5rem; min-height: 3.25rem;">
                 Kullanıcı çalışma alanına yeni bir bulut depolama sağlayıcısı (AWS S3, Azure Blob, Google Drive, Huawei OBS, OneDrive vb.) ekleme sihirbazını ve bağlantı adımlarını doğrular.
               </p>
               
-              <div class="card-select-group" style="margin-top: 0.5rem;">
+              <div class="card-select-group" style="margin-top: 0.5rem; margin-bottom: 0.75rem;">
                 <label for="storageProviderSelect" style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Bulut Depolama Sağlayıcısı (Provider)</label>
                 <div class="gitsec-select-wrapper no-left-icon">
                   <select id="storageProviderSelect" class="gitsec-select" style="padding-left: 0.875rem;" onchange="saveStorageProviderSettings()">
@@ -3109,88 +3100,27 @@
                   </span>
                 </div>
               </div>
+
+              <div class="card-select-group" style="margin-top: 0.5rem;">
+                <label for="storageModeSelect" style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Depolama Test Modu (Test Scope)</label>
+                <div class="gitsec-select-wrapper no-left-icon">
+                  <select id="storageModeSelect" class="gitsec-select" style="padding-left: 0.875rem;" onchange="updateCardUI('card-storage', 'storageModeSelect', 'storage-desc'); saveSettings()">
+                    <option value="happy_path">Normal Bağlantı Akışı (Happy Path)</option>
+                    <option value="validation">Form Doğrulama & Sınır Koşulları (Validation)</option>
+                    <option value="api_failures">Ağ & API Hata Dayanıklılığı (Resilience)</option>
+                    <option value="edge_cases">Stres & Uç Durumlar (Edge Cases)</option>
+                    <option value="all">Tüm Depolama Testleri (Hepsi)</option>
+                  </select>
+                  <span class="select-chevron-right">
+                    <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                  </span>
+                </div>
+              </div>
             </div>
             
             <div class="card-footer">
               <span class="card-meta">storage.spec.ts</span>
               <button class="btn-run" onclick="runStorageTest()">
-                <span>Çalıştır</span>
-              </button>
-            </div>
-          </div>
-
-          <!-- Storage Validation Card -->
-          <div id="card-storage-validation" class="test-card">
-            <div class="card-header">
-              <div class="card-title-group">
-                <span class="card-tag">Depolama Doğrulaması</span>
-                <h3 class="card-title">Form Doğrulama & Sınır Koşulları</h3>
-              </div>
-              <div class="card-status-dot"></div>
-            </div>
-            
-            <div class="card-content">
-              <p style="color: var(--text-muted); font-size: 0.8125rem; line-height: 1.5;">
-                Depolama sağlayıcısı ekleme formundaki zorunlu alan boşluk kontrollerini, geçersiz boşluk karakteri (whitespace) engellemelerini ve mükerrer sağlayıcı tanımlama hatalarını test eder.
-              </p>
-            </div>
-            
-            <div class="card-content">
-              <!-- Empty spacer to match visual layout -->
-            </div>
-            
-            <div class="card-footer">
-              <span class="card-meta">storage-validation.spec.ts</span>
-              <button class="btn-run" onclick="runTest('', 'card-storage-validation', 'tests/e2e/providers/storage-validation.spec.ts')">
-                <span>Çalıştır</span>
-              </button>
-            </div>
-          </div>
-
-          <!-- Storage API Failures Card -->
-          <div id="card-storage-api-failures" class="test-card">
-            <div class="card-header">
-              <div class="card-title-group">
-                <span class="card-tag">API & Ağ Dayanıklılığı</span>
-                <h3 class="card-title">Ağ & API Hata Dayanıklılığı</h3>
-              </div>
-              <div class="card-status-dot"></div>
-            </div>
-            
-            <div class="card-content">
-              <p style="color: var(--text-muted); font-size: 0.8125rem; line-height: 1.5;">
-                Bağlantı sırasında yaşanabilecek ağ kesintilerini, sunucu çökmelerini (HTTP 500), yüksek ağ gecikmelerini (latency) ve yetki iptali (HTTP 401) durumlarındaki hata yönetimini simüle eder.
-              </p>
-            </div>
-            
-            <div class="card-footer">
-              <span class="card-meta">storage-api-failures.spec.ts</span>
-              <button class="btn-run" onclick="runTest('', 'card-storage-api-failures', 'tests/e2e/providers/storage-api-failures.spec.ts')">
-                <span>Çalıştır</span>
-              </button>
-            </div>
-          </div>
-
-
-          <!-- Storage Edge Cases Card -->
-          <div id="card-storage-edge-cases" class="test-card">
-            <div class="card-header">
-              <div class="card-title-group">
-                <span class="card-tag">Sınır Durumlar</span>
-                <h3 class="card-title">Stres & Uç Durumlar</h3>
-              </div>
-              <div class="card-status-dot"></div>
-            </div>
-            
-            <div class="card-content">
-              <p style="color: var(--text-muted); font-size: 0.8125rem; line-height: 1.5;">
-                Aynı butonun ardışık hızlı tıklanmasını (double-click spam) önleme mekanizmasını ve internetin tamamen kesildiği çevrimdışı (offline) mod davranışlarını test eder.
-              </p>
-            </div>
-            
-            <div class="card-footer">
-              <span class="card-meta">storage-edge-cases.spec.ts</span>
-              <button class="btn-run" onclick="runTest('', 'card-storage-edge-cases', 'tests/e2e/providers/storage-edge-cases.spec.ts')">
                 <span>Çalıştır</span>
               </button>
             </div>
@@ -3618,8 +3548,30 @@
                   Test Dahil/Hariç Kapsamı
                 </span>
                 <span class="env-accordion-chevron">▼</span>
-                      <div class="terminal-resizer" id="terminalResizer"></div>
+              </div>
+              <div class="env-accordion-body env-grid">
+                <div class="form-group">
+                  <label for="env_E2E_INCLUDE_MODE">E2E Dahil Etme Modu (E2E_INCLUDE_MODE)</label>
+                  <input type="text" id="env_E2E_INCLUDE_MODE" placeholder="one_repo">
+                </div>
+                <div class="form-group">
+                  <label for="env_E2E_EXCLUDE_MODE">E2E Hariç Tutma Modu (E2E_EXCLUDE_MODE)</label>
+                  <input type="text" id="env_E2E_EXCLUDE_MODE" placeholder="one_repo">
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+
+
+      <!-- Live Terminal Console (Persistently visible at bottom) -->
+      <div class="terminal-container" id="terminalContainer">
+        <div class="terminal-resizer" id="terminalResizer"></div>
         <div class="terminal-header">
+
           <div class="terminal-title">Canlı Konsol Çıktısı</div>
           <div class="terminal-actions" style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
             <!-- Canlı Arama ve Kategori Filtre Kontrolleri -->
@@ -4258,7 +4210,14 @@
       
       const tag = '@' + type;
       const cardId = 'card-scheduler';
-      const testFile = 'tests/e2e/backups/schedulers.spec.ts';
+      
+      const schedulerMode = document.getElementById('schedulerModeSelect') ? document.getElementById('schedulerModeSelect').value : 'happy_path';
+      let testFile = 'tests/e2e/backups/schedulers.spec.ts';
+      if (schedulerMode === 'validation') {
+        testFile = 'tests/e2e/backups/schedulers-validation.spec.ts';
+      } else if (schedulerMode === 'all') {
+        testFile = 'tests/e2e/backups/schedulers.spec.ts tests/e2e/backups/schedulers-validation.spec.ts';
+      }
 
       const scheduleName = document.getElementById('scheduleName').value;
       
@@ -4336,8 +4295,26 @@
       
       const includeMode = document.getElementById('includeModeSelect') ? document.getElementById('includeModeSelect').value : null;
       const excludeMode = document.getElementById('excludeModeSelect') ? document.getElementById('excludeModeSelect').value : null;
+      const backupMode = document.getElementById('backupModeSelect') ? document.getElementById('backupModeSelect').value : null;
       const workers = document.getElementById('workersCount') ? document.getElementById('workersCount').value : 1;
       
+      let finalTestFile = testFile;
+      if (cardId === 'card-restore') {
+        const restoreMode = document.getElementById('restoreModeSelect') ? document.getElementById('restoreModeSelect').value : 'happy_path';
+        if (restoreMode === 'validation') {
+          finalTestFile = 'tests/e2e/backups/restore-validation.spec.ts';
+        } else if (restoreMode === 'all') {
+          finalTestFile = 'tests/e2e/backups/restore.spec.ts tests/e2e/backups/restore-validation.spec.ts';
+        }
+      } else if (cardId === 'card-auth-login') {
+        const loginMode = document.getElementById('loginModeSelect') ? document.getElementById('loginModeSelect').value : 'happy_path';
+        if (loginMode === 'failures') {
+          finalTestFile = 'tests/e2e/auth/login-failures.spec.ts';
+        } else if (loginMode === 'all') {
+          finalTestFile = 'tests/e2e/auth/login.spec.ts tests/e2e/auth/login-failures.spec.ts';
+        }
+      }
+
       activeCardId = cardId;
       selectedConsoleCardId = cardId;
       testStartTime = Date.now();
@@ -4359,8 +4336,8 @@
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            tag, headed, testFile, workspaceId, baseUrl,
-            includeMode, excludeMode, workers, cardId
+            tag, headed, testFile: finalTestFile, workspaceId, baseUrl,
+            includeMode, excludeMode, backupMode, workers, cardId
           })
         });
 
@@ -4406,7 +4383,18 @@
       const baseUrl = document.getElementById('baseUrl').value;
       
       const cardId = 'card-storage';
-      const testFile = 'tests/e2e/providers/storage.spec.ts';
+      
+      const storageMode = document.getElementById('storageModeSelect') ? document.getElementById('storageModeSelect').value : 'happy_path';
+      let testFile = 'tests/e2e/providers/storage.spec.ts';
+      if (storageMode === 'validation') {
+        testFile = 'tests/e2e/providers/storage-validation.spec.ts';
+      } else if (storageMode === 'api_failures') {
+        testFile = 'tests/e2e/providers/storage-api-failures.spec.ts';
+      } else if (storageMode === 'edge_cases') {
+        testFile = 'tests/e2e/providers/storage-edge-cases.spec.ts';
+      } else if (storageMode === 'all') {
+        testFile = 'tests/e2e/providers/storage.spec.ts tests/e2e/providers/storage-validation.spec.ts tests/e2e/providers/storage-api-failures.spec.ts tests/e2e/providers/storage-edge-cases.spec.ts';
+      }
 
       activeCardId = cardId;
       selectedConsoleCardId = cardId;
@@ -5454,6 +5442,11 @@
         weeklyDays: Array.from(document.querySelectorAll('input[name="weeklyDayCheckbox"]:checked')).map(cb => cb.value),
         includeMode: document.getElementById('includeModeSelect') ? document.getElementById('includeModeSelect').value : 'one_repo',
         excludeMode: document.getElementById('excludeModeSelect') ? document.getElementById('excludeModeSelect').value : 'one_repo',
+        backupMode: document.getElementById('backupModeSelect') ? document.getElementById('backupModeSelect').value : 'all',
+        schedulerMode: document.getElementById('schedulerModeSelect') ? document.getElementById('schedulerModeSelect').value : 'happy_path',
+        restoreMode: document.getElementById('restoreModeSelect') ? document.getElementById('restoreModeSelect').value : 'happy_path',
+        loginMode: document.getElementById('loginModeSelect') ? document.getElementById('loginModeSelect').value : 'happy_path',
+        storageMode: document.getElementById('storageModeSelect') ? document.getElementById('storageModeSelect').value : 'happy_path',
         workers: document.getElementById('workersCount') ? document.getElementById('workersCount').value : 1
       };
       localStorage.setItem('gitsec_scheduler_settings', JSON.stringify(settings));
@@ -5556,6 +5549,21 @@
         if (settings.excludeMode !== undefined && document.getElementById('excludeModeSelect')) {
           document.getElementById('excludeModeSelect').value = settings.excludeMode;
         }
+        if (settings.backupMode !== undefined && document.getElementById('backupModeSelect')) {
+          document.getElementById('backupModeSelect').value = settings.backupMode;
+        }
+        if (settings.schedulerMode !== undefined && document.getElementById('schedulerModeSelect')) {
+          document.getElementById('schedulerModeSelect').value = settings.schedulerMode;
+        }
+        if (settings.restoreMode !== undefined && document.getElementById('restoreModeSelect')) {
+          document.getElementById('restoreModeSelect').value = settings.restoreMode;
+        }
+        if (settings.loginMode !== undefined && document.getElementById('loginModeSelect')) {
+          document.getElementById('loginModeSelect').value = settings.loginMode;
+        }
+        if (settings.storageMode !== undefined && document.getElementById('storageModeSelect')) {
+          document.getElementById('storageModeSelect').value = settings.storageMode;
+        }
 
         if (settings.workers !== undefined) {
           const wVal = settings.workers;
@@ -5568,9 +5576,83 @@
         }
 
         onScheduleTypeChange();
+        
+        // Sync UI descriptions on load
+        setTimeout(() => {
+          if (document.getElementById('includeModeSelect')) updateCardUI('card-github-include', 'includeModeSelect', 'include-desc', true);
+          if (document.getElementById('excludeModeSelect')) updateCardUI('card-github-exclude', 'excludeModeSelect', 'exclude-desc', true);
+          if (document.getElementById('backupModeSelect')) updateCardUI('card-github-backup', 'backupModeSelect', 'backup-desc', true);
+          if (document.getElementById('storageProviderSelect')) updateCardUI('card-storage', 'storageProviderSelect', 'storage-desc', true);
+          if (document.getElementById('schedulerModeSelect')) updateCardUI('card-scheduler', 'schedulerModeSelect', 'scheduler-desc', true);
+          if (document.getElementById('restoreModeSelect')) updateCardUI('card-restore', 'restoreModeSelect', 'restore-desc', true);
+          if (document.getElementById('loginModeSelect')) updateCardUI('card-auth-login', 'loginModeSelect', 'login-desc', true);
+          if (document.getElementById('storageModeSelect')) updateCardUI('card-storage', 'storageModeSelect', 'storage-desc', true);
+        }, 50);
       } catch (e) {
         console.error('Ayarlar yüklenirken hata oluştu:', e);
         onScheduleTypeChange();
+      }
+    }
+
+    const cardDescriptions = {
+      'card-github-include': {
+        'one_repo': 'Yedekleme kapsamına alınması istenen <strong>tek bir deponun</strong> (repository) arayüzdeki switch butonu ile dahil edilmesini, durumun API ve arayüz seviyesinde başarıyla güncellendiğini doğrular.',
+        'one_page': 'Arayüzün aktif sayfasındaki <strong>tüm depoların toplu olarak</strong> yedekleme kapsamına dahil edilmesini doğrular.',
+        'all_pages': 'Tüm sayfalardaki (sayfalandırma boyunca) <strong>tüm depoların toplu olarak</strong> yedekleme kapsamına dahil edilmesini doğrular.'
+      },
+      'card-github-exclude': {
+        'one_repo': 'Yedekleme planının dışında tutulması istenen <strong>tek bir deponun</strong> arayüzdeki switch butonu ile hariç tutulmasını, durumun API ve arayüz seviyesinde başarıyla güncellendiğini doğrular.',
+        'all_pages': 'Tüm sayfalardaki <strong>tüm depoların toplu olarak</strong> yedekleme planı dışına çıkarılmasını (exclude edilmesini) doğrular.'
+      },
+      'card-github-backup': {
+        'happy_path': 'Entegre edilmiş GitHub depoları için <strong>başarılı bir yedekleme sürecinin tetiklenmesini, ilerleme durumunun API üzerinden izlenmesini</strong> ve başarıyla tamamlandığını doğrular.',
+        'edge_cases': 'Yedekleme esnasında karşılaşılabilecek <strong>sunucu hataları (500), silinmiş depo durumları (400) ve sıfır seçili depo</strong> gibi olumsuz senaryolardaki hata yönetimini doğrular.',
+        'all': 'Hem başarılı yedekleme akışını hem de tüm hata yönetimi ve limit (edge case) senaryolarını <strong>sırasıyla ve eksiksiz</strong> olarak doğrular.'
+      },
+      'card-storage': {
+        'aws': 'Kullanıcı çalışma alanına yeni bir <strong>AWS S3 (Amazon Simple Storage Service)</strong> sağlayıcısı ekleme sihirbazını, yetkilendirme ve bağlantı adımlarını doğrular.',
+        'azure': 'Kullanıcı çalışma alanına yeni bir <strong>Azure Blob Storage</strong> sağlayıcısı ekleme sihirbazını, yetkilendirme ve bağlantı adımlarını doğrular.',
+        'gdrive': 'Kullanıcı çalışma alanına yeni bir <strong>Google Drive</strong> sağlayıcısı ekleme sihirbazını, yetkilendirme ve bağlantı adımlarını doğrular.',
+        'huawei': 'Kullanıcı çalışma alanına yeni bir <strong>Huawei OBS (Object Storage Service)</strong> sağlayıcısı ekleme sihirbazını, yetkilendirme ve bağlantı adımlarını doğrular.',
+        'onedrive': 'Kullanıcı çalışma alanına yeni bir <strong>OneDrive Personal</strong> sağlayıcısı ekleme sihirbazını, yetkilendirme ve bağlantı adımlarını doğrular.',
+        'happy_path': 'Seçilen bulut depolama sağlayıcısı için yeni bir <strong>bağlantı oluşturma ve yetkilendirme</strong> adımlarını test eder.',
+        'validation': 'Depolama sağlayıcısı ekleme formundaki <strong>zorunlu alan boşluk kontrollerini, geçersiz karakter engellemelerini</strong> ve mükerrer sağlayıcı tanımlama hatalarını test eder.',
+        'api_failures': 'Bağlantı sırasında yaşanabilecek <strong>ağ kesintilerini, sunucu çökmelerini (HTTP 500), yüksek gecikmeleri</strong> ve yetki iptali (HTTP 401) durumlarını simüle eder.',
+        'edge_cases': 'Aynı butonun ardışık hızlı tıklanmasını (double-click spam) önleme mekanizmasını ve <strong>internetin tamamen kesildiği çevrimdışı (offline) mod</strong> davranışlarını test eder.',
+        'all': 'Seçilen bulut sağlayıcısı bağlantısı dahil <strong>tüm depolama doğrulama, api hata ve sınır senaryolarını sırasıyla</strong> test eder.'
+      },
+      'card-scheduler': {
+        'happy_path': 'Otomatik veri yedekleme görevlerini planlamayı sağlar; zamanlama sıklığını Günlük (Daily), Haftalık (Weekly), Aylık (Monthly) veya Özel (Cron) olarak yapılandırır.',
+        'validation': 'Zamanlayıcı oluşturma formundaki zorunlu alanların (isim, süre vb.) validasyon kurallarını ve aynı isimle mükerrer kayıt oluşturma çakışmalarını denetler.',
+        'all': 'Hem otomatik yedekleme planlama akışını hem de tüm form doğrulama/hata senaryolarını sırasıyla doğrular.'
+      },
+      'card-restore': {
+        'happy_path': 'Daha önce oluşturulmuş yedeklerin geri yükleme (restore) sihirbazını test eder; adımların doğruluğunu ve kullanıcı yönlendirmelerini doğrular.',
+        'validation': 'Geri yükleme sihirbazındaki veri giriş sınırlarını (boş depo adı, geçersiz karakterler vb.) ve çakışan aynı isimli depoların geri yükleme denemelerindeki hata yönetimini test eder.',
+        'all': 'Hem normal geri yükleme akışını hem de tüm geri yükleme hata ve sınır senaryolarını sırasıyla doğrular.'
+      },
+      'card-auth-login': {
+        'happy_path': 'GitSec platformuna kullanıcı giriş formunun alan doğrulamalarını, geçersiz giriş denemelerindeki hata mesajlarını ve başarılı girişteki yönlendirmeleri test eder.',
+        'failures': 'Giriş işlemi sırasında yaşanabilecek ağ kopmaları veya sunucu hataları (HTTP 500 gibi) altında uygulamanın kararlılığını ve kullanıcıya gösterilen hata uyarılarını test eder.',
+        'all': 'Hem başarılı giriş akışını hem de giriş esnasındaki hata/kesinti senaryolarını sırasıyla test eder.'
+      }
+    };
+
+    function updateCardUI(cardId, selectId, descId, isInitialLoad = false) {
+      const select = document.getElementById(selectId);
+      const descEl = document.getElementById(descId);
+      const card = document.getElementById(cardId);
+      
+      if (!select || !card) return;
+      
+      const val = select.value;
+      
+      if (descEl && cardDescriptions[cardId] && cardDescriptions[cardId][val]) {
+        descEl.innerHTML = cardDescriptions[cardId][val];
+      }
+      
+      if (!isInitialLoad) {
+        card.className = 'test-card';
       }
     }
 

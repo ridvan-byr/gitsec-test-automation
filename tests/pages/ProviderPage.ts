@@ -85,18 +85,13 @@ export class ProviderPage {
 
   /** Restore / provider seçimindeki GitHub kartı (dialog şart değil — sayfada veya sheet içinde olabilir). */
   githubProviderCardLocator(): Locator {
-    const scope = this.page.locator('main').first().or(this.page.locator('body'));
-    return scope
-      .locator('div, [role="button"], button')
-      .filter({ has: this.page.getByText(/^Github$/i) })
-      .locator('button')
-      .filter({ hasText: /Install the GitSec app and grant repository permissions/i })
-      .first()
-      .or(
-        this.page.locator('button')
-          .filter({ hasText: /Install the GitSec app and grant repository permissions/i })
-          .first()
-      );
+    return this.page.locator([
+      'button:has-text("Install the GitSec app and grant repository permissions")',
+      'button:has-text("Configure App")',
+      '[role="button"]:has-text("Configure App")',
+      'button:has-text("GitHub")',
+      'button:has-text("Github")'
+    ].join(', ')).first();
   }
 
   /**
@@ -111,10 +106,7 @@ export class ProviderPage {
     const pagesBefore = new Set(context.pages());
 
     const waitForGithubPage = (): Promise<Page> => {
-      const viaPopup = this.page.waitForEvent('popup', { timeout: 60_000 }).then(async (p) => {
-        await p.waitForURL(/github\.com/i, { timeout: 30_000 }).catch(() => {});
-        return p;
-      });
+      const viaPopup = this.page.waitForEvent('popup', { timeout: 60_000 });
 
       const viaSameTab = this.page
         .waitForURL(/github\.com/i, { timeout: 60_000 })
@@ -128,14 +120,8 @@ export class ProviderPage {
             if (/github\.com/i.test(p.url())) {
               return p;
             }
-            try {
-              await p.waitForURL(/github\.com/i, { timeout: 2000 });
-              return p;
-            } catch {
-              /* yükleniyor */
-            }
           }
-          await this.page.waitForLoadState('domcontentloaded').catch(() => {});
+          await this.page.waitForTimeout(500);
         }
         throw new Error('GitHub sekmesi zaman aşımı');
       })();
@@ -144,10 +130,24 @@ export class ProviderPage {
     };
 
     const clickCard = async (): Promise<void> => {
-      try {
-        await githubCard.click({ timeout: 8000 });
-      } catch {
-        await githubCard.click({ force: true });
+      await this.page.waitForTimeout(1500); // Animasyon ve hydration'ın oturması için bekle
+      
+      const deadline = Date.now() + 15000;
+      while (Date.now() < deadline) {
+        try {
+          await githubCard.click({ force: true, timeout: 3000 });
+        } catch (e) {
+          // Geçici tıklama hatalarını yoksay
+        }
+        
+        await this.page.waitForTimeout(1000);
+        
+        // Popup veya yönlendirme başladıysa tıklama döngüsünden çık
+        const anyGithubPage = this.page.context().pages().some(p => /github\.com/i.test(p.url()));
+        const mainNavigating = /github\.com/i.test(this.page.url());
+        if (anyGithubPage || mainNavigating) {
+          break;
+        }
       }
     };
 

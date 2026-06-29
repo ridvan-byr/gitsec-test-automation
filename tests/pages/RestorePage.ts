@@ -129,21 +129,40 @@ export class RestorePage {
       await installBtn.click();
       await onInstallNewOrganization();
 
-      console.log('[restore] Yetkilendirme sonrası sayfa yenileniyor...');
-      await this.page.reload({ waitUntil: 'load' });
-
-      console.log('[restore] Sayfa yenilendikten sonra organizasyon seçimi bekleniyor...');
-      await this.openTargetOrganizationSelect();
-      const newListState = await this.waitForOrganizationListState(30000);
-      if (newListState === 'has_orgs') {
-        let option = this.organizationOptions().first();
-        await option.waitFor({ state: 'visible', timeout: 15000 });
-        const orgLabel = (await option.innerText()).replace(/\s+/g, ' ').trim();
-        console.log(`[restore] Yeni yetkilendirilen organizasyon seçiliyor: "${orgLabel}"`);
-        await option.click();
-      } else if (newListState === 'empty') {
-        console.log('[restore] Yeni yetkilendirme sonrası organizasyon bulunamadı. Seçim kutusu Escape ile kapatılıyor...');
-        await this.page.keyboard.press('Escape').catch(() => {});
+      console.log('[restore] Yetkilendirme sonrası organizasyonun yüklenmesi bekleniyor...');
+      
+      let orgSelected = false;
+      const deadline = Date.now() + 45000; // 45 saniye toplam zaman aşımı
+      
+      while (Date.now() < deadline) {
+        console.log('[restore] Sayfa yenileniyor ve organizasyon listesi kontrol ediliyor...');
+        await this.page.reload({ waitUntil: 'networkidle' }).catch(() => {});
+        
+        try {
+          await this.openTargetOrganizationSelect();
+          const state = await this.waitForOrganizationListState(5000);
+          if (state === 'has_orgs') {
+            let option = this.organizationOptions().first();
+            await option.waitFor({ state: 'visible', timeout: 5000 });
+            const orgLabel = (await option.innerText()).replace(/\s+/g, ' ').trim();
+            console.log(`[restore] Yeni yetkilendirilen organizasyon seçiliyor: "${orgLabel}"`);
+            await option.click();
+            orgSelected = true;
+            break;
+          } else {
+            console.log('[restore] Liste boş ("No organizations available"). Kapatılıp tekrar denenecek...');
+            await this.page.keyboard.press('Escape').catch(() => {});
+          }
+        } catch (e) {
+          console.log('[restore] Organizasyon kontrolü sırasında hata oluştu, tekrar denenecek...', (e as any).message);
+          await this.page.keyboard.press('Escape').catch(() => {});
+        }
+        
+        await this.page.waitForTimeout(3000);
+      }
+      
+      if (!orgSelected) {
+        console.warn('⚠️ [UYARI] Yeni yetkilendirme sonrası 45 saniye boyunca organizasyon bulunamadı.');
       }
 
       const next = this.nextStepButton();
@@ -174,5 +193,33 @@ export class RestorePage {
     await next.click();
     console.log('[restore] Next Step tıklandı; sonraki adımlar için hazır.');
     return 'selected_existing_org';
+  }
+
+  async selectBackupSourceIfVisible(): Promise<void> {
+    const step2Heading = this.page.getByRole('heading', { name: /Select backup source/i }).first();
+    const backupTrigger = this.page.locator('[data-slot="select-trigger"]').filter({ hasText: /Select a backup/i }).first();
+    
+    await Promise.race([
+      step2Heading.waitFor({ state: 'visible', timeout: 10000 }).catch(() => {}),
+      backupTrigger.waitFor({ state: 'visible', timeout: 10000 }).catch(() => {})
+    ]);
+
+    const isBackupTriggerVisible = await backupTrigger.isVisible().catch(() => false);
+
+    if (isBackupTriggerVisible) {
+      console.log('[e2e] "Select a backup" tespit edildi, yedek seçiliyor...');
+      await backupTrigger.click();
+
+      const backupOptions = this.page.getByRole('option')
+        .or(this.page.locator('[data-slot="select-item"]'))
+        .filter({ hasNotText: /Select a backup/i });
+
+      await backupOptions.first().waitFor({ state: 'visible', timeout: 10000 });
+      const backupText = await backupOptions.first().innerText().catch(() => '');
+      console.log(`[e2e] Yedek seçiliyor: "${backupText.trim()}"`);
+      await backupOptions.first().click();
+    } else {
+      console.log('[e2e] Yedek zaten seçili durumda veya görünmüyor.');
+    }
   }
 }

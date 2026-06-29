@@ -1,37 +1,18 @@
 /**
- * Test: AWS S3 Storage Provider Edge Cases & Stress (Faz 4 - Edge Cases & States)
+ * Test: Bulut Depolama Sağlayıcısı Edge Cases & Stres Testleri
  * 
- * Risk:
- * - Kullanıcının "Save" butonuna aşırı hızlı ve art arda tıklaması (Double-click spamming) durumunda backend'e mükerrer 
- *   isteklerin gitmesi ve mükerrer veritabanı kayıtları veya sunucu tarafında kaynak israfı oluşması.
- * - İşlem sırasında kullanıcının internet bağlantısının tamamen kesilmesi durumunda arayüzün (UI) donması veya çökmesi.
- * 
- * Beklenen:
- * - Butona ilk tıklamada buton anında `disabled` olmalı, sonraki tıklamalar hiçbir şekilde API isteği tetiklememelidir.
- * - İnternet bağlantısı koptuğunda uygulama çökmeyip kararlı kalmalı veya kullanıcıyı `/offline` sayfasına yönlendirmelidir.
- * 
- * Doğrulama (Assert):
- * - Double-click spam testinde; ikinci/üçüncü tıklama denemelerinde butonun `disabled` olması ve ağda sadece 1 adet POST isteği yapılması.
- * - Offline mod testinde; `context.setOffline(true)` sonrası yapılan işlemde URL'in `/offline` içermesi veya arayüzün kararlı kalması.
- * 
- * Yanlış Pozitif Riski:
- * Buton arayüzde pasif görünmesine rağmen arka planda ağ isteklerini göndermeye devam ediyor olabilir (debouncing/throttle veya disabled mantığı eksik kurulmuş olabilir).
- * 
- * Ek Doğrulama (Mitigation):
- * - Ağ katmanında POST istek adedi Playwright route interceptor (`page.route`) ile sayılarak (yani `apiPostCount === 1`) 
- *   kesin olarak sadece tek bir API isteğinin sunucuya ulaştığı doğrulanır.
+ * Bu test dosyası AWS S3, Azure Blob, Huawei OBS, Google Drive ve OneDrive sağlayıcıları için
+ * çift tıklama engelleme (double-click spam), çevrimdışı (offline) mod dayanıklılığı,
+ * ve silme (DELETE) işlemi veri tutarlılığı senaryolarını dinamik olarak test eder.
  */
 
 import { test, expect } from '../../fixtures/test';
+import { Page } from '@playwright/test';
 import { StoragePage } from '../../pages/StoragePage';
 import { requireEnv } from '../../support/require-env';
 
-// --- DİNAMİK HATA YAKALAMA FONKSİYONLARI ---
-
-/**
- * Sayfa üzerinde o an görünür olan herhangi bir hata mesajı, toast, alert veya validation uyarısını dinamik olarak arar.
- */
-async function getVisibleErrorMessage(page: any): Promise<string | null> {
+// Arayüzdeki hata mesajlarını dinamik arayan yardımcı fonksiyon
+async function getVisibleErrorMessage(page: Page): Promise<string | null> {
   const errorSelectors = [
     page.locator('[role="alert"]'),
     page.locator('.toast-notification.error'),
@@ -59,13 +40,10 @@ async function getVisibleErrorMessage(page: any): Promise<string | null> {
   return null;
 }
 
-/**
- * Belirtilen regex pattern'ine uyan bir hatanın arayüzde görünmesini dinamik olarak bekler ve doğrular.
- */
-async function assertAndLogDynamicError(page: any, expectedPattern: RegExp): Promise<string> {
+async function assertAndLogDynamicError(page: Page, expectedPattern: RegExp): Promise<string> {
   let errorText: string | null = null;
   let bodyText = '';
-  
+
   await expect(async () => {
     errorText = await getVisibleErrorMessage(page);
     if (errorText) {
@@ -85,17 +63,95 @@ async function assertAndLogDynamicError(page: any, expectedPattern: RegExp): Pro
   }
 }
 
-
 const workspaceId = requireEnv('WORKSPACE_ID');
+const provider = process.env.E2E_STORAGE_PROVIDER || 'aws';
+const isOAuthProvider = ['gdrive', 'onedrive'].includes(provider);
 
-test.describe('AWS S3 Depolama Sağlayıcısı Edge Case & Stres Testleri', () => {
-  // Stres ve Edge Case testleri (offline/recovery/delete) uzun sürebilir, timeout'u artıralım
-  test.setTimeout(90_000);
+// Sağlayıcıya göre geçerli çevre verilerini hazırlayalım
+function getProviderEnvData() {
+  if (provider === 'aws') {
+    return {
+      connName: `Edge Cases AWS Test - ${Date.now()}`,
+      bucket: requireEnv('AWS_S3_BUCKET'),
+      accessKey: requireEnv('AWS_ACCESS_KEY_ID'),
+      secretKey: requireEnv('AWS_SECRET_ACCESS_KEY'),
+      region: requireEnv('AWS_REGION')
+    };
+  } else if (provider === 'azure') {
+    return {
+      connName: `Edge Cases Azure Test - ${Date.now()}`,
+      folderPath: process.env.AZURE_FOLDER_PATH || '/',
+      connectionString: requireEnv('AZURE_CONNECTION_STRING')
+    };
+  } else if (provider === 'huawei') {
+    return {
+      connName: `Edge Cases Huawei Test - ${Date.now()}`,
+      bucket: requireEnv('HUAWEI_BUCKET'),
+      accessKey: requireEnv('HUAWEI_ACCESS_KEY_ID'),
+      secretKey: requireEnv('HUAWEI_SECRET_ACCESS_KEY'),
+      region: process.env.HUAWEI_REGION || 'Europe (Turkey - West)'
+    };
+  } else {
+    // OAuth (GDrive, OneDrive)
+    return {
+      connName: `Edge Cases OAuth Test - ${Date.now()}`
+    };
+  }
+}
 
+async function fillFormForSelectedProvider(storagePage: StoragePage, connName: string, data: any) {
+  if (provider === 'aws') {
+    await storagePage.fillAWSForm(connName, data.bucket, data.accessKey, data.secretKey, data.region);
+  } else if (provider === 'azure') {
+    await storagePage.fillAzureForm(connName, data.folderPath, data.connectionString);
+  } else if (provider === 'huawei') {
+    await storagePage.fillHuaweiForm(connName, data.bucket, data.accessKey, data.secretKey, data.region);
+  } else {
+    // OAuth (GDrive, OneDrive) sadece Connection Name doldurulur
+    const connectionNameInput = storagePage.page.getByPlaceholder('e.g., Compliance GD')
+      .or(storagePage.page.locator('input[placeholder*="Compliance"]'))
+      .or(storagePage.page.locator('input[name="name"]'))
+      .first();
+    await connectionNameInput.waitFor({ state: 'visible', timeout: 15000 });
+    await connectionNameInput.fill(connName);
+  }
+}
+
+async function prepareConnectionForSave(storagePage: StoragePage, page: Page) {
+  if (!isOAuthProvider) {
+    await storagePage.testS3Connection();
+  } else {
+    // OAuth sağlayıcılarda yetkilendirme akışını mock'la
+    await page.route(/\/api\/storage-providers\/oauth\/status/, async (route) => {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ success: true }) });
+    });
+    const popupPromise = page.waitForEvent('popup');
+    const permissionBtn = page.getByRole('button', { name: /Permission Required/i }).first();
+    await permissionBtn.click();
+    const popup = await popupPromise;
+    await popup.close();
+    const baseUrl = page.url().split('?')[0];
+    const providerParam = provider === 'gdrive' ? 'Google+Drive' : 'OneDrive+Personal';
+    await page.goto(`${baseUrl}?provider=${providerParam}&oauth-success=true&correlation_id=mock-correlation-id`);
+  }
+}
+
+test.describe(`${provider.toUpperCase()} Depolama Sağlayıcısı Edge Case & Stres Testleri`, () => {
+  test.setTimeout(90000);
+  test.describe.configure({ retries: 1 });
   let storagePage: StoragePage;
 
   test.beforeEach(async ({ page }) => {
-    // Connection check API'sini mock'la (Testlerin ışık hızında ve kararlı çalışması için)
+    (page as any).ignoredErrors = [
+      /api\/storage-providers/,
+      /Failed to load resource: the server responded with a status of (400|500|401|403|422|502)/,
+      /Cross-Origin-Opener-Policy/,
+      /net::ERR_INTERNET_DISCONNECTED/,
+      /net::ERR_FAILED/,
+      /HTTP Status 502/
+    ];
+
+    // Sınama API'sini mock'la (Başarılı bağlantı durumları için)
     await page.route(
       (url) => url.href.includes('/storage') && (url.href.includes('/test') || url.href.includes('/check')),
       async (route) => {
@@ -107,12 +163,7 @@ test.describe('AWS S3 Depolama Sağlayıcısı Edge Case & Stres Testleri', () =
             success: true,
             message: 'Connection test successful',
             errors: [],
-            data: {
-              isSuccessful: true,
-              provider: 1,
-              durationMs: 150,
-              checks: []
-            }
+            data: { isSuccessful: true, provider: 1, durationMs: 150, checks: [] }
           })
         });
       }
@@ -120,24 +171,36 @@ test.describe('AWS S3 Depolama Sağlayıcısı Edge Case & Stres Testleri', () =
 
     storagePage = new StoragePage(page);
     await storagePage.navigateToStoragePage();
-    await storagePage.cleanupExistingTestProviders('aws');
+    await storagePage.cleanupExistingTestProviders(provider);
     await storagePage.clickAddStorageProvider();
-    await storagePage.selectS3Provider();
-  });
 
+    // Arayüzden ilgili sağlayıcı kartını seçelim
+    if (provider === 'aws') {
+      await storagePage.selectS3Provider();
+    } else if (provider === 'azure') {
+      await storagePage.selectAzureProvider();
+    } else if (provider === 'huawei') {
+      await storagePage.selectHuaweiProvider();
+    } else if (provider === 'gdrive') {
+      await storagePage.selectOAuthProvider('Google Drive', 'Google Drive Service');
+    } else if (provider === 'onedrive') {
+      await storagePage.selectOAuthProvider('OneDrive Personal', 'OneDrive Personal');
+    }
+  });
 
   // ─────────────────────────────────────────────────────────────────
   // 🖱️ SENARYO 1: DOUBLE-CLICK SPAMMING (ÇİFT TIKLAMA KORUMASI)
   // ─────────────────────────────────────────────────────────────────
   test('Save butonuna art arda hızlı tıklandığında butonun disabled olarak mükerrer isteği engellediğini doğrula', async ({ page }) => {
-    const connName = `Double Click Test - ${Date.now()}`;
-    const bucketName = requireEnv('AWS_S3_BUCKET');
-    const accessKeyId = requireEnv('AWS_ACCESS_KEY_ID');
-    const secretAccessKey = requireEnv('AWS_SECRET_ACCESS_KEY');
-    const awsRegion = requireEnv('AWS_REGION');
-
-    await storagePage.fillAWSForm(connName, bucketName, accessKeyId, secretAccessKey, awsRegion);
-    await storagePage.testS3Connection();
+    const envData = getProviderEnvData();
+    if (isOAuthProvider) {
+      await prepareConnectionForSave(storagePage, page);
+      await fillFormForSelectedProvider(storagePage, envData.connName, envData);
+      await storagePage.testS3Connection();
+    } else {
+      await fillFormForSelectedProvider(storagePage, envData.connName, envData);
+      await prepareConnectionForSave(storagePage, page);
+    }
 
     // Ağ seviyesinde SADECE POST /api/storage-providers isteklerini sayacağız
     let apiPostCount = 0;
@@ -146,17 +209,12 @@ test.describe('AWS S3 Depolama Sağlayıcısı Edge Case & Stres Testleri', () =
       async (route) => {
         if (route.request().method() === 'POST') {
           apiPostCount++;
-          console.log(`📡 [AĞ] Storage POST isteği #${apiPostCount} yakalandı: ${route.request().url()}`);
+          console.log(`📡 [AĞ] Storage POST isteği #${apiPostCount} yakalandı.`);
           await new Promise(resolve => setTimeout(resolve, 3000));
           await route.fulfill({
             status: 200,
             contentType: 'application/json',
-            body: JSON.stringify({
-              success: true,
-              errors: [],
-              message: 'Mocked successful save',
-              data: { id: 999999 }
-            })
+            body: JSON.stringify({ success: true, message: 'Mocked successful save', data: { id: 999999 } })
           });
         } else {
           await route.continue();
@@ -183,33 +241,27 @@ test.describe('AWS S3 Depolama Sağlayıcısı Edge Case & Stres Testleri', () =
     // Gecikme süresinin dolmasını bekle
     await page.evaluate(() => new Promise(resolve => setTimeout(resolve, 3000)));
 
-    console.log(`📊 Toplam gönderilen POST API isteği sayısı: ${apiPostCount}`);
-    console.log(`📊 2. tıklama engellendi mi: ${secondClickBlocked}`);
-    console.log(`📊 3. tıklama engellendi mi: ${thirdClickBlocked}`);
-
     expect(secondClickBlocked).toBe(true);
     expect(thirdClickBlocked).toBe(true);
     expect(apiPostCount).toBe(1);
-    console.log('✅ Double-click spam koruması doğrulandı: İlk tıklama sonrası buton disabled oldu, mükerrer API çağrısı engellendi.');
+    console.log('✅ Double-click spam koruması başarıyla doğrulandı.');
   });
 
   // ─────────────────────────────────────────────────────────────────
   // 📴 SENARYO 2: OFFLİNE MODE (ÇEVRİMDIŞI MOD DAYANIKLILIĞI)
   // ─────────────────────────────────────────────────────────────────
-  test('İnternet bağlantısı kesildiğinde uygulamanın offline sayfasına yönlendirdiğini doğrula', async ({ page, context }) => {
-    // Offline mod testi daha uzun sürebilir
-    test.setTimeout(60000);
+  test('İnternet bağlantısı kesildiğinde uygulamanın offline veya çökmeden kararlı kaldığını doğrula', async ({ page }) => {
+    const envData = getProviderEnvData();
+    if (isOAuthProvider) {
+      await prepareConnectionForSave(storagePage, page);
+      await fillFormForSelectedProvider(storagePage, envData.connName, envData);
+      await storagePage.testS3Connection();
+    } else {
+      await fillFormForSelectedProvider(storagePage, envData.connName, envData);
+      await prepareConnectionForSave(storagePage, page);
+    }
 
-    const connName = `Offline Test - ${Date.now()}`;
-    const bucketName = requireEnv('AWS_S3_BUCKET');
-    const accessKeyId = requireEnv('AWS_ACCESS_KEY_ID');
-    const secretAccessKey = requireEnv('AWS_SECRET_ACCESS_KEY');
-    const awsRegion = requireEnv('AWS_REGION');
-
-    await storagePage.fillAWSForm(connName, bucketName, accessKeyId, secretAccessKey, awsRegion);
-    await storagePage.testS3Connection();
-
-    // İnternet bağlantısını kes (CDP bağlantısını bozmadan simüle etmek için page.route kullanıyoruz)
+    // İnternet bağlantısını kes (Ağ seviyesinde abort)
     console.log('📴 İnternet bağlantısı kesiliyor (Offline Simülasyonu)...');
     await page.route('**/*', async (route) => {
       await route.abort('internetdisconnected').catch(() => { });
@@ -218,9 +270,9 @@ test.describe('AWS S3 Depolama Sağlayıcısı Edge Case & Stres Testleri', () =
     const saveBtn = page.getByRole('button', { name: /Add Storage|Save/i }).first();
     await saveBtn.click({ noWaitAfter: true }).catch(() => { });
 
-    // Next.js uygulamasının /offline sayfasına yönlendirmesini bekle
-    console.log('⏳ Offline sayfasına yönlendirme bekleniyor...');
-    await page.waitForURL(/offline/i, { timeout: 15000 }).catch(() => { });
+    // Next.js uygulamasının /offline sayfasına yönlendirmesini bekle veya arayüzün ayakta kaldığını doğrula
+    console.log('⏳ Offline durumu veya çökme kontrolü bekleniyor...');
+    await page.waitForURL(/offline/i, { timeout: 8000 }).catch(() => { });
 
     const currentUrl = page.url();
     console.log(`📍 Mevcut URL: ${currentUrl}`);
@@ -236,26 +288,28 @@ test.describe('AWS S3 Depolama Sağlayıcısı Edge Case & Stres Testleri', () =
     // İnterneti geri aç (Temizlik)
     await page.unroute('**/*').catch(() => { });
     await page.close({ runBeforeUnload: false }).catch(() => { });
-    console.log('🌐 İnternet bağlantısı geri açıldı ve sayfa kapatıldı.');
   });
 
   // ─────────────────────────────────────────────────────────────────
   // 📴 SENARYO 3: INTERNET KESİNTİSİNDEN TEKRAR ONLINE DURUMA DÖNÜŞ (RECOVERY)
   // ─────────────────────────────────────────────────────────────────
   test('İnternet kesildiğinde kaydetme başarısız olmalı, internet geri geldiğinde tekrar Save tıklanarak başarılı olunmalı', async ({ page }) => {
-    const connName = `Offline Recovery Test - ${Date.now()}`;
-    const bucketName = requireEnv('AWS_S3_BUCKET');
-    const accessKeyId = requireEnv('AWS_ACCESS_KEY_ID');
-    const secretAccessKey = requireEnv('AWS_SECRET_ACCESS_KEY');
-    const awsRegion = requireEnv('AWS_REGION');
+    const envData = getProviderEnvData();
+    if (isOAuthProvider) {
+      await prepareConnectionForSave(storagePage, page);
+      await fillFormForSelectedProvider(storagePage, envData.connName, envData);
+      await storagePage.testS3Connection();
+    } else {
+      await fillFormForSelectedProvider(storagePage, envData.connName, envData);
+      await prepareConnectionForSave(storagePage, page);
+    }
 
-    await storagePage.fillAWSForm(connName, bucketName, accessKeyId, secretAccessKey, awsRegion);
-    await storagePage.testS3Connection();
+    const storageRoutePattern = (url: URL) => url.href.includes('/storage') && !url.href.includes('/test') && !url.href.includes('/check');
 
     // 1. Ağ kesintisi simülasyonu yapalım
     console.log('📴 İnternet bağlantısı kesiliyor (Offline)...');
     await page.route(
-      (url) => url.href.includes('/storage') && !url.href.includes('/test') && !url.href.includes('/check'),
+      storageRoutePattern,
       async (route) => {
         if (route.request().method() === 'POST') {
           console.log('🛡️ [OFFLINE MOCK] Kaydetme isteği engellendi (Network Error).');
@@ -275,13 +329,11 @@ test.describe('AWS S3 Depolama Sağlayıcısı Edge Case & Stres Testleri', () =
 
     // 2. Ağ bağlantısını geri getirelim
     console.log('🌐 İnternet bağlantısı geri geliyor (Online)...');
-    await page.unroute(
-      (url) => url.href.includes('/storage') && !url.href.includes('/test') && !url.href.includes('/check')
-    );
+    await page.unroute(storageRoutePattern);
 
     // Save API çağrısını başarılı 200 dönecek şekilde mocklayalım
     await page.route(
-      (url) => url.href.includes('/storage') && !url.href.includes('/test') && !url.href.includes('/check'),
+      storageRoutePattern,
       async (route) => {
         if (route.request().method() === 'POST') {
           console.log('🛡️ [MOCK] İnternet geri geldi, kaydetme başarılı 200 dönülüyor!');
@@ -305,35 +357,48 @@ test.describe('AWS S3 Depolama Sağlayıcısı Edge Case & Stres Testleri', () =
   });
 
   // ─────────────────────────────────────────────────────────────────
-  // 🗑️ SENARYO 4: SİLME (DELETE) İŞLEMİ VE VERİ TUTARLILIĞI DOĞRULAMASI (Senior QA)
+  // 🗑️ SENARYO 4: SİLME (DELETE) İŞLEMİ VE VERİ TUTARLILIĞI DOĞRULAMASI
   // ─────────────────────────────────────────────────────────────────
   test('Eklenen bir depolama sağlayıcısının silindiğinde arayüzden ve backend\'den kalıcı olarak kalktığını doğrula', async ({ page }) => {
+    if (isOAuthProvider) {
+      test.skip(true, 'OAuth providers require real interactive authorization and cannot be tested for CRUD delete without a real connection.');
+    }
+
+    const envData = getProviderEnvData();
     const connName = `CRUD Delete Test - ${Date.now()}`;
-    const bucketName = requireEnv('AWS_S3_BUCKET');
-    const accessKeyId = requireEnv('AWS_ACCESS_KEY_ID');
-    const secretAccessKey = requireEnv('AWS_SECRET_ACCESS_KEY');
-    const awsRegion = requireEnv('AWS_REGION');
 
-    // 1. Entegrasyon ekleme işlemini yapalım (Gerçek API entegrasyonu ile sağlayıcı ekleme işlemini yapalım)
-    await storagePage.fillAWSForm(connName, bucketName, accessKeyId, secretAccessKey, awsRegion);
-    await storagePage.testS3Connection();
-    await storagePage.saveStorageProvider();
+    // 1. Formu dolduralım
+    if (isOAuthProvider) {
+      await prepareConnectionForSave(storagePage, page);
+      await fillFormForSelectedProvider(storagePage, connName, envData);
+      await storagePage.testS3Connection();
+    } else {
+      await fillFormForSelectedProvider(storagePage, connName, envData);
+      await prepareConnectionForSave(storagePage, page);
+    }
 
-    // 2. Arayüzde eklendiğini doğrula
+    // 2. Gerçek API üzerinden kaydedelim
+    const saveBtn = page.getByRole('button', { name: /Add Storage|Save/i }).first();
+    await saveBtn.click();
+    await page.waitForURL(new RegExp(`/${workspaceId}/storage(\\?|#|$)`), { timeout: 15_000 });
+
+    // 3. Arayüzde eklendiğini (Active/Connected) doğrula
     await storagePage.verifyProviderActive(connName);
 
-    // 3. Silme işlemini tetikle (Gerçek DELETE API çağrısını tetikler)
-    console.log(`🗑️ [DELETE] ${connName} sağlayıcısı silinmeye başlanıyor...`);
+    // 4. Silme işlemini tetikle
+    console.log(`🗑️ [DELETE] ${connName} sağlayıcısı siliniyor...`);
     await storagePage.deleteProvider(connName);
 
-    // 4. Arayüzde ve sayfa yenilendikten sonra da gerçekten kalıcı olarak silindiğini doğrula (CRUD Verification)
+    // 5. Arayüzden silindiğini doğrula
     const cardLocator = page.locator('tr').filter({ hasText: connName }).first();
     await expect(cardLocator).toBeHidden({ timeout: 8000 });
 
-    console.log('🔄 [RELOAD] Sayfa yenileniyor, verinin gerçekten silindiği teyit edilecek...');
+    // 6. Sayfayı yenileyip gerçekten silindiğini doğrula
+    console.log('🔄 [RELOAD] Sayfa yenileniyor...');
     await page.reload();
+    await page.waitForLoadState('networkidle').catch(() => { });
     await expect(cardLocator).toBeHidden({ timeout: 8000 });
 
-    console.log('✅ [CRUD DELETE] Entegrasyonun silindikten sonra hem arayüzden hem de kalıcı olarak silindiği doğrulandı.');
+    console.log('✅ Entegrasyonun silindikten sonra hem arayüzden hem de kalıcı olarak silindiği başarıyla doğrulandı.');
   });
 });

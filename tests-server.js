@@ -48,6 +48,12 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  // 1c. Dokümantasyon Sayfası
+  if (req.url === '/docs' || req.url === '/docs.html') {
+    serveStaticFile(res, path.join(__dirname, 'docs.html'), 'text/html');
+    return;
+  }
+
   // 1b. Favicon
   if (req.url.startsWith('/favicon.ico')) {
     const faviconPath = path.join(__dirname, 'favicon.ico');
@@ -122,7 +128,7 @@ const server = http.createServer((req, res) => {
           tag, headed, testFile, timezone, workspaceId, baseUrl,
           scheduleName, scheduleTime, includeCode, includePr, includeIssues,
           scheduleType, weeklyDay, monthlyDay, cronExpression,
-          includeMode, excludeMode, workers, cardId
+          includeMode, excludeMode, backupMode, workers, cardId
         } = JSON.parse(body || '{}');
 
         const maxWorkers = parseInt(workers) || 1;
@@ -153,7 +159,8 @@ const server = http.createServer((req, res) => {
         }
         
         if (testFile) {
-          args.push(testFile);
+          const files = testFile.trim().split(/\s+/);
+          args.push(...files);
         }
         if (tag) {
           args.push('--grep', tag);
@@ -202,6 +209,7 @@ const server = http.createServer((req, res) => {
         if (cronExpression) runEnv.E2E_CRON_EXPR = cronExpression;
         if (includeMode) runEnv.E2E_INCLUDE_MODE = includeMode;
         if (excludeMode) runEnv.E2E_EXCLUDE_MODE = excludeMode;
+        if (backupMode) runEnv.E2E_BACKUP_MODE = backupMode;
 
         const proc = spawn(cmd, args, {
           shell: !runWithNode,

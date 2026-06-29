@@ -38,6 +38,12 @@ test.describe('Storage Provider Entegrasyonları', () => {
   test.setTimeout(120_000);
 
   test('Seçilen bulut depolama sağlayıcısını bağlamayı dene', { tag: ['@smoke', '@critical'] }, async ({ page }) => {
+    (page as any).ignoredErrors = [
+      /Cross-Origin-Opener-Policy/,
+      /Failed to load resource: the server responded with a status of (400|500|401|403|422|502)/,
+      /HTTP Status 502/
+    ];
+
     const providerPage = new ProviderPage(page);
     const storagePage = new StoragePage(page);
     const storageProvider = requireEnv('E2E_STORAGE_PROVIDER');

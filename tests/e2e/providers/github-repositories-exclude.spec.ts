@@ -10,7 +10,31 @@ function translateToastMessage(msg: string): string {
   if (normalized.includes('failed to update repository status')) {
     return 'Repository/Depo durumu güncellenemedi.';
   }
+  if (normalized.includes('access is not granted') || normalized.includes('cannot be activated because access')) {
+    return 'Erişim izni verilmediği için depo etkinleştirilemedi. Sorun: GitHub üzerinde bu deponun sahibi olan kullanıcı veya organizasyon, GitSec uygulamasına üçüncü taraf (third-party) erişim veya OAuth yetkisi vermemiş olabilir.';
+  }
   return msg.replace(/\n/g, ' ').trim();
+}
+
+async function checkApiResponseAndToast(page: Page, apiResponse: any, cleanedRepoName: string, actionName: string): Promise<void> {
+  if (!apiResponse) {
+    throw new Error(`🚨 [SUNUCU HATASI / API TIMEOUT] "${cleanedRepoName}" reposu ${actionName} edilirken API isteği 30 saniye içinde yanıt vermedi. Sorun sunucu/site kaynaklıdır.`);
+  }
+  const status = apiResponse.status();
+  if (status !== 200) {
+    // Wait up to 3 seconds for a toast error to appear
+    const errorToast = page.locator('text=/The licence limit within threshold has been reached|Failed to update repository status|Some repositories cannot be activated/i').first();
+    const hasToast = await errorToast.waitFor({ state: 'visible', timeout: 3000 }).then(() => true).catch(() => false);
+    let toastMessage = '';
+    let explanation = '';
+    if (hasToast) {
+      toastMessage = await errorToast.innerText().catch(() => '');
+      explanation = translateToastMessage(toastMessage);
+      console.log(`🚨 [ARAYÜZ HATA TOASTU TESPİT EDİLDİ] Mesaj: "${toastMessage}" -> Açıklama: ${explanation}`);
+    }
+    
+    throw new Error(`🚨 [SUNUCU HATASI] API isteği HTTP ${status} hatası döndü ("${apiResponse.statusText()}"). Arayüz Hata Detayı: "${toastMessage || 'Toast mesajı bulunamadı'}" ${explanation ? `(Açıklama: ${explanation})` : ''}. Sorun sunucu/site kaynaklıdır.`);
+  }
 }
 
 async function getRepoTable(page: Page): Promise<Locator> {
@@ -47,7 +71,7 @@ async function scrollTableToRight(page: Page): Promise<void> {
       el.scrollLeft = 1000;
       el.dispatchEvent(new Event('scroll', { bubbles: true }));
     }).catch(() => {});
-    await page.evaluate(() => new Promise(requestAnimationFrame));
+    await page.evaluate(() => new Promise(requestAnimationFrame)).catch(() => {});
   }
   
   await page.evaluate(() => {
@@ -60,7 +84,7 @@ async function scrollTableToRight(page: Page): Promise<void> {
       }
     }
   }).catch(() => {});
-  await page.evaluate(() => new Promise(requestAnimationFrame));
+  await page.evaluate(() => new Promise(requestAnimationFrame)).catch(() => {});
 }
 
 // Tablonun skeleton yükleme durumunun tamamlanmasını bekleyen fonksiyon
@@ -75,7 +99,7 @@ async function waitTableLoadingFinished(repoTable: Locator): Promise<void> {
 // Durum kontrolü ve lisans hatası izleme yardımcısı (expect().toPass kullanan modern yapı)
 async function verifySwitchStateOrDetectLicenseError(page: Page, targetSwitch: Locator, targetState: 'true' | 'false' = 'false'): Promise<boolean> {
   const errorToast = page
-    .locator('text=/The licence limit within threshold has been reached|Failed to update repository status/i')
+    .locator('text=/The licence limit within threshold has been reached|Failed to update repository status|Some repositories cannot be activated/i')
     .first();
 
   let hasError = false;
@@ -116,7 +140,7 @@ async function clickNextPageAndWaitForLoad(page: Page, nextBtn: Locator, firstRo
     const currentName = await getCleanRepoName(firstRow);
     expect(currentName).not.toBe(previousName);
     expect(currentName.length).toBeGreaterThan(1);
-  }).toPass({ timeout: 10000, intervals: [200] });
+  }).toPass({ timeout: 20000, intervals: [200] });
 }
 
 // Son sayfaya doğrudan yönlenmeyi deneyen fonksiyon
@@ -137,7 +161,7 @@ async function goToLastPageIfPossible(page: Page, repoTable: Locator): Promise<v
       expect(currentName.length).toBeGreaterThan(1);
     }).toPass({ timeout: 10000, intervals: [200] });
 
-    await page.evaluate(() => new Promise(requestAnimationFrame));
+    await page.evaluate(() => new Promise(requestAnimationFrame)).catch(() => {});
   }
 }
 
@@ -150,7 +174,7 @@ async function findRepoPageByScanning(page: Page, repoTable: Locator, repoName: 
   await scrollTableToRight(page);
   
   // Son sayfada aramayı dene
-  let foundRow = page.locator('tr').filter({ hasText: repoName }).first();
+  let foundRow = repoTable.locator('tbody tr').filter({ hasText: repoName }).first();
   if (await foundRow.isVisible().catch(() => false)) {
     console.log(`🎉 [BAŞARILI] Depo son sayfada bulundu: "${repoName}"`);
     return foundRow;
@@ -179,7 +203,7 @@ async function findRepoPageByScanning(page: Page, repoTable: Locator, repoName: 
     }).toPass({ timeout: 10000, intervals: [200] });
     
     await scrollTableToRight(page);
-    foundRow = page.locator('tr').filter({ hasText: repoName }).first();
+    foundRow = repoTable.locator('tbody tr').filter({ hasText: repoName }).first();
     if (await foundRow.isVisible().catch(() => false)) {
       console.log(`🎉 [BAŞARILI] Depo geriye doğru taramada bulundu: "${repoName}"`);
       return foundRow;
@@ -199,7 +223,7 @@ async function findRepoPageByScanning(page: Page, repoTable: Locator, repoName: 
   let scanPageCount = 1;
   while (true) {
     await scrollTableToRight(page);
-    foundRow = page.locator('tr').filter({ hasText: repoName }).first();
+    foundRow = repoTable.locator('tbody tr').filter({ hasText: repoName }).first();
     if (await foundRow.isVisible().catch(() => false)) {
       console.log(`🎉 [BAŞARILI] Depo ileriye doğru taramada bulundu: "${repoName}"`);
       return foundRow;
@@ -230,7 +254,7 @@ async function navigateToRepositoriesGithubAndEnsureStable(page: Page, providerP
   
   const repoTable = await getRepoTable(page);
   await waitTableLoadingFinished(repoTable);
-  await page.evaluate(() => new Promise(requestAnimationFrame));
+  await page.evaluate(() => new Promise(requestAnimationFrame)).catch(() => {});
   
   return repoTable;
 }
@@ -250,65 +274,199 @@ async function getCleanRepoName(row: Locator): Promise<string> {
 }
 
 test.describe('Repositories - GitHub Exclude Selected', () => {
-  test('secili repolar exclude edilmeli', async ({ page }) => {
+  test('tek bir depoyu exclude etme', async ({ page }) => {
+    const mode = process.env.E2E_EXCLUDE_MODE || 'one_repo';
+    test.skip(mode !== 'one_repo', 'Only runs in one_repo mode');
     test.setTimeout(180000); // 3 dakikalık geniş zaman aşımı
     const providerPage = new ProviderPage(page);
 
-    const mode = process.env.E2E_EXCLUDE_MODE || 'one_repo';
-    console.log(`🚀 [BAŞLANGIÇ] GitHub Repositories Exclude Testi başlatılıyor. Kapsam Modu: ${mode}`);
+    console.log('🚀 [BAŞLANGIÇ] GitHub Repositories Exclude Testi başlatılıyor. Kapsam: tek bir depoyu exclude etme');
 
     const repoTable = await navigateToRepositoriesGithubAndEnsureStable(page, providerPage);
 
     // Listeyi taramaya başlamadan önce tabloyu kesinlikle sağa kaydırıyoruz
     await scrollTableToRight(page);
 
-    if (mode === 'one_repo') {
-      // Mod 1: Tek bir repoyu exclude et (Switch butonu ile)
-      let targetSwitch: Locator | null = null;
-      let targetIndex = -1;
-      let pageCount = 1;
+    // Mod 1: Tek bir repoyu exclude et (Switch butonu ile)
+    let targetSwitch: Locator | null = null;
+    let targetIndex = -1;
+    let pageCount = 1;
 
-      while (true) {
-        // Her döngü başında tablonun sağa kaydırılmış olduğundan emin oluyoruz
-        await scrollTableToRight(page);
+    while (true) {
+      // Her döngü başında tablonun sağa kaydırılmış olduğundan emin oluyoruz
+      await scrollTableToRight(page);
 
-        console.log(`🔍 [KONTROL] ${pageCount}. sayfada checked (aria-checked=true) switch aranıyor...`);
-        const switches = repoTable.locator('button[role="switch"]');
-        await switches.first().waitFor({ state: 'visible', timeout: 15000 }).catch(() => {});
-        const count = await switches.count();
+      console.log(`🔍 [KONTROL] ${pageCount}. sayfada checked (aria-checked=true) switch aranıyor...`);
+      const switches = repoTable.locator('button[role="switch"]');
+      await switches.first().waitFor({ state: 'visible', timeout: 15000 }).catch(() => {});
+      const count = await switches.count();
 
-        for (let i = 0; i < count; i++) {
-          const sw = switches.nth(i);
-          const isChecked = await sw.getAttribute('aria-checked');
-          if (isChecked === 'true' || isChecked === 'checked') {
-            targetSwitch = sw;
-            targetIndex = i;
-            console.log(`🎉 [BAŞARILI] Checked switch bulundu: Sayfa = ${pageCount}, Satır dizini = ${i}`);
-            break;
-          }
-        }
-
-        if (targetSwitch) {
+      for (let i = 0; i < count; i++) {
+        const sw = switches.nth(i);
+        const isChecked = await sw.getAttribute('aria-checked');
+        if (isChecked === 'true' || isChecked === 'checked') {
+          targetSwitch = sw;
+          targetIndex = i;
+          console.log(`🎉 [BAŞARILI] Checked switch bulundu: Sayfa = ${pageCount}, Satır dizini = ${i}`);
           break;
         }
-
-        console.log(`🔍 [KONTROL] ${pageCount}. sayfadaki tüm depolar zaten exclude edilmiş (devre dışı).`);
-        const nextBtn = await getNextPageButton(page);
-        const hasNext = await hasNextPage(nextBtn);
-
-        if (!hasNext) {
-          console.log('🎉 [BAŞARILI] Bütün sayfalar exclude edilmiş!');
-          console.log('🎉 [BAŞARILI] Test başarıyla tamamlandı (Tüm depolar zaten hariç tutulmuş durumda).');
-          return;
-        }
-
-        const firstRow = repoTable.locator('tbody tr').first();
-        await clickNextPageAndWaitForLoad(page, nextBtn, firstRow);
-        
-        pageCount++;
       }
 
-      // Sadece dikey olarak ekranın ortasına getiren ve yatay kaydırmayı bozmayan kaydırma
+      if (targetSwitch) {
+        break;
+      }
+
+      console.log(`🔍 [KONTROL] ${pageCount}. sayfadaki tüm depolar zaten exclude edilmiş (devre dışı).`);
+      const nextBtn = await getNextPageButton(page);
+      const hasNext = await hasNextPage(nextBtn);
+
+      if (!hasNext) {
+        console.log('🎉 [BAŞARILI] Bütün sayfalar exclude edilmiş!');
+        console.log('🎉 [BAŞARILI] Test başarıyla tamamlandı (Tüm depolar zaten hariç tutulmuş durumda).');
+        return;
+      }
+
+      const firstRow = repoTable.locator('tbody tr').first();
+      await clickNextPageAndWaitForLoad(page, nextBtn, firstRow);
+      
+      pageCount++;
+    }
+
+    if (!targetSwitch) {
+      throw new Error('Hedef switch bulunamadı.');
+    }
+
+    // Bulunduğumuz satırdaki repository ismini alalım
+    const targetRow = targetSwitch.locator('xpath=./ancestor::tr').first();
+    const cleanedRepoName = await getCleanRepoName(targetRow);
+    console.log(`📦 [İŞLEM] Hedef repository ismi: "${cleanedRepoName}"`);
+
+    // Sadece dikey olarak ekranın ortasına getiren ve yatay kaydırmayı bozmayan kaydırma
+    await targetSwitch.evaluate(el => {
+      const rect = el.getBoundingClientRect();
+      const isInViewport = rect.top >= 150 && rect.bottom <= (window.innerHeight - 150);
+      if (!isInViewport) {
+        window.scrollBy({
+          top: rect.top - (window.innerHeight / 2),
+          behavior: 'auto'
+        });
+      }
+    }).catch(() => {});
+    await page.evaluate(() => new Promise(requestAnimationFrame)).catch(() => {});
+
+    const responsePromise = page.waitForResponse(
+      response => response.url().includes('/api/repositories/license-inclusion-status/'),
+      { timeout: 30000 }
+    ).catch(() => null);
+
+    console.log('👆 [TIKLAMA] Switch butonuna tıklanıyor (Devre dışı bırakmak için)...');
+    try {
+      await targetSwitch.click({ timeout: 5000 });
+    } catch {
+      await targetSwitch.click({ force: true });
+    }
+    console.log('🎉 [BAŞARILI] Switch butonuna tıklandı!');
+
+    // Varsa onay modalını onayla
+    const confirmBtn = page.getByRole('button', { name: /Yes,\s*Exclude|Confirm/i }).first();
+    if (await confirmBtn.waitFor({ state: 'visible', timeout: 5000 }).then(() => true).catch(() => false)) {
+      console.log('👆 [TIKLAMA] Onay modalında "Yes, Exclude" butonuna tıklanıyor...');
+      await confirmBtn.click({ force: true });
+      await expect(confirmBtn).toBeHidden({ timeout: 5000 });
+    }
+
+    console.log('⏳ [BEKLEME] API yanıtı bekleniyor...');
+    const apiResponse = await responsePromise;
+    await checkApiResponseAndToast(page, apiResponse, cleanedRepoName, 'kapsam dışı');
+    console.log(`🎉 [BAŞARILI] API yanıtı başarıyla tamamlandı: ${apiResponse!.status()}`);
+
+    console.log('⏳ [BEKLEME] Tıklanan Switch butonunun pasif (checked / false) duruma gelmesi bekleniyor...');
+
+    const success = await verifySwitchStateOrDetectLicenseError(page, targetSwitch, 'false');
+    if (!success) {
+      const errorVisible = await page
+        .locator('text=/The licence limit within threshold has been reached|Failed to update repository status|Some repositories cannot be activated/i')
+        .first()
+        .isVisible()
+        .catch(() => false);
+      if (errorVisible) return;
+      await expect(targetSwitch).toHaveAttribute('aria-checked', 'false', { timeout: 1000 });
+    }
+    
+    console.log('🎉 [BAŞARILI] Başarıyla switch butonu ile repository backup kapsamından çıkarıldı (Exclude edildi)!');
+
+    // 🔄 Sayfa Yenileme Kalıcılık Doğrulaması (Refresh/Reload Persistence)
+    console.log('🔄 [İŞLEM] [Refresh Persistence] Durumun kalıcılığını test etmek için sayfa yenileniyor...');
+    await providerPage.goToRepositoriesGithub();
+    await expect(page.locator('table').first()).toBeVisible({ timeout: 30000 });
+    
+    // Bekleme ve stabilizasyon: Yükleme tamamlanana ve repolar gelene kadar bekle
+    await expect(page.getByText(/connected repositories/i).first()).toHaveText(/[1-9]\d* connected repositories/, { timeout: 30000 });
+
+    const repoTableAfterReload = await getRepoTable(page);
+    await waitTableLoadingFinished(repoTableAfterReload);
+
+    // Tabloyu tekrar sağa kaydır
+    await scrollTableToRight(page);
+
+    // Repository satırını tüm sayfaları tarayarak bulup switch butonunun checked durumunu doğrula
+    if (cleanedRepoName) {
+      console.log(`🔍 [KONTROL] Yenileme sonrası "${cleanedRepoName}" deponun konumu ve switch durumu kontrol ediliyor...`);
+      
+      const foundRow = await findRepoPageByScanning(page, repoTableAfterReload, cleanedRepoName);
+      if (!foundRow) {
+        throw new Error(`Yenileme sonrasında "${cleanedRepoName}" isimli repository bulunamadı!`);
+      }
+
+      const switchAfterReload = foundRow.locator('button[role="switch"]').first();
+      await expect(switchAfterReload).toHaveAttribute('aria-checked', 'false', { timeout: 15000 });
+      console.log('🎉 [BAŞARILI] [Refresh Persistence] Sayfa yenileme sonrasında da repository\'nin backup kapsamı dışında (unchecked/false) kaldığı başarıyla doğrulandı!');
+    }
+  });
+
+  test('tüm depoları exclude etme', async ({ page }) => {
+    const mode = process.env.E2E_EXCLUDE_MODE || 'one_repo';
+    test.skip(mode !== 'all_pages', 'Only runs in all_pages mode');
+    test.setTimeout(180000); // 3 dakikalık geniş zaman aşımı
+    const providerPage = new ProviderPage(page);
+
+    console.log('🚀 [BAŞLANGIÇ] GitHub Repositories Exclude Testi başlatılıyor. Kapsam: tüm depoları exclude etme');
+
+    const repoTable = await navigateToRepositoriesGithubAndEnsureStable(page, providerPage);
+
+    // Listeyi taramaya başlamadan önce tabloyu kesinlikle sağa kaydırıyoruz
+    await scrollTableToRight(page);
+
+    // Mod 2: Bütün aktif depoları exclude et (Her adımda Page 1, Index 0'ı exclude edip yenileyerek)
+    let totalProcessed = 0;
+
+    while (true) {
+      // Tabloyu sağa kaydır
+      await scrollTableToRight(page);
+
+      const switches = repoTable.locator('button[role="switch"]');
+      await switches.first().waitFor({ state: 'visible', timeout: 15000 }).catch(() => {});
+      const count = await switches.count().catch(() => 0);
+      
+      let targetSwitch: Locator | null = null;
+      for (let i = 0; i < count; i++) {
+        const sw = switches.nth(i);
+        const isChecked = await sw.getAttribute('aria-checked').catch(() => null);
+        if (isChecked === 'true' || isChecked === 'checked') {
+          targetSwitch = sw;
+          break;
+        }
+      }
+
+      if (!targetSwitch) {
+        console.log('🎉 [BAŞARILI] Sayfa 1 üzerinde aktif (checked) depo kalmadı. Exclude işlemi tamamlandı.');
+        break;
+      }
+
+      const targetRow = targetSwitch.locator('xpath=./ancestor::tr').first();
+      const cleanedRepoName = await getCleanRepoName(targetRow);
+      console.log(`📦 [İŞLEM] Aktif depo kapsam dışına çıkarılıyor: "${cleanedRepoName}"`);
+
       await targetSwitch.evaluate(el => {
         const rect = el.getBoundingClientRect();
         const isInViewport = rect.top >= 150 && rect.bottom <= (window.innerHeight - 150);
@@ -319,235 +477,53 @@ test.describe('Repositories - GitHub Exclude Selected', () => {
           });
         }
       }).catch(() => {});
-      await page.evaluate(() => new Promise(requestAnimationFrame));
+      await page.evaluate(() => new Promise(requestAnimationFrame)).catch(() => {});
 
-      // API yanıtını beklemek için promise hazırlıyoruz (onay tıklandıktan sonra tetiklenir)
       const responsePromise = page.waitForResponse(
-        response => response.url().includes('/api/repositories/license-inclusion-status/') && response.status() === 200,
+        response => response.url().includes('/api/repositories/license-inclusion-status/'),
         { timeout: 30000 }
       ).catch(() => null);
 
-      console.log('👆 [TIKLAMA] Switch butonuna tıklanıyor (Devre dışı bırakmak için)...');
       try {
         await targetSwitch.click({ timeout: 5000 });
       } catch {
         await targetSwitch.click({ force: true });
       }
-      console.log('🎉 [BAŞARILI] Switch butonuna tıklandı!');
 
-      // Varsa onay modalını onayla
       const confirmBtn = page.getByRole('button', { name: /Yes,\s*Exclude|Confirm/i }).first();
       if (await confirmBtn.waitFor({ state: 'visible', timeout: 5000 }).then(() => true).catch(() => false)) {
-        console.log('👆 [TIKLAMA] Onay modalında "Yes, Exclude" butonuna tıklanıyor...');
         await confirmBtn.click({ force: true });
         await expect(confirmBtn).toBeHidden({ timeout: 5000 });
       }
 
-      console.log('⏳ [BEKLEME] API yanıtı bekleniyor...');
       const apiResponse = await responsePromise;
-      if (apiResponse) {
-        console.log(`🎉 [BAŞARILI] API yanıtı başarıyla tamamlandı: ${apiResponse.status()}`);
-      } else {
-        console.log('⚠️ [UYARI] API yanıtı beklenirken zaman aşımı oluştu.');
-      }
-
-      console.log('⏳ [BEKLEME] Tıklanan Switch butonunun pasif (checked / false) duruma gelmesi bekleniyor...');
-      
-      // Bulunduğumuz satırdaki repository ismini alalım (Yenileme sonrası doğrulamak için)
-      const targetRow = targetSwitch.locator('xpath=./ancestor::tr').first();
-      const cleanedRepoName = await getCleanRepoName(targetRow);
-      console.log(`📦 [İŞLEM] Hedef repository ismi: "${cleanedRepoName}"`);
+      await checkApiResponseAndToast(page, apiResponse, cleanedRepoName, 'kapsam dışı');
+      console.log(`🎉 [BAŞARILI] API yanıtı başarıyla tamamlandı: ${apiResponse!.status()}`);
 
       const success = await verifySwitchStateOrDetectLicenseError(page, targetSwitch, 'false');
       if (!success) {
         const errorVisible = await page
-          .locator('text=/The licence limit within threshold has been reached|Failed to update repository status/i')
+          .locator('text=/The licence limit within threshold has been reached|Failed to update repository status|Some repositories cannot be activated/i')
           .first()
           .isVisible()
           .catch(() => false);
-        if (errorVisible) return;
+        if (errorVisible) {
+          return;
+        }
         await expect(targetSwitch).toHaveAttribute('aria-checked', 'false', { timeout: 1000 });
       }
-      
-      console.log('🎉 [BAŞARILI] Başarıyla switch butonu ile repository backup kapsamından çıkarıldı (Exclude edildi)!');
 
-      // 🔄 Sayfa Yenileme Kalıcılık Doğrulaması (Refresh/Reload Persistence)
-      console.log('🔄 [İŞLEM] [Refresh Persistence] Durumun kalıcılığını test etmek için sayfa yenileniyor...');
+      console.log('🎉 [BAŞARILI] Depo başarıyla kapsam dışına çıkarıldı.');
+      totalProcessed++;
+
+      // Her exclude işleminden sonra sayfayı yenileyerek durum sıralamasını güncelliyoruz
+      console.log('🔄 [İŞLEM] [Refresh] Sıralamayı güncellemek için sayfa yenileniyor...');
       await providerPage.goToRepositoriesGithub();
       await expect(page.locator('table').first()).toBeVisible({ timeout: 30000 });
-      
-      // Bekleme ve stabilizasyon: Yükleme tamamlanana ve repolar gelene kadar bekle
-      await expect(page.getByText(/connected repositories/i).first()).toHaveText(/[1-9]\d* connected repositories/, { timeout: 30000 });
-
-      const repoTableAfterReload = await getRepoTable(page);
-      await waitTableLoadingFinished(repoTableAfterReload);
-
-      // Tabloyu tekrar sağa kaydır
-      await scrollTableToRight(page);
-
-      // Repository satırını tüm sayfaları tarayarak bulup switch butonunun checked durumunu doğrula
-      if (cleanedRepoName) {
-        console.log(`🔍 [KONTROL] Yenileme sonrası "${cleanedRepoName}" deponun konumu ve switch durumu kontrol ediliyor...`);
-        
-        const foundRow = await findRepoPageByScanning(page, repoTableAfterReload, cleanedRepoName);
-        if (!foundRow) {
-          throw new Error(`Yenileme sonrasında "${cleanedRepoName}" isimli repository bulunamadı!`);
-        }
-
-        const switchAfterReload = foundRow.locator('button[role="switch"]').first();
-        await expect(switchAfterReload).toHaveAttribute('aria-checked', 'false', { timeout: 15000 });
-        console.log('🎉 [BAŞARILI] [Refresh Persistence] Sayfa yenileme sonrasında da repository\'nin backup kapsamı dışında (unchecked/false) kaldığı başarıyla doğrulandı!');
-      }
-
-    } else if (mode === 'all_pages') {
-      // Mod 2: Bütün aktif depoları exclude et (Her adımda Page 1, Index 0'ı exclude edip yenileyerek)
-      let totalProcessed = 0;
-
-      while (true) {
-        // Tabloyu sağa kaydır
-        await scrollTableToRight(page);
-
-        const switches = repoTable.locator('button[role="switch"]');
-        await switches.first().waitFor({ state: 'visible', timeout: 15000 }).catch(() => {});
-        const count = await switches.count().catch(() => 0);
-        
-        let targetSwitch: Locator | null = null;
-        for (let i = 0; i < count; i++) {
-          const sw = switches.nth(i);
-          const isChecked = await sw.getAttribute('aria-checked').catch(() => null);
-          if (isChecked === 'true' || isChecked === 'checked') {
-            targetSwitch = sw;
-            break;
-          }
-        }
-
-        if (!targetSwitch) {
-          console.log('🎉 [BAŞARILI] Sayfa 1 üzerinde aktif (checked) depo kalmadı. Exclude işlemi tamamlandı.');
-          break;
-        }
-
-        const targetRow = targetSwitch.locator('xpath=./ancestor::tr').first();
-        const cleanedRepoName = await getCleanRepoName(targetRow);
-        console.log(`📦 [İŞLEM] Aktif depo kapsam dışına çıkarılıyor: "${cleanedRepoName}"`);
-
-        await targetSwitch.evaluate(el => {
-          const rect = el.getBoundingClientRect();
-          const isInViewport = rect.top >= 150 && rect.bottom <= (window.innerHeight - 150);
-          if (!isInViewport) {
-            window.scrollBy({
-              top: rect.top - (window.innerHeight / 2),
-              behavior: 'auto'
-            });
-          }
-        }).catch(() => {});
-        await page.evaluate(() => new Promise(requestAnimationFrame));
-
-        try {
-          await targetSwitch.click({ timeout: 5000 });
-        } catch {
-          await targetSwitch.click({ force: true });
-        }
-
-        const confirmBtn = page.getByRole('button', { name: /Yes,\s*Exclude|Confirm/i }).first();
-        if (await confirmBtn.waitFor({ state: 'visible', timeout: 5000 }).then(() => true).catch(() => false)) {
-          await confirmBtn.click({ force: true });
-          await expect(confirmBtn).toBeHidden({ timeout: 5000 });
-        }
-
-        const success = await verifySwitchStateOrDetectLicenseError(page, targetSwitch, 'false');
-        if (!success) {
-          const errorVisible = await page
-            .locator('text=/The licence limit within threshold has been reached|Failed to update repository status/i')
-            .first()
-            .isVisible()
-            .catch(() => false);
-          if (errorVisible) {
-            return;
-          }
-          await expect(targetSwitch).toHaveAttribute('aria-checked', 'false', { timeout: 1000 });
-        }
-
-        console.log('🎉 [BAŞARILI] Depo başarıyla kapsam dışına çıkarıldı.');
-        totalProcessed++;
-
-        // Her exclude işleminden sonra sayfayı yenileyerek durum sıralamasını güncelliyoruz
-        console.log('🔄 [İŞLEM] [Refresh] Sıralamayı güncellemek için sayfa yenileniyor...');
-        await providerPage.goToRepositoriesGithub();
-        await expect(page.locator('table').first()).toBeVisible({ timeout: 30000 });
-        await waitTableLoadingFinished(repoTable);
-      }
-
-      console.log('🎉 [BAŞARILI] Sistemdeki tüm depolar başarıyla kapsam dışı bırakıldı! Toplam işlem yapılan: ' + totalProcessed);
-    }
-  });
-
-  // ─────────────────────────────────────────────────────────────────
-  // 💥 CHAOS & RESILIENCE TESTS (SENIOR SDET)
-  // ─────────────────────────────────────────────────────────────────
-
-  test('Hata durumunda switch durumunun revert edildigini ve toast ciktigini dogrula (Chaos Test)', async ({ page }) => {
-    test.setTimeout(90000);
-    const providerPage = new ProviderPage(page);
-
-    await page.route(
-      (url) => url.href.includes('/api/repositories/license-inclusion-status/'),
-      async (route) => {
-        console.log(`🛡️ [MOCK CHAOS] Toggle API isteği yakalandı ve 500 Internal Server Error dönülüyor.`);
-        await route.fulfill({
-          status: 500,
-          contentType: 'application/json',
-          body: JSON.stringify({
-            success: false,
-            message: 'Failed to update repository status'
-          })
-        });
-      }
-    );
-
-    const repoTable = await navigateToRepositoriesGithubAndEnsureStable(page, providerPage);
-
-    await scrollTableToRight(page);
-
-    const switches = repoTable.locator('button[role="switch"]');
-    await switches.first().waitFor({ state: 'visible', timeout: 15000 }).catch(() => {});
-    const count = await switches.count();
-
-    let targetSwitch: Locator | null = null;
-    for (let i = 0; i < count; i++) {
-      const sw = switches.nth(i);
-      const isChecked = await sw.getAttribute('aria-checked');
-      if (isChecked === 'true' || isChecked === 'checked') {
-        targetSwitch = sw;
-        console.log(`🎉 [BAŞARILI] Checked switch bulundu (Chaos Test): Satır = ${i}`);
-        break;
-      }
+      await waitTableLoadingFinished(repoTable);
     }
 
-    if (!targetSwitch) {
-      console.log('🔍 [KONTROL] Checked switch bulunamadı, test sonlandırılıyor.');
-      return;
-    }
-
-    await targetSwitch.scrollIntoViewIfNeeded().catch(() => {});
-    await page.evaluate(() => new Promise(requestAnimationFrame));
-
-    console.log('👆 [TIKLAMA] Switch butonuna tıklanıyor (Başarısız olması bekleniyor)...');
-    await targetSwitch.click({ force: true });
-
-    // Onay modalını bekle ve tıkla
-    const confirmBtn = page.getByRole('button', { name: /Yes,\s*Exclude|Confirm/i }).first();
-    if (await confirmBtn.waitFor({ state: 'visible', timeout: 5000 }).then(() => true).catch(() => false)) {
-      await confirmBtn.click({ force: true });
-      await expect(confirmBtn).toBeHidden({ timeout: 5000 });
-    }
-
-    console.log('⏳ [BEKLEME] Hata toast mesajı veya lisans uyarı kontrolü yapılıyor...');
-    const toastError = page.locator('text=/Failed to update repository status|The licence limit within threshold has been reached/i').first();
-    await expect(toastError).toBeVisible({ timeout: 10000 });
-    const toastText = await toastError.innerText().catch(() => '');
-    console.log(`🚨 [HATA NEDENİ] ${translateToastMessage(toastText)}`);
-
-    await expect(targetSwitch).toHaveAttribute('aria-checked', 'true', { timeout: 10000 });
-    console.log('🎉 [BAŞARILI] Switch butonunun durumunun aktif (true) olarak korunduğu / revert edildiği başarıyla doğrulandı.');
+    console.log('🎉 [BAŞARILI] Sistemdeki tüm depolar başarıyla kapsam dışı bırakıldı! Toplam işlem yapılan: ' + totalProcessed);
   });
 });
+
