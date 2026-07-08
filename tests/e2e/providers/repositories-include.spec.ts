@@ -2,6 +2,13 @@ import type { Locator, Page } from '@playwright/test';
 import { test, expect } from '../../fixtures/test';
 import { ProviderPage } from '../../pages/ProviderPage';
 
+type CodeProvider = 'github' | 'bitbucket';
+
+function getCodeProvider(): CodeProvider {
+  const provider = (process.env.E2E_CODE_PROVIDER || 'github').trim().toLowerCase();
+  return provider === 'bitbucket' ? 'bitbucket' : 'github';
+}
+
 function translateToastMessage(msg: string): string {
   const normalized = msg.toLowerCase();
   if (normalized.includes('licence limit') || normalized.includes('license limit')) {
@@ -32,7 +39,7 @@ async function checkApiResponseAndToast(page: Page, apiResponse: any, cleanedRep
       explanation = translateToastMessage(toastMessage);
       console.log(`🚨 [ARAYÜZ HATA TOASTU TESPİT EDİLDİ] Mesaj: "${toastMessage}" -> Açıklama: ${explanation}`);
     }
-    
+
     throw new Error(`🚨 [SUNUCU HATASI] API isteği HTTP ${status} hatası döndü ("${apiResponse.statusText()}"). Arayüz Hata Detayı: "${toastMessage || 'Toast mesajı bulunamadı'}" ${explanation ? `(Açıklama: ${explanation})` : ''}. Sorun sunucu/site kaynaklıdır.`);
   }
 }
@@ -62,18 +69,18 @@ async function hasNextPage(nextBtn: Locator): Promise<boolean> {
 // Tabloyu yatayda sağa kaydıran kararlı yardımcı fonksiyon (Sanal tabloları tetiklemek için scroll event'i fırlatır)
 async function scrollTableToRight(page: Page): Promise<void> {
   console.log('↔️ [KAYDIRMA] Tablo sağa kaydırılıyor (Scroll to right)...');
-  
+
   const container = page.locator('div.overflow-x-auto, div.overflow-auto, .overflow-x-scroll, [class*="overflow-x"]').first();
   const isVisible = await container.isVisible().catch(() => false);
-  
+
   if (isVisible) {
     await container.evaluate(el => {
       el.scrollLeft = 1000;
       el.dispatchEvent(new Event('scroll', { bubbles: true }));
-    }).catch(() => {});
-    await page.evaluate(() => new Promise(requestAnimationFrame)).catch(() => {});
+    }).catch(() => { });
+    await page.evaluate(() => new Promise(requestAnimationFrame)).catch(() => { });
   }
-  
+
   await page.evaluate(() => {
     const divs = document.querySelectorAll('div');
     for (let i = 0; i < divs.length; i++) {
@@ -83,8 +90,8 @@ async function scrollTableToRight(page: Page): Promise<void> {
         div.dispatchEvent(new Event('scroll', { bubbles: true }));
       }
     }
-  }).catch(() => {});
-  await page.evaluate(() => new Promise(requestAnimationFrame)).catch(() => {});
+  }).catch(() => { });
+  await page.evaluate(() => new Promise(requestAnimationFrame)).catch(() => { });
 }
 
 // Durum kontrolü ve lisans hatası izleme yardımcısı (expect().toPass kullanan modern yapı)
@@ -101,7 +108,7 @@ async function verifySwitchStateOrDetectLicenseError(page: Page, targetSwitch: L
         hasError = true;
         return; // Hata bulundu, toPass bloğunu sonlandırmak için normal dönüş
       }
-      
+
       const isChecked = await targetSwitch.getAttribute('aria-checked').catch(() => null);
       expect(isChecked).toBe(targetState);
     }).toPass({ timeout: 7000, intervals: [200] });
@@ -125,7 +132,7 @@ async function clickNextPageAndWaitForLoad(page: Page, nextBtn: Locator, firstRo
   const previousName = await getCleanRepoName(firstRow);
   console.log(`👆 [TIKLAMA] Sonraki sayfaya geçiliyor... Önceki ilk repo: "${previousName}"`);
   await nextBtn.click({ force: true });
-  
+
   // İlk satırdaki repository ismi değişene kadar bekleyelim (sayfa geçişinin tamamlandığının kanıtı)
   await expect(async () => {
     const currentName = await getCleanRepoName(firstRow);
@@ -134,17 +141,25 @@ async function clickNextPageAndWaitForLoad(page: Page, nextBtn: Locator, firstRo
 }
 
 // Kararlı ve dinamik sayfa açılış yardımı (Sert 4s uyku yerine dinamik bekleme)
-async function navigateToRepositoriesGithubAndEnsureStable(page: Page, providerPage: ProviderPage): Promise<Locator> {
-  console.log('🚀 [BAŞLANGIÇ] Doğrudan GitHub Repositories sayfasına gidiliyor...');
-  await providerPage.goToRepositoriesGithub();
-  
+async function navigateToRepositoriesAndEnsureStable(
+  page: Page,
+  providerPage: ProviderPage,
+  provider: CodeProvider,
+): Promise<Locator> {
+  console.log(`[BASLANGIC] Dogrudan ${provider.toUpperCase()} Repositories sayfasina gidiliyor...`);
+  if (provider === 'bitbucket') {
+    await providerPage.goToRepositoriesBitbucket();
+  } else {
+    await providerPage.goToRepositoriesGithub();
+  }
+
   await page.waitForLoadState('domcontentloaded');
   await expect(page.locator('table').first()).toBeVisible({ timeout: 30000 });
-  
+
   const repoTable = await getRepoTable(page);
   await waitTableLoadingFinished(repoTable);
-  await page.evaluate(() => new Promise(requestAnimationFrame)).catch(() => {});
-  
+  await page.evaluate(() => new Promise(requestAnimationFrame)).catch(() => { });
+
   return repoTable;
 }
 
@@ -171,15 +186,16 @@ async function waitTableLoadingFinished(repoTable: Locator): Promise<void> {
 }
 
 
-test.describe('Repositories - GitHub Include Selected', () => {
+test.describe('Repositories - Include Selected', () => {
   test('secili repolar include edilmeli', async ({ page }) => {
     test.setTimeout(180000); // 3 dakikalık geniş zaman aşımı
     const providerPage = new ProviderPage(page);
-    
-    const mode = process.env.E2E_INCLUDE_MODE || 'one_repo';
-    console.log(`🚀 [BAŞLANGIÇ] GitHub Repositories Include Testi başlatılıyor. Kapsam Modu: ${mode}`);
 
-    const repoTable = await navigateToRepositoriesGithubAndEnsureStable(page, providerPage);
+    const mode = process.env.E2E_INCLUDE_MODE || 'one_repo';
+    const provider = getCodeProvider();
+    console.log(`[BASLANGIC] ${provider.toUpperCase()} Repositories Include testi baslatiliyor. Kapsam Modu: ${mode}`);
+
+    const repoTable = await navigateToRepositoriesAndEnsureStable(page, providerPage, provider);
 
     // Listeyi taramaya başlamadan önce tabloyu kesinlikle sağa kaydırıyoruz
     await scrollTableToRight(page);
@@ -196,7 +212,7 @@ test.describe('Repositories - GitHub Include Selected', () => {
 
         console.log(`🔍 [KONTROL] ${pageCount}. sayfada unchecked (aria-checked=false) switch aranıyor...`);
         const switches = repoTable.locator('button[role="switch"]');
-        await switches.first().waitFor({ state: 'visible', timeout: 15000 }).catch(() => {});
+        await switches.first().waitFor({ state: 'visible', timeout: 15000 }).catch(() => { });
         const count = await switches.count();
 
         for (let i = 0; i < count; i++) {
@@ -226,7 +242,7 @@ test.describe('Repositories - GitHub Include Selected', () => {
 
         const firstRow = repoTable.locator('tbody tr').first();
         await clickNextPageAndWaitForLoad(page, nextBtn, firstRow);
-        
+
         pageCount++;
       }
 
@@ -249,8 +265,8 @@ test.describe('Repositories - GitHub Include Selected', () => {
             behavior: 'auto'
           });
         }
-      }).catch(() => {});
-      await page.evaluate(() => new Promise(requestAnimationFrame)).catch(() => {});
+      }).catch(() => { });
+      await page.evaluate(() => new Promise(requestAnimationFrame)).catch(() => { });
 
       const responsePromise = page.waitForResponse(
         response => response.url().includes('/api/repositories/license-inclusion-status/'),
@@ -282,20 +298,20 @@ test.describe('Repositories - GitHub Include Selected', () => {
         if (errorVisible) return;
         await expect(targetSwitch).toHaveAttribute('aria-checked', 'true', { timeout: 1000 });
       }
-      
+
       console.log('🎉 [BAŞARILI] Başarıyla switch butonu ile repository backup kapsamına eklendi!');
 
       // 🔄 [SENIOR SDET] Sayfa Yenileme Kalıcılık Doğrulaması (Refresh/Reload Persistence)
       console.log('🔄 [İŞLEM] [Refresh Persistence] Durumun kalıcılığını test etmek için sayfa yenileniyor...');
-      await providerPage.goToRepositoriesGithub();
+      await navigateToRepositoriesAndEnsureStable(page, providerPage, provider);
       await expect(page.locator('table').first()).toBeVisible({ timeout: 30000 });
-      
+
       // Bekleme ve stabilizasyon: Yükleme tamamlanana ve repolar gelene kadar bekle
       await expect(page.getByText(/connected repositories/i).first()).toHaveText(/[1-9]\d* connected repositories/, { timeout: 30000 });
 
       const repoTableAfterReload = await getRepoTable(page);
       const firstRowAfterReload = repoTableAfterReload.locator('tbody tr').first();
-      await firstRowAfterReload.waitFor({ state: 'visible', timeout: 25000 }).catch(() => {});
+      await firstRowAfterReload.waitFor({ state: 'visible', timeout: 25000 }).catch(() => { });
 
       // Tabloyu tekrar sağa kaydır
       await scrollTableToRight(page);
@@ -303,7 +319,7 @@ test.describe('Repositories - GitHub Include Selected', () => {
       // Repository satırını tüm sayfaları tarayarak bulup switch butonunun checked durumunu doğrula
       if (cleanedRepoName) {
         console.log(`🔍 [KONTROL] Yenileme sonrası "${cleanedRepoName}" isimli deponun switch durumu kontrol ediliyor...`);
-        
+
         let foundRow: Locator | null = null;
         let scanPageCount = 1;
         while (true) {
@@ -313,13 +329,13 @@ test.describe('Repositories - GitHub Include Selected', () => {
             foundRow = row;
             break;
           }
-          
+
           const nextBtn = await getNextPageButton(page);
           const hasNext = await hasNextPage(nextBtn);
           if (!hasNext) {
             break;
           }
-          
+
           console.log(`🔍 [KONTROL] Depo bu sayfada bulunamadı, ${scanPageCount + 1}. sayfaya geçiliyor...`);
           const reloadFirstRow = repoTableAfterReload.locator('tbody tr').first();
           await clickNextPageAndWaitForLoad(page, nextBtn, reloadFirstRow);
@@ -349,13 +365,13 @@ test.describe('Repositories - GitHub Include Selected', () => {
 
         const switches = repoTable.locator('button[role="switch"]');
         let count = await switches.count().catch(() => 0);
-        
+
         if (count === 0) {
           console.log('⚠️ [UYARI] Tablo henüz yüklenmedi, yüklenmesi bekleniyor...');
-          await waitTableLoadingFinished(repoTable).catch(() => {});
+          await waitTableLoadingFinished(repoTable).catch(() => { });
           count = await switches.count().catch(() => 0);
         }
-        
+
         let uncheckedIndices: number[] = [];
         for (let i = 0; i < count; i++) {
           const sw = switches.nth(i);
@@ -368,7 +384,7 @@ test.describe('Repositories - GitHub Include Selected', () => {
         // Eğer bu sayfada hiç unchecked depo yoksa (tümü zaten include edilmişse)
         if (uncheckedIndices.length === 0) {
           console.log(`🔍 [KONTROL] ${pageCount}. sayfadaki tüm depolar zaten include edilmiş.`);
-          
+
           const nextBtn = await getNextPageButton(page);
           const hasNext = await hasNextPage(nextBtn);
 
@@ -395,10 +411,10 @@ test.describe('Repositories - GitHub Include Selected', () => {
 
           if (currentCount === 0) {
             console.log('⚠️ [UYARI] Tabloda switch bulunamadı, sayfa yükleniyor olabilir. Yüklenmesi bekleniyor...');
-            await waitTableLoadingFinished(repoTable).catch(() => {});
+            await waitTableLoadingFinished(repoTable).catch(() => { });
             currentCount = await currentSwitches.count().catch(() => 0);
           }
-          
+
           let targetSwitch: Locator | null = null;
           let targetIndex = -1;
 
@@ -421,7 +437,7 @@ test.describe('Repositories - GitHub Include Selected', () => {
           const targetRow = targetSwitch.locator('xpath=./ancestor::tr').first();
           const cleanedRepoName = await getCleanRepoName(targetRow);
           console.log(`📦 [İŞLEM] ${pageCount}. sayfadaki "${cleanedRepoName || targetIndex}" deponun switch butonuna tıklanıyor...`);
-          
+
           await targetSwitch.evaluate(el => {
             const rect = el.getBoundingClientRect();
             const isInViewport = rect.top >= 150 && rect.bottom <= (window.innerHeight - 150);
@@ -431,8 +447,8 @@ test.describe('Repositories - GitHub Include Selected', () => {
                 behavior: 'auto'
               });
             }
-          }).catch(() => {});
-          await page.evaluate(() => new Promise(requestAnimationFrame)).catch(() => {});
+          }).catch(() => { });
+          await page.evaluate(() => new Promise(requestAnimationFrame)).catch(() => { });
 
           const responsePromise = page.waitForResponse(
             response => response.url().includes('/api/repositories/license-inclusion-status/'),
@@ -476,9 +492,9 @@ test.describe('Repositories - GitHub Include Selected', () => {
       // 🔄 Sayfa Yenileme Kalıcılık Doğrulaması (Refresh/Reload Persistence)
       if (toggledRepoNames.length > 0) {
         console.log('🔄 [İŞLEM] [Refresh Persistence] Durumun kalıcılığını test etmek için sayfa yenileniyor...');
-        await providerPage.goToRepositoriesGithub();
+        await navigateToRepositoriesAndEnsureStable(page, providerPage, provider);
         await expect(page.locator('table').first()).toBeVisible({ timeout: 30000 });
-        
+
         const reloadTable = await getRepoTable(page);
         await waitTableLoadingFinished(reloadTable);
 
@@ -493,179 +509,20 @@ test.describe('Repositories - GitHub Include Selected', () => {
               foundRow = row;
               break;
             }
-            
+
             const nextBtn = await getNextPageButton(page);
             const hasNext = await hasNextPage(nextBtn);
             if (!hasNext) {
               break;
             }
-            
+
             console.log(`🔍 [KONTROL] Depo bu sayfada bulunamadı, ${scanPageCount + 1}. sayfaya geçiliyor...`);
             const firstRow = reloadTable.locator('tbody tr').first();
-            await clickNextPageAndWaitForLoad(page, nextBtn, firstRow);
-            scanPageCount++;
+
+            const switchAfterReload = foundRow.locator('button[role="switch"]').first();
+            await expect(switchAfterReload).toHaveAttribute('aria-checked', 'true', { timeout: 15000 });
+            console.log(`🎉 [BAŞARILI] [Refresh Persistence] "${repoName}" deponun yedekleme kapsamında kaldığı doğrulandı.`);
           }
-
-          if (!foundRow) {
-            throw new Error(`Yenileme sonrasında "${repoName}" isimli repository bulunamadı!`);
-          }
-
-          const switchAfterReload = foundRow.locator('button[role="switch"]').first();
-          await expect(switchAfterReload).toHaveAttribute('aria-checked', 'true', { timeout: 15000 });
-          console.log(`🎉 [BAŞARILI] [Refresh Persistence] "${repoName}" deponun yedekleme kapsamında kaldığı doğrulandı.`);
-        }
-      }
-
-    } else if (mode === 'all_pages') {
-      // Mod 3: Bütün sayfalardaki tüm depoları tek tek include et (Sayfa sayfa gezinerek)
-      let pageCount = 1;
-      let totalProcessed = 0;
-      let toggledRepoNames: string[] = [];
-
-      while (true) {
-        console.log('📦 [İŞLEM] Kapsama Ekleme Döngüsü: ' + pageCount + '. sayfadayız...');
-        let processedOnPage = 0;
-
-        while (true) {
-          await scrollTableToRight(page);
-
-          const switches = repoTable.locator('button[role="switch"]');
-          let count = await switches.count().catch(() => 0);
-
-          if (count === 0) {
-            console.log('⚠️ [UYARI] Tablo henüz yüklenmedi, yüklenmesi bekleniyor...');
-            await waitTableLoadingFinished(repoTable).catch(() => {});
-            count = await switches.count().catch(() => 0);
-          }
-          
-          let targetSwitch: Locator | null = null;
-          let targetIndex = -1;
-
-          for (let i = 0; i < count; i++) {
-            const sw = switches.nth(i);
-            const isChecked = await sw.getAttribute('aria-checked').catch(() => null);
-            if (isChecked === 'false' || isChecked === null) {
-              targetSwitch = sw;
-              targetIndex = i;
-              break;
-            }
-          }
-
-          if (!targetSwitch) {
-            console.log('🔍 [KONTROL] ' + pageCount + '. sayfada kapsama dahil edilecek başka unchecked depo kalmadı!');
-            break;
-          }
-
-
-          const targetRow = targetSwitch.locator('xpath=./ancestor::tr').first();
-          const cleanedRepoName = await getCleanRepoName(targetRow);
-          console.log('📦 [İŞLEM] Sayfa ' + pageCount + ', ' + (targetIndex + 1) + '. sıradaki unchecked depo kapsama dahil ediliyor...');
-          
-          await targetSwitch.evaluate(el => {
-            const rect = el.getBoundingClientRect();
-            const isInViewport = rect.top >= 150 && rect.bottom <= (window.innerHeight - 150);
-            if (!isInViewport) {
-              window.scrollBy({
-                top: rect.top - (window.innerHeight / 2),
-                behavior: 'auto'
-              });
-            }
-          }).catch(() => {});
-          await page.evaluate(() => new Promise(requestAnimationFrame)).catch(() => {});
-
-          const responsePromise = page.waitForResponse(
-            response => response.url().includes('/api/repositories/license-inclusion-status/'),
-            { timeout: 30000 }
-          ).catch(() => null);
-
-          try {
-            await targetSwitch.click({ timeout: 5000 });
-          } catch {
-            await targetSwitch.click({ force: true });
-          }
-
-          const apiResponse = await responsePromise;
-          await checkApiResponseAndToast(page, apiResponse, cleanedRepoName || String(targetIndex), 'dahil');
-          console.log(`🎉 [BAŞARILI] API yanıtı başarıyla tamamlandı: ${apiResponse!.status()}`);
-
-          const success = await verifySwitchStateOrDetectLicenseError(page, targetSwitch);
-          if (!success) {
-            const errorVisible = await page
-              .locator('text=/The licence limit within threshold has been reached|Failed to update repository status|Some repositories cannot be activated/i')
-              .first()
-              .isVisible()
-              .catch(() => false);
-            if (errorVisible) {
-              return;
-            }
-            await expect(targetSwitch).toHaveAttribute('aria-checked', 'true', { timeout: 1000 });
-          }
-
-          console.log(`🎉 [BAŞARILI] Depo başarıyla kapsama dahil edildi.`);
-          if (cleanedRepoName) {
-            toggledRepoNames.push(cleanedRepoName);
-          }
-          processedOnPage++;
-          totalProcessed++;
-        }
-
-        console.log('🎉 [BAŞARILI] ' + pageCount + '. sayfadaki işlem tamamlandı. ' + processedOnPage + ' depo kapsama eklendi.');
-
-        const nextBtn = await getNextPageButton(page);
-        const hasNext = await hasNextPage(nextBtn);
-
-        if (!hasNext) {
-          console.log('🎉 [BAŞARILI] Bütün sayfalar başarıyla taranıp tamamlandı!');
-          console.log('🎉 [BAŞARILI] Toplam ' + totalProcessed + ' yeni depo tek tek kapsama dahil edildi.');
-          break;
-        }
-
-        const allFirstRow = repoTable.locator('tbody tr').first();
-        await clickNextPageAndWaitForLoad(page, nextBtn, allFirstRow);
-        
-        pageCount++;
-      }
-
-      // 🔄 Sayfa Yenileme Kalıcılık Doğrulaması (Refresh/Reload Persistence)
-      if (toggledRepoNames.length > 0) {
-        console.log('🔄 [İŞLEM] [Refresh Persistence] Durumun kalıcılığını test etmek için sayfa yenileniyor...');
-        await providerPage.goToRepositoriesGithub();
-        await expect(page.locator('table').first()).toBeVisible({ timeout: 30000 });
-        
-        const reloadTable = await getRepoTable(page);
-        await waitTableLoadingFinished(reloadTable);
-
-        for (const repoName of toggledRepoNames) {
-          console.log(`🔍 [KONTROL] Yenileme sonrası "${repoName}" deponun switch durumu kontrol ediliyor...`);
-          let foundRow: Locator | null = null;
-          let scanPageCount = 1;
-          while (true) {
-            await scrollTableToRight(page);
-            const row = reloadTable.locator('tbody tr').filter({ hasText: repoName }).first();
-            if (await row.isVisible().catch(() => false)) {
-              foundRow = row;
-              break;
-            }
-            
-            const nextBtn = await getNextPageButton(page);
-            const hasNext = await hasNextPage(nextBtn);
-            if (!hasNext) {
-              break;
-            }
-            
-            console.log(`🔍 [KONTROL] Depo bu sayfada bulunamadı, ${scanPageCount + 1}. sayfaya geçiliyor...`);
-            const firstRow = reloadTable.locator('tbody tr').first();
-            await clickNextPageAndWaitForLoad(page, nextBtn, firstRow);
-            scanPageCount++;
-          }
-
-          if (!foundRow) {
-            throw new Error(`Yenileme sonrasında "${repoName}" isimli repository bulunamadı!`);
-          }
-
-          const switchAfterReload = foundRow.locator('button[role="switch"]').first();
-          await expect(switchAfterReload).toHaveAttribute('aria-checked', 'true', { timeout: 15000 });
-          console.log(`🎉 [BAŞARILI] [Refresh Persistence] "${repoName}" deponun yedekleme kapsamında kaldığı doğrulandı.`);
         }
       }
     }

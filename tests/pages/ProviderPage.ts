@@ -66,6 +66,13 @@ export class ProviderPage {
     await expect(this.page.locator('table').first()).toBeVisible({ timeout: 30000 });
   }
 
+  /** Direct navigation to Bitbucket repositories. */
+  async goToRepositoriesBitbucket(): Promise<void> {
+    await this.page.goto(`${dashboardBaseUrl}/${workspaceId}/repositories/bitbucket`, { waitUntil: 'load' });
+    await expect(this.page).toHaveURL(/\/repositories\/bitbucket\b/);
+    await expect(this.page.locator('table').first()).toBeVisible({ timeout: 30000 });
+  }
+
   /** Kenar çubuğu: Repositories → GitHub (UI üzerinden, diğer akışlarla aynı hedef URL). */
   async goToRepositoriesGithubViaSidebar(): Promise<void> {
     const githubLink = this.page.getByRole('link', { name: /^GitHub$/i });

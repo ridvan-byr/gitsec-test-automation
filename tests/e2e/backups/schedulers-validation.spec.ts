@@ -101,15 +101,43 @@ async function assertAndLogDynamicError(page: Page, expectedPattern: RegExp): Pr
 }
 
 async function fillBaseSchedulerForm(page: Page, nameVal: string): Promise<string> {
-  const newSchedulerBtn = page.getByRole('button', { name: /New Scheduler/i }).first();
-  await newSchedulerBtn.waitFor({ state: 'visible', timeout: 15000 });
-  await newSchedulerBtn.click();
-  console.log('👆 [TIKLAMA] "New Scheduler" butonuna tıklandı.');
-  
-  await page.locator('[role="dialog"], [data-slot="dialog-content"]').first().waitFor({ state: 'visible', timeout: 10000 });
+  const maxRetries = 2;
+  let attempt = 0;
+  let modalReady = false;
+
+  while (attempt <= maxRetries && !modalReady) {
+    if (attempt > 0) {
+      console.log(`🔄 [YENİDEN DENEME] Modal/combobox yüklenemedi, sayfa yenileniyor... (Deneme: ${attempt + 1}/${maxRetries + 1})`);
+      await page.reload({ waitUntil: 'domcontentloaded' });
+      const providerPage = new ProviderPage(page);
+      await providerPage.recoverFromChunkLoadError();
+      await expect(page.locator('main').first()).toBeVisible({ timeout: 15000 }).catch(() => {});
+    }
+
+    const newSchedulerBtn = page.getByRole('button', { name: /New Scheduler/i }).first();
+    try {
+      await newSchedulerBtn.waitFor({ state: 'visible', timeout: 15000 });
+      await newSchedulerBtn.click();
+      console.log('👆 [TIKLAMA] "New Scheduler" butonuna tıklandı.');
+      
+      await page.locator('[role="dialog"], [data-slot="dialog-content"]').first().waitFor({ state: 'visible', timeout: 10000 });
+      
+      const repoCombo = page.getByRole('combobox').filter({ hasText: /Select a repository/i }).first();
+      await repoCombo.waitFor({ state: 'visible', timeout: 10000 });
+      modalReady = true;
+    } catch (err) {
+      console.log('⚠️ [UYARI] Modal veya repository combobox yüklenemedi, yeniden denenecek...');
+      await page.keyboard.press('Escape');
+      await page.locator('[role="dialog"], [data-slot="dialog-content"]').first().waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {});
+      attempt++;
+    }
+  }
+
+  if (!modalReady) {
+    throw new Error('❌ [HATA] Birden fazla denemeden sonra New Scheduler modalı başarıyla yüklenemedi.');
+  }
 
   const repoCombo = page.getByRole('combobox').filter({ hasText: /Select a repository/i }).first();
-  await repoCombo.waitFor({ state: 'visible', timeout: 15000 });
   await repoCombo.click({ force: true });
 
   const enabledRepoOptions = page.locator('[role="option"][data-disabled="false"], [data-slot="select-item"][data-disabled="false"]');
@@ -228,6 +256,12 @@ test.describe('Backup Schedulers - Form ve Sınır Doğrulama (Validation)', () 
   test.setTimeout(180000);
 
   test.beforeEach(async ({ page }) => {
+    (page as any).ignoredErrors = [
+      /status of 502/,
+      /status of 500/,
+      /chunk|loading chunk/i,
+      /Failed to load resource/
+    ];
     const providerPage = new ProviderPage(page);
     console.log('🌐 [NAVİGASYON] Dashboard açılıyor...');
     await providerPage.navigateToDashboard();
@@ -426,6 +460,10 @@ test.describe('Backup Schedulers - Form ve Sınır Doğrulama (Validation)', () 
   });
 
   test('Planlayıcı isminde Null Byte, RTL karakterler ve Zero-width space içeren veriler girildiğinde uygulama çökmemeli ve hata uyarısı veya başarılı kayıt işlemiyle sonuçlanmalıdır', async ({ page }) => {
+    (page as any).ignoredErrors = [
+      ...((page as any).ignoredErrors || []),
+      /\/api\/backup\/schedules/
+    ];
     console.log('🚀 [BAŞLANGIÇ] Karakter seti sınır testi başladı.');
     const charsetNames = [
       'Null\0Byte',

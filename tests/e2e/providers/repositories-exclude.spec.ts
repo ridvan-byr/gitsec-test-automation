@@ -2,6 +2,13 @@ import type { Locator, Page } from '@playwright/test';
 import { test, expect } from '../../fixtures/test';
 import { ProviderPage } from '../../pages/ProviderPage';
 
+type CodeProvider = 'github' | 'bitbucket';
+
+function getCodeProvider(): CodeProvider {
+  const provider = (process.env.E2E_CODE_PROVIDER || 'github').trim().toLowerCase();
+  return provider === 'bitbucket' ? 'bitbucket' : 'github';
+}
+
 function translateToastMessage(msg: string): string {
   const normalized = msg.toLowerCase();
   if (normalized.includes('licence limit') || normalized.includes('license limit')) {
@@ -245,9 +252,17 @@ async function findRepoPageByScanning(page: Page, repoTable: Locator, repoName: 
 }
 
 // Kararlı ve dinamik sayfa açılış yardımı (Sert 4s uyku yerine dinamik bekleme)
-async function navigateToRepositoriesGithubAndEnsureStable(page: Page, providerPage: ProviderPage): Promise<Locator> {
-  console.log('🚀 [BAŞLANGIÇ] Doğrudan GitHub Repositories sayfasına gidiliyor...');
-  await providerPage.goToRepositoriesGithub();
+async function navigateToRepositoriesAndEnsureStable(
+  page: Page,
+  providerPage: ProviderPage,
+  provider: CodeProvider,
+): Promise<Locator> {
+  console.log(`🚀 [BAŞLANGIÇ] Doğrudan ${provider.toUpperCase()} Repositories sayfasına gidiliyor...`);
+  if (provider === 'bitbucket') {
+    await providerPage.goToRepositoriesBitbucket();
+  } else {
+    await providerPage.goToRepositoriesGithub();
+  }
   
   await page.waitForLoadState('domcontentloaded');
   await expect(page.locator('table').first()).toBeVisible({ timeout: 30000 });
@@ -273,16 +288,17 @@ async function getCleanRepoName(row: Locator): Promise<string> {
   return '';
 }
 
-test.describe('Repositories - GitHub Exclude Selected', () => {
+test.describe('Repositories - Exclude Selected', () => {
   test('tek bir depoyu exclude etme', async ({ page }) => {
     const mode = process.env.E2E_EXCLUDE_MODE || 'one_repo';
     test.skip(mode !== 'one_repo', 'Only runs in one_repo mode');
     test.setTimeout(180000); // 3 dakikalık geniş zaman aşımı
     const providerPage = new ProviderPage(page);
+    const provider = getCodeProvider();
 
-    console.log('🚀 [BAŞLANGIÇ] GitHub Repositories Exclude Testi başlatılıyor. Kapsam: tek bir depoyu exclude etme');
+    console.log(`🚀 [BAŞLANGIÇ] ${provider.toUpperCase()} Repositories Exclude Testi başlatılıyor. Kapsam: tek bir depoyu exclude etme`);
 
-    const repoTable = await navigateToRepositoriesGithubAndEnsureStable(page, providerPage);
+    const repoTable = await navigateToRepositoriesAndEnsureStable(page, providerPage, provider);
 
     // Listeyi taramaya başlamadan önce tabloyu kesinlikle sağa kaydırıyoruz
     await scrollTableToRight(page);
@@ -397,7 +413,7 @@ test.describe('Repositories - GitHub Exclude Selected', () => {
 
     // 🔄 Sayfa Yenileme Kalıcılık Doğrulaması (Refresh/Reload Persistence)
     console.log('🔄 [İŞLEM] [Refresh Persistence] Durumun kalıcılığını test etmek için sayfa yenileniyor...');
-    await providerPage.goToRepositoriesGithub();
+    await navigateToRepositoriesAndEnsureStable(page, providerPage, provider);
     await expect(page.locator('table').first()).toBeVisible({ timeout: 30000 });
     
     // Bekleme ve stabilizasyon: Yükleme tamamlanana ve repolar gelene kadar bekle
@@ -429,10 +445,11 @@ test.describe('Repositories - GitHub Exclude Selected', () => {
     test.skip(mode !== 'all_pages', 'Only runs in all_pages mode');
     test.setTimeout(180000); // 3 dakikalık geniş zaman aşımı
     const providerPage = new ProviderPage(page);
+    const provider = getCodeProvider();
 
-    console.log('🚀 [BAŞLANGIÇ] GitHub Repositories Exclude Testi başlatılıyor. Kapsam: tüm depoları exclude etme');
+    console.log(`🚀 [BAŞLANGIÇ] ${provider.toUpperCase()} Repositories Exclude Testi başlatılıyor. Kapsam: tüm depoları exclude etme`);
 
-    const repoTable = await navigateToRepositoriesGithubAndEnsureStable(page, providerPage);
+    const repoTable = await navigateToRepositoriesAndEnsureStable(page, providerPage, provider);
 
     // Listeyi taramaya başlamadan önce tabloyu kesinlikle sağa kaydırıyoruz
     await scrollTableToRight(page);
@@ -518,7 +535,7 @@ test.describe('Repositories - GitHub Exclude Selected', () => {
 
       // Her exclude işleminden sonra sayfayı yenileyerek durum sıralamasını güncelliyoruz
       console.log('🔄 [İŞLEM] [Refresh] Sıralamayı güncellemek için sayfa yenileniyor...');
-      await providerPage.goToRepositoriesGithub();
+      await navigateToRepositoriesAndEnsureStable(page, providerPage, provider);
       await expect(page.locator('table').first()).toBeVisible({ timeout: 30000 });
       await waitTableLoadingFinished(repoTable);
     }
@@ -526,4 +543,3 @@ test.describe('Repositories - GitHub Exclude Selected', () => {
     console.log('🎉 [BAŞARILI] Sistemdeki tüm depolar başarıyla kapsam dışı bırakıldı! Toplam işlem yapılan: ' + totalProcessed);
   });
 });
-

@@ -11,7 +11,7 @@ import {
   ensureGithubLoginFormIfEnvUser,
 } from '../support/github-auth';
 
-setup('authenticate and connect GitHub', async ({ request, page }) => {
+setup('authenticate and connect provider', async ({ request, page }) => {
   setup.setTimeout(180000);
   // Eğer register, login veya herhangi bir auth testi çalıştırılıyorsa setup'ı tamamen atlıyoruz.
   if (process.env.SKIP_GLOBAL_SETUP === 'true' || process.argv.some(arg => arg.includes('register') || arg.includes('login') || arg.includes('auth/') || arg.includes('--skip-gs'))) {
@@ -28,9 +28,12 @@ setup('authenticate and connect GitHub', async ({ request, page }) => {
   const apiBaseUrl = requireEnv('API_BASE_URL');
   const appEmail = requireEnv('E2E_USER_EMAIL');
   const appPassword = requireEnv('E2E_USER_PASSWORD');
-  const githubUser = process.env.GITHUB_TEST_USER ?? appEmail;
-  const githubPass = process.env.GITHUB_TEST_PASSWORD ?? appPassword;
-  logGithubAuthPlan();
+
+  const isBitbucketRun = process.env.E2E_CODE_PROVIDER === 'bitbucket' || process.argv.some(arg => arg.includes('bitbucket'));
+
+  if (!isBitbucketRun) {
+    logGithubAuthPlan();
+  }
 
   console.log(`🚀 [GİRİŞ] GitSec Staging API'sine giriş isteği gönderiliyor... (Email: ${appEmail}, Endpoint: ${apiBaseUrl}/auth/signin)`);
   const response = await request.post(`${apiBaseUrl}/auth/signin`, {
@@ -49,9 +52,6 @@ setup('authenticate and connect GitHub', async ({ request, page }) => {
   if (!token) {
     throw new Error('Auth setup login failed: token not found in response');
   }
-
-  const { cookies: githubCookies, origins: githubOrigins } = githubCookiesForStorageState();
-  const dashboardOrigin = new URL(dashboardBaseUrl).origin;
 
   const gsAuthValue = JSON.stringify({
     state: {
@@ -82,7 +82,7 @@ setup('authenticate and connect GitHub', async ({ request, page }) => {
   });
 
   // Cookieleri ekleyelim
-  await page.context().addCookies([
+  const cookiesToInject = [
     {
       name: 'gs_token',
       value: token,
@@ -91,13 +91,19 @@ setup('authenticate and connect GitHub', async ({ request, page }) => {
       expires: -1,
       httpOnly: false,
       secure: true,
-      sameSite: 'Lax',
-    },
-    ...githubCookies.map((c: any) => ({
+      sameSite: 'Lax' as any,
+    }
+  ];
+
+  if (!isBitbucketRun) {
+    const { cookies: githubCookies } = githubCookiesForStorageState();
+    cookiesToInject.push(...githubCookies.map((c: any) => ({
       ...c,
       sameSite: c.sameSite as any,
-    })),
-  ]);
+    })));
+  }
+
+  await page.context().addCookies(cookiesToInject);
 
   // Onboarding'i ve auth state'ini her sayfa load'undan önce localStorage'a yazarak yönlendirmeleri engelleyelim.
   await page.context().addInitScript(`
@@ -112,6 +118,39 @@ setup('authenticate and connect GitHub', async ({ request, page }) => {
   console.log(`[auth-setup] Dashboard açılıyor... (URL: ${dashboardBaseUrl}/${workspaceId}/dashboard)`);
   // Yönlendirme ve yükleme işlemlerinin stabil tamamlanması için networkidle bekleyelim.
   await page.goto(`${dashboardBaseUrl}/${workspaceId}/dashboard`, { waitUntil: 'load', timeout: 30000 });
+
+  if (isBitbucketRun) {
+    console.log('[auth-setup] ℹ️ Bitbucket testi algılandı. GitHub otomatik bağlantı adımı atlanıyor, sadece GitSec oturumu hazırlanıyor.');
+    await page.context().storageState({ path: withProviderFile });
+    await page.context().storageState({ path: authFile });
+
+    const googleSessionPath = path.join(process.cwd(), 'playwright/.auth/google-session.json');
+    if (fs.existsSync(googleSessionPath)) {
+      console.log('[auth-setup] 🔑 [GOOGLE] Kayıtlı Google oturumu (google-session.json) tespit edildi. Oturum çerezleri enjekte ediliyor...');
+      try {
+        const googleSession = JSON.parse(fs.readFileSync(googleSessionPath, 'utf8'));
+        const targetData = JSON.parse(fs.readFileSync(withProviderFile, 'utf8'));
+        
+        const cookieMap = new Map();
+        (targetData.cookies || []).forEach((c: any) => {
+          cookieMap.set(`${c.domain}:${c.name}`, c);
+        });
+        (googleSession.cookies || []).forEach((c: any) => {
+          cookieMap.set(`${c.domain}:${c.name}`, c);
+        });
+
+        targetData.cookies = Array.from(cookieMap.values());
+        fs.writeFileSync(withProviderFile, JSON.stringify(targetData, null, 2), 'utf8');
+        console.log('[auth-setup] ✅ [GOOGLE] Google çerezleri başarıyla birleştirildi.');
+      } catch (e) {
+        console.error('[auth-setup] Google çerezleri birleştirilirken hata:', e);
+      }
+    }
+    return;
+  }
+
+  const githubUser = process.env.GITHUB_TEST_USER ?? appEmail;
+  const githubPass = process.env.GITHUB_TEST_PASSWORD ?? appPassword;
 
   // EĞER KULLANICI ÖZELLİKLE "github-connect.spec.ts" TESTİNİ ÇALIŞTIRIYORSA:
   if (process.argv.some(arg => arg.includes('github-connect.spec.ts'))) {

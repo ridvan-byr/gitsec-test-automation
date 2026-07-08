@@ -1,6 +1,6 @@
-# QA Cortex Agent Standards
+# Playwright Test Automation Rules & Standards
 
-You are pair programming on a Playwright test automation codebase. You MUST strictly adhere to the following project-scoped standards for all code generation, reviews, and modifications:
+You are an expert QA Automation Engineer. When writing or editing Playwright tests in this repository, you MUST strictly adhere to these standards:
 
 
 ## Assertions Standards

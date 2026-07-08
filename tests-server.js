@@ -128,7 +128,7 @@ const server = http.createServer((req, res) => {
           tag, headed, testFile, timezone, workspaceId, baseUrl,
           scheduleName, scheduleTime, includeCode, includePr, includeIssues,
           scheduleType, weeklyDay, monthlyDay, cronExpression,
-          includeMode, excludeMode, backupMode, workers, cardId
+          includeMode, includeProvider, excludeMode, backupMode, workers, cardId
         } = JSON.parse(body || '{}');
 
         const maxWorkers = parseInt(workers) || 1;
@@ -208,6 +208,7 @@ const server = http.createServer((req, res) => {
         if (monthlyDay) runEnv.E2E_MONTHDAY = monthlyDay;
         if (cronExpression) runEnv.E2E_CRON_EXPR = cronExpression;
         if (includeMode) runEnv.E2E_INCLUDE_MODE = includeMode;
+        if (includeProvider) runEnv.E2E_CODE_PROVIDER = includeProvider;
         if (excludeMode) runEnv.E2E_EXCLUDE_MODE = excludeMode;
         if (backupMode) runEnv.E2E_BACKUP_MODE = backupMode;
 
@@ -299,8 +300,51 @@ const server = http.createServer((req, res) => {
   }
 
   // 3c. Google Manuel Giriş Tetikleme (API)
+  if (req.url === '/api/google-login-code' && req.method === 'POST') {
+    const googleCardIds = ['card-google-session', 'card-code-google-session'];
+    const googleProcessRunning = googleCardIds.some(cardId => activeProcesses.has(cardId));
+    if (googleProcessRunning) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Zaten aktif bir Google oturum açma işlemi çalışıyor!' }));
+      return;
+    }
+
+    const cardId = 'card-code-google-session';
+    const scriptPath = path.join(__dirname, 'scripts', 'login-google-manually.ts');
+    console.log(`[Server] Başlatılan Kod Sağlayıcı Google Manuel Giriş komutu: npx tsx ${scriptPath}`);
+    broadcast('log', { cardId, text: `[DASHBOARD] Google Manuel Oturum Açma aracı başlatılıyor...\n` });
+
+    const proc = spawn('npx', ['tsx', 'scripts/login-google-manually.ts'], {
+      shell: true,
+      cwd: __dirname,
+      env: { ...process.env, FORCE_COLOR: '1' }
+    });
+
+    activeProcesses.set(cardId, proc);
+    broadcast('status', { running: true, runningCardIds: Array.from(activeProcesses.keys()) });
+
+    proc.stdout.on('data', data => {
+      broadcast('log', { cardId, text: data.toString() });
+    });
+
+    proc.stderr.on('data', data => {
+      broadcast('log', { cardId, text: data.toString() });
+    });
+
+    proc.on('close', code => {
+      console.log(`[Server] Kod Sağlayıcı Google login aracı tamamlandı, çıkış kodu: ${code}`);
+      activeProcesses.delete(cardId);
+      broadcast('status', { running: activeProcesses.size > 0, runningCardIds: Array.from(activeProcesses.keys()) });
+      broadcast('done', { cardId, success: code === 0, code });
+    });
+
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ success: true, message: 'Google oturum açma aracı başlatıldı.' }));
+    return;
+  }
+
   if (req.url === '/api/google-login' && req.method === 'POST') {
-    if (activeProcesses.has('card-google-session')) {
+    if (activeProcesses.has('card-google-session') || activeProcesses.has('card-code-google-session')) {
       res.writeHead(400, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: 'Zaten aktif bir Google oturum açma işlemi çalışıyor!' }));
       return;

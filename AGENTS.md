@@ -1,6 +1,6 @@
-# QA Cortex Agent Standards
+# QA Cortex Project Standards
 
-You are pair programming on a Playwright test automation codebase. You MUST strictly adhere to the following project-scoped standards for all code generation, reviews, and modifications:
+You are working on a Playwright test automation codebase. You MUST strictly adhere to the following project-scoped standards for all code generation, reviews, and modifications:
 
 
 ## Assertions Standards
