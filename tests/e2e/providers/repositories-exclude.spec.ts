@@ -371,7 +371,7 @@ test.describe('Repositories - Exclude Selected', () => {
     await page.evaluate(() => new Promise(requestAnimationFrame)).catch(() => {});
 
     const responsePromise = page.waitForResponse(
-      response => response.url().includes('/api/repositories/license-inclusion-status/'),
+      response => response.url().includes('/api/repositories/license-inclusion-status'),
       { timeout: 30000 }
     ).catch(() => null);
 
@@ -454,7 +454,7 @@ test.describe('Repositories - Exclude Selected', () => {
     // Listeyi taramaya başlamadan önce tabloyu kesinlikle sağa kaydırıyoruz
     await scrollTableToRight(page);
 
-    // Mod 2: Bütün aktif depoları exclude et (Her adımda Page 1, Index 0'ı exclude edip yenileyerek)
+    // Mod 2: Bütün aktif depoları exclude et (Toplu veya tek tek fallback yöntemiyle)
     let totalProcessed = 0;
 
     while (true) {
@@ -465,73 +465,143 @@ test.describe('Repositories - Exclude Selected', () => {
       await switches.first().waitFor({ state: 'visible', timeout: 15000 }).catch(() => {});
       const count = await switches.count().catch(() => 0);
       
-      let targetSwitch: Locator | null = null;
+      let checkedCount = 0;
       for (let i = 0; i < count; i++) {
         const sw = switches.nth(i);
         const isChecked = await sw.getAttribute('aria-checked').catch(() => null);
         if (isChecked === 'true' || isChecked === 'checked') {
-          targetSwitch = sw;
-          break;
+          checkedCount++;
         }
       }
 
-      if (!targetSwitch) {
+      if (checkedCount === 0) {
         console.log('🎉 [BAŞARILI] Sayfa 1 üzerinde aktif (checked) depo kalmadı. Exclude işlemi tamamlandı.');
         break;
       }
 
-      const targetRow = targetSwitch.locator('xpath=./ancestor::tr').first();
-      const cleanedRepoName = await getCleanRepoName(targetRow);
-      console.log(`📦 [İŞLEM] Aktif depo kapsam dışına çıkarılıyor: "${cleanedRepoName}"`);
+      // Toplu seçim dene
+      const selectAllCheckbox = page.locator('thead th [role="checkbox"]').first();
+      const isSelectAllVisible = await selectAllCheckbox.isVisible().catch(() => false);
+      let bulkSuccess = false;
 
-      await targetSwitch.evaluate(el => {
-        const rect = el.getBoundingClientRect();
-        const isInViewport = rect.top >= 150 && rect.bottom <= (window.innerHeight - 150);
-        if (!isInViewport) {
-          window.scrollBy({
-            top: rect.top - (window.innerHeight / 2),
-            behavior: 'auto'
-          });
+      if (isSelectAllVisible) {
+        try {
+          console.log('⚡ [TOPLU SEÇİM] "Select all" onay kutusu bulundu. Tüm depolar seçiliyor...');
+          await selectAllCheckbox.click({ timeout: 5000 });
+
+          const excludeSelectedBtn = page.getByRole('button', { name: /Exclude selected|Remove from backup scope/i }).first();
+          const isBtnVisible = await excludeSelectedBtn.waitFor({ state: 'visible', timeout: 5000 }).then(() => true).catch(() => false);
+
+          if (isBtnVisible) {
+            console.log('👆 [TOPLU SEÇİM] Exclude selected butonuna tıklanıyor...');
+            const responsePromise = page.waitForResponse(
+              response => response.url().includes('/api/repositories/license-inclusion-status'),
+              { timeout: 30000 }
+            ).catch(() => null);
+
+            await excludeSelectedBtn.click();
+
+            const confirmBtn = page.getByRole('button', { name: /Yes,\s*Exclude|Confirm/i }).first();
+            if (await confirmBtn.waitFor({ state: 'visible', timeout: 5000 }).then(() => true).catch(() => false)) {
+              console.log('👆 [TOPLU SEÇİM] Onay modalında onaylama butonuna tıklanıyor...');
+              await confirmBtn.click({ force: true });
+              await expect(confirmBtn).toBeHidden({ timeout: 5000 });
+            }
+
+            const apiResponse = await responsePromise;
+            if (apiResponse && apiResponse.status() === 200) {
+              console.log('🎉 [BAŞARILI] Toplu exclude etme API yanıtı başarıyla tamamlandı: 200');
+              totalProcessed += checkedCount;
+              bulkSuccess = true;
+            } else {
+              console.log('⚠️ [UYARI] Toplu exclude API yanıtı başarısız. Fallback tekil tıklamaya geçiliyor...');
+              const clearBtn = page.getByRole('button', { name: /dataTable.clearSelection/i }).or(page.locator('button').filter({ hasText: /clear/i })).first();
+              if (await clearBtn.isVisible().catch(() => false)) {
+                await clearBtn.click().catch(() => {});
+              }
+            }
+          } else {
+            console.log('ℹ️ [BİLGİ] Exclude selected butonu görünmedi.');
+            bulkSuccess = true;
+          }
+        } catch (err: any) {
+          console.log(`⚠️ [UYARI] Toplu seçim sırasında hata oluştu: ${err.message}. Fallback tekil tıklamaya geçiliyor...`);
+          const clearBtn = page.getByRole('button', { name: /dataTable.clearSelection/i }).or(page.locator('button').filter({ hasText: /clear/i })).first();
+          if (await clearBtn.isVisible().catch(() => false)) {
+            await clearBtn.click().catch(() => {});
+          }
         }
-      }).catch(() => {});
-      await page.evaluate(() => new Promise(requestAnimationFrame)).catch(() => {});
-
-      const responsePromise = page.waitForResponse(
-        response => response.url().includes('/api/repositories/license-inclusion-status/'),
-        { timeout: 30000 }
-      ).catch(() => null);
-
-      try {
-        await targetSwitch.click({ timeout: 5000 });
-      } catch {
-        await targetSwitch.click({ force: true });
       }
 
-      const confirmBtn = page.getByRole('button', { name: /Yes,\s*Exclude|Confirm/i }).first();
-      if (await confirmBtn.waitFor({ state: 'visible', timeout: 5000 }).then(() => true).catch(() => false)) {
-        await confirmBtn.click({ force: true });
-        await expect(confirmBtn).toBeHidden({ timeout: 5000 });
-      }
-
-      const apiResponse = await responsePromise;
-      await checkApiResponseAndToast(page, apiResponse, cleanedRepoName, 'kapsam dışı');
-      console.log(`🎉 [BAŞARILI] API yanıtı başarıyla tamamlandı: ${apiResponse!.status()}`);
-
-      const success = await verifySwitchStateOrDetectLicenseError(page, targetSwitch, 'false');
-      if (!success) {
-        const errorVisible = await page
-          .locator('text=/The licence limit within threshold has been reached|Failed to update repository status|Some repositories cannot be activated/i')
-          .first()
-          .isVisible()
-          .catch(() => false);
-        if (errorVisible) {
-          return;
+      if (!bulkSuccess) {
+        console.log('📦 [FALLBACK] Tek tek depo exclude etme adımı uygulanıyor...');
+        let targetSwitch: Locator | null = null;
+        for (let i = 0; i < count; i++) {
+          const sw = switches.nth(i);
+          const isChecked = await sw.getAttribute('aria-checked').catch(() => null);
+          if (isChecked === 'true' || isChecked === 'checked') {
+            targetSwitch = sw;
+            break;
+          }
         }
-        await expect(targetSwitch).toHaveAttribute('aria-checked', 'false', { timeout: 1000 });
-      }
 
-      console.log('🎉 [BAŞARILI] Depo başarıyla kapsam dışına çıkarıldı.');
-      totalProcessed++;
+        if (!targetSwitch) {
+          break;
+        }
+
+        const targetRow = targetSwitch.locator('xpath=./ancestor::tr').first();
+        const cleanedRepoName = await getCleanRepoName(targetRow);
+        console.log(`📦 [İŞLEM] Aktif depo kapsam dışına çıkarılıyor: "${cleanedRepoName}"`);
+
+        await targetSwitch.evaluate(el => {
+          const rect = el.getBoundingClientRect();
+          const isInViewport = rect.top >= 150 && rect.bottom <= (window.innerHeight - 150);
+          if (!isInViewport) {
+            window.scrollBy({
+              top: rect.top - (window.innerHeight / 2),
+              behavior: 'auto'
+            });
+          }
+        }).catch(() => {});
+        await page.evaluate(() => new Promise(requestAnimationFrame)).catch(() => {});
+
+        const responsePromise = page.waitForResponse(
+          response => response.url().includes('/api/repositories/license-inclusion-status'),
+          { timeout: 30000 }
+        ).catch(() => null);
+
+        try {
+          await targetSwitch.click({ timeout: 5000 });
+        } catch {
+          await targetSwitch.click({ force: true });
+        }
+
+        const confirmBtn = page.getByRole('button', { name: /Yes,\s*Exclude|Confirm/i }).first();
+        if (await confirmBtn.waitFor({ state: 'visible', timeout: 5000 }).then(() => true).catch(() => false)) {
+          await confirmBtn.click({ force: true });
+          await expect(confirmBtn).toBeHidden({ timeout: 5000 });
+        }
+
+        const apiResponse = await responsePromise;
+        await checkApiResponseAndToast(page, apiResponse, cleanedRepoName, 'kapsam dışı');
+        console.log(`🎉 [BAŞARILI] API yanıtı başarıyla tamamlandı: ${apiResponse!.status()}`);
+
+        const success = await verifySwitchStateOrDetectLicenseError(page, targetSwitch, 'false');
+        if (!success) {
+          const errorVisible = await page
+            .locator('text=/The licence limit within threshold has been reached|Failed to update repository status|Some repositories cannot be activated/i')
+            .first()
+            .isVisible()
+            .catch(() => false);
+          if (errorVisible) {
+            return;
+          }
+          await expect(targetSwitch).toHaveAttribute('aria-checked', 'false', { timeout: 1000 });
+        }
+
+        console.log('🎉 [BAŞARILI] Depo başarıyla kapsam dışına çıkarıldı.');
+        totalProcessed++;
+      }
 
       // Her exclude işleminden sonra sayfayı yenileyerek durum sıralamasını güncelliyoruz
       console.log('🔄 [İŞLEM] [Refresh] Sıralamayı güncellemek için sayfa yenileniyor...');

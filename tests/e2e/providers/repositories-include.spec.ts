@@ -269,7 +269,7 @@ test.describe('Repositories - Include Selected', () => {
       await page.evaluate(() => new Promise(requestAnimationFrame)).catch(() => { });
 
       const responsePromise = page.waitForResponse(
-        response => response.url().includes('/api/repositories/license-inclusion-status/'),
+        response => response.url().includes('/api/repositories/license-inclusion-status'),
         { timeout: 30000 }
       ).catch(() => null);
 
@@ -356,137 +356,201 @@ test.describe('Repositories - Include Selected', () => {
       }
 
     } else if (mode === 'one_page') {
-      // Mod 2: Bulunulan sayfadaki tüm unchecked depoları dinamik olarak tek tek include et.
+      // Mod 2: Bulunulan sayfadaki tüm unchecked depoları toplu (Select all) veya tek tek (fallback) include et.
       let pageCount = 1;
       let toggledRepoNames: string[] = [];
 
-      while (true) {
-        await scrollTableToRight(page);
+      await scrollTableToRight(page);
 
-        const switches = repoTable.locator('button[role="switch"]');
-        let count = await switches.count().catch(() => 0);
+      // Select All onay kutusunu arayalım
+      const selectAllCheckbox = page.locator('thead th [role="checkbox"]').first();
+      const isSelectAllVisible = await selectAllCheckbox.isVisible().catch(() => false);
+      let bulkSuccess = false;
 
-        if (count === 0) {
-          console.log('⚠️ [UYARI] Tablo henüz yüklenmedi, yüklenmesi bekleniyor...');
-          await waitTableLoadingFinished(repoTable).catch(() => { });
-          count = await switches.count().catch(() => 0);
-        }
+      if (isSelectAllVisible) {
+        try {
+          console.log('⚡ [TOPLU SEÇİM] "Select all" onay kutusu bulundu. Sayfadaki tüm depolar seçiliyor...');
+          await selectAllCheckbox.click({ timeout: 5000 });
 
-        let uncheckedIndices: number[] = [];
-        for (let i = 0; i < count; i++) {
-          const sw = switches.nth(i);
-          const isChecked = await sw.getAttribute('aria-checked').catch(() => null);
-          if (isChecked === 'false' || isChecked === null) {
-            uncheckedIndices.push(i);
+          // "Include selected" butonu görünene kadar bekleyelim
+          const includeSelectedBtn = page.getByRole('button', { name: /Include selected/i }).first();
+          const isBtnVisible = await includeSelectedBtn.waitFor({ state: 'visible', timeout: 5000 }).then(() => true).catch(() => false);
+
+          if (isBtnVisible) {
+            console.log('👆 [TOPLU SEÇİM] "Include selected" butonuna tıklanıyor...');
+            const responsePromise = page.waitForResponse(
+              response => response.url().includes('/api/repositories/license-inclusion-status'),
+              { timeout: 30000 }
+            ).catch(() => null);
+
+            await includeSelectedBtn.click();
+            const apiResponse = await responsePromise;
+            
+            if (apiResponse && apiResponse.status() === 200) {
+              console.log('🎉 [BAŞARILI] Toplu dahil etme API yanıtı başarıyla tamamlandı: 200');
+              
+              // Eklendiğini doğrulamak için sayfadaki tüm repository isimlerini toplayalım
+              const rows = repoTable.locator('tbody tr');
+              const rowCount = await rows.count().catch(() => 0);
+              for (let i = 0; i < rowCount; i++) {
+                const name = await getCleanRepoName(rows.nth(i));
+                if (name) {
+                  toggledRepoNames.push(name);
+                }
+              }
+              bulkSuccess = true;
+            } else {
+              console.log('⚠️ [UYARI] Toplu dahil etme API yanıtı başarısız oldu (200 dönmedi). Tek tek tıklama fallback akışına geçiliyor...');
+              // Seçimi iptal etmeye çalışalım
+              const clearBtn = page.getByRole('button', { name: /dataTable.clearSelection/i }).or(page.locator('button').filter({ hasText: /clear/i })).first();
+              if (await clearBtn.isVisible().catch(() => false)) {
+                await clearBtn.click().catch(() => {});
+              }
+            }
+          } else {
+            console.log('ℹ️ [BİLGİ] "Include selected" butonu görünmedi. Sayfadaki tüm depolar zaten dahil edilmiş olabilir.');
+            bulkSuccess = true;
+          }
+        } catch (err: any) {
+          console.log(`⚠️ [UYARI] Toplu seçim sırasında hata oluştu: ${err.message}. Tek tek tıklama fallback akışına geçiliyor...`);
+          // Seçimi iptal etmeye çalışalım
+          const clearBtn = page.getByRole('button', { name: /dataTable.clearSelection/i }).or(page.locator('button').filter({ hasText: /clear/i })).first();
+          if (await clearBtn.isVisible().catch(() => false)) {
+            await clearBtn.click().catch(() => {});
           }
         }
+      }
 
-        // Eğer bu sayfada hiç unchecked depo yoksa (tümü zaten include edilmişse)
-        if (uncheckedIndices.length === 0) {
-          console.log(`🔍 [KONTROL] ${pageCount}. sayfadaki tüm depolar zaten include edilmiş.`);
-
-          const nextBtn = await getNextPageButton(page);
-          const hasNext = await hasNextPage(nextBtn);
-
-          if (!hasNext) {
-            console.log('🎉 [BAŞARILI] Bütün sayfalardaki tüm depolar zaten include edilmiş durumda. Eklenecek depo kalmadı!');
-            return;
-          }
-
-          const scanFirstRow = repoTable.locator('tbody tr').first();
-          await clickNextPageAndWaitForLoad(page, nextBtn, scanFirstRow);
-          pageCount++;
-          continue;
-        }
-
-        // Eğer sayfada en az bir tane unchecked depo varsa
-        console.log(`🔍 [KONTROL] ${pageCount}. sayfada eklenecek ${uncheckedIndices.length} adet unchecked depo tespit edildi. İşlem başlatılıyor...`);
-        let processedCount = 0;
-
+      if (!bulkSuccess) {
+        console.log('📦 [FALLBACK] Tek tek depo dahil etme döngüsü başlatılıyor...');
         while (true) {
           await scrollTableToRight(page);
 
-          const currentSwitches = repoTable.locator('button[role="switch"]');
-          let currentCount = await currentSwitches.count().catch(() => 0);
+          const switches = repoTable.locator('button[role="switch"]');
+          let count = await switches.count().catch(() => 0);
 
-          if (currentCount === 0) {
-            console.log('⚠️ [UYARI] Tabloda switch bulunamadı, sayfa yükleniyor olabilir. Yüklenmesi bekleniyor...');
+          if (count === 0) {
+            console.log('⚠️ [UYARI] Tablo henüz yüklenmedi, yüklenmesi bekleniyor...');
             await waitTableLoadingFinished(repoTable).catch(() => { });
-            currentCount = await currentSwitches.count().catch(() => 0);
+            count = await switches.count().catch(() => 0);
           }
 
-          let targetSwitch: Locator | null = null;
-          let targetIndex = -1;
-
-          for (let i = 0; i < currentCount; i++) {
-            const sw = currentSwitches.nth(i);
+          let uncheckedIndices: number[] = [];
+          for (let i = 0; i < count; i++) {
+            const sw = switches.nth(i);
             const isChecked = await sw.getAttribute('aria-checked').catch(() => null);
             if (isChecked === 'false' || isChecked === null) {
-              targetSwitch = sw;
-              targetIndex = i;
-              break;
+              uncheckedIndices.push(i);
             }
           }
 
-          if (!targetSwitch) {
-            console.log('🎉 [BAŞARILI] ' + pageCount + '. sayfadaki tüm unchecked depolar başarıyla dahil edildi.');
-            break;
-          }
+          // Eğer bu sayfada hiç unchecked depo yoksa (tümü zaten include edilmişse)
+          if (uncheckedIndices.length === 0) {
+            console.log(`🔍 [KONTROL] ${pageCount}. sayfadaki tüm depolar zaten include edilmiş.`);
 
+            const nextBtn = await getNextPageButton(page);
+            const hasNext = await hasNextPage(nextBtn);
 
-          const targetRow = targetSwitch.locator('xpath=./ancestor::tr').first();
-          const cleanedRepoName = await getCleanRepoName(targetRow);
-          console.log(`📦 [İŞLEM] ${pageCount}. sayfadaki "${cleanedRepoName || targetIndex}" deponun switch butonuna tıklanıyor...`);
-
-          await targetSwitch.evaluate(el => {
-            const rect = el.getBoundingClientRect();
-            const isInViewport = rect.top >= 150 && rect.bottom <= (window.innerHeight - 150);
-            if (!isInViewport) {
-              window.scrollBy({
-                top: rect.top - (window.innerHeight / 2),
-                behavior: 'auto'
-              });
-            }
-          }).catch(() => { });
-          await page.evaluate(() => new Promise(requestAnimationFrame)).catch(() => { });
-
-          const responsePromise = page.waitForResponse(
-            response => response.url().includes('/api/repositories/license-inclusion-status/'),
-            { timeout: 30000 }
-          ).catch(() => null);
-
-          try {
-            await targetSwitch.click({ timeout: 5000 });
-          } catch {
-            await targetSwitch.click({ force: true });
-          }
-
-          const apiResponse = await responsePromise;
-          await checkApiResponseAndToast(page, apiResponse, cleanedRepoName || String(targetIndex), 'dahil');
-          console.log(`🎉 [BAŞARILI] API yanıtı başarıyla tamamlandı: ${apiResponse!.status()}`);
-
-          const success = await verifySwitchStateOrDetectLicenseError(page, targetSwitch);
-          if (!success) {
-            const errorVisible = await page
-              .locator('text=/The licence limit within threshold has been reached|Failed to update repository status|Some repositories cannot be activated/i')
-              .first()
-              .isVisible()
-              .catch(() => false);
-            if (errorVisible) {
+            if (!hasNext) {
+              console.log('🎉 [BAŞARILI] Bütün sayfalardaki tüm depolar zaten include edilmiş durumda. Eklenecek depo kalmadı!');
               return;
             }
-            await expect(targetSwitch).toHaveAttribute('aria-checked', 'true', { timeout: 1000 });
+
+            const scanFirstRow = repoTable.locator('tbody tr').first();
+            await clickNextPageAndWaitForLoad(page, nextBtn, scanFirstRow);
+            pageCount++;
+            continue;
           }
 
-          console.log(`🎉 [BAŞARILI] Depo başarıyla kapsama dahil edildi.`);
-          if (cleanedRepoName) {
-            toggledRepoNames.push(cleanedRepoName);
+          // Eğer sayfada en az bir tane unchecked depo varsa
+          console.log(`🔍 [KONTROL] ${pageCount}. sayfada eklenecek ${uncheckedIndices.length} adet unchecked depo tespit edildi. İşlem başlatılıyor...`);
+          let processedCount = 0;
+
+          while (true) {
+            await scrollTableToRight(page);
+
+            const currentSwitches = repoTable.locator('button[role="switch"]');
+            let currentCount = await currentSwitches.count().catch(() => 0);
+
+            if (currentCount === 0) {
+              console.log('⚠️ [UYARI] Tabloda switch bulunamadı, sayfa yükleniyor olabilir. Yüklenmesi bekleniyor...');
+              await waitTableLoadingFinished(repoTable).catch(() => { });
+              currentCount = await currentSwitches.count().catch(() => 0);
+            }
+
+            let targetSwitch: Locator | null = null;
+            let targetIndex = -1;
+
+            for (let i = 0; i < currentCount; i++) {
+              const sw = currentSwitches.nth(i);
+              const isChecked = await sw.getAttribute('aria-checked').catch(() => null);
+              if (isChecked === 'false' || isChecked === null) {
+                targetSwitch = sw;
+                targetIndex = i;
+                break;
+              }
+            }
+
+            if (!targetSwitch) {
+              console.log('🎉 [BAŞARILI] ' + pageCount + '. sayfadaki tüm unchecked depolar başarıyla dahil edildi.');
+              break;
+            }
+
+
+            const targetRow = targetSwitch.locator('xpath=./ancestor::tr').first();
+            const cleanedRepoName = await getCleanRepoName(targetRow);
+            console.log(`📦 [İŞLEM] ${pageCount}. sayfadaki "${cleanedRepoName || targetIndex}" deponun switch butonuna tıklanıyor...`);
+
+            await targetSwitch.evaluate(el => {
+              const rect = el.getBoundingClientRect();
+              const isInViewport = rect.top >= 150 && rect.bottom <= (window.innerHeight - 150);
+              if (!isInViewport) {
+                window.scrollBy({
+                  top: rect.top - (window.innerHeight / 2),
+                  behavior: 'auto'
+                });
+              }
+            }).catch(() => { });
+            await page.evaluate(() => new Promise(requestAnimationFrame)).catch(() => { });
+
+            const responsePromise = page.waitForResponse(
+              response => response.url().includes('/api/repositories/license-inclusion-status'),
+              { timeout: 30000 }
+            ).catch(() => null);
+
+            try {
+              await targetSwitch.click({ timeout: 5000 });
+            } catch {
+              await targetSwitch.click({ force: true });
+            }
+
+            const apiResponse = await responsePromise;
+            await checkApiResponseAndToast(page, apiResponse, cleanedRepoName || String(targetIndex), 'dahil');
+            console.log(`🎉 [BAŞARILI] API yanıtı başarıyla tamamlandı: ${apiResponse!.status()}`);
+
+            const success = await verifySwitchStateOrDetectLicenseError(page, targetSwitch);
+            if (!success) {
+              const errorVisible = await page
+                .locator('text=/The licence limit within threshold has been reached|Failed to update repository status|Some repositories cannot be activated/i')
+                .first()
+                .isVisible()
+                .catch(() => false);
+              if (errorVisible) {
+                return;
+              }
+              await expect(targetSwitch).toHaveAttribute('aria-checked', 'true', { timeout: 1000 });
+            }
+
+            console.log(`🎉 [BAŞARILI] Depo başarıyla kapsama dahil edildi.`);
+            if (cleanedRepoName) {
+              toggledRepoNames.push(cleanedRepoName);
+            }
+            processedCount++;
           }
-          processedCount++;
+
+          console.log('🎉 [BAŞARILI] ' + pageCount + '. sayfa başarıyla tamamlandı. Toplam ' + processedCount + ' depo eklendi.');
+          break; // Bir sayfayı doldurduğumuz için döngüden çıkıp yenileme doğrulamasına geçiyoruz
         }
-
-        console.log('🎉 [BAŞARILI] ' + pageCount + '. sayfa başarıyla tamamlandı. Toplam ' + processedCount + ' depo eklendi.');
-        break; // Bir sayfayı doldurduğumuz için döngüden çıkıp yenileme doğrulamasına geçiyoruz
       }
 
       // 🔄 Sayfa Yenileme Kalıcılık Doğrulaması (Refresh/Reload Persistence)
@@ -518,11 +582,17 @@ test.describe('Repositories - Include Selected', () => {
 
             console.log(`🔍 [KONTROL] Depo bu sayfada bulunamadı, ${scanPageCount + 1}. sayfaya geçiliyor...`);
             const firstRow = reloadTable.locator('tbody tr').first();
-
-            const switchAfterReload = foundRow.locator('button[role="switch"]').first();
-            await expect(switchAfterReload).toHaveAttribute('aria-checked', 'true', { timeout: 15000 });
-            console.log(`🎉 [BAŞARILI] [Refresh Persistence] "${repoName}" deponun yedekleme kapsamında kaldığı doğrulandı.`);
+            await clickNextPageAndWaitForLoad(page, nextBtn, firstRow);
+            scanPageCount++;
           }
+
+          if (!foundRow) {
+            throw new Error(`Yenileme sonrasında "${repoName}" isimli repository bulunamadı!`);
+          }
+
+          const switchAfterReload = foundRow.locator('button[role="switch"]').first();
+          await expect(switchAfterReload).toHaveAttribute('aria-checked', 'true', { timeout: 15000 });
+          console.log(`🎉 [BAŞARILI] [Refresh Persistence] "${repoName}" deponun yedekleme kapsamında kaldığı doğrulandı.`);
         }
       }
     }
