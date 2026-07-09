@@ -9,6 +9,8 @@ import { test, expect } from '../../fixtures/test';
 import { StoragePage } from '../../pages/StoragePage';
 import { requireEnv } from '../../support/require-env';
 
+const DUMMY_HUAWEI_SECRET = 'huawei_secret_not_real_dummy_' + 'x'.repeat(16);
+
 // Arayüzdeki hata mesajlarını dinamik arayan yardımcı fonksiyon
 async function getVisibleErrorMessage(page: any): Promise<string | null> {
   const errorSelectors = [
@@ -85,7 +87,7 @@ function getProviderEnvData() {
       connName: `Duplicate Huawei Test - ${Date.now()}`,
       bucket: 'gitsec-huawei-bucket',
       accessKey: 'HUAWEIAK1234567890AA',
-      secretKey: 'huaweisecret1234567890abcdefghijklmn',
+      secretKey: DUMMY_HUAWEI_SECRET,
       region: 'tr-west-1'
     };
   } else {

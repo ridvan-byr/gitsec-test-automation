@@ -3599,6 +3599,29 @@
               </button>
             </div>
           </div>
+
+          <!-- Storage UI Verification Card -->
+          <div id="card-storage-ui" class="test-card">
+            <div class="card-header">
+              <div class="card-title-group">
+                <span class="card-tag">Arayüz Doğrulaması</span>
+                <h3 class="card-title">Depolama Arayüzü & Butonlar</h3>
+              </div>
+              <div class="card-status-dot"></div>
+            </div>
+            <div class="card-content">
+              <p style="color: var(--text-muted); font-size: 0.8125rem; line-height: 1.5;">
+                Depolama sağlayıcıları sayfasındaki tüm butonların görünürlük, aktiflik durumları (disabled/enabled) ve iptal/kaydet yönlendirme adımlarını test eder.
+              </p>
+            </div>
+            <div class="card-footer">
+              <span class="card-meta">storage-ui.spec.ts</span>
+              <button class="btn-run"
+                onclick="runTest('', 'card-storage-ui', 'tests/e2e/ui/storage-ui.spec.ts')">
+                <span>Çalıştır</span>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -3978,10 +4001,28 @@
                   </select>
                 </div>
 
-                <!-- AWS S3 -->
                 <div class="form-group">
                   <label for="env_AWS_ACCESS_KEY_ID">AWS Erişim Anahtarı Kimliği (AWS_ACCESS_KEY_ID)</label>
-                  <input type="text" id="env_AWS_ACCESS_KEY_ID" placeholder="AKIA...">
+                  <div class="password-input-wrapper">
+                    <input type="password" id="env_AWS_ACCESS_KEY_ID" placeholder="AKIA...">
+                    <button type="button" class="password-toggle-btn"
+                      onclick="togglePasswordVisibility('env_AWS_ACCESS_KEY_ID', this)"
+                      title="Şifreyi Göster/Gizle">
+                      <svg class="eye-icon w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                        <circle cx="12" cy="12" r="3"></circle>
+                      </svg>
+                      <svg class="eye-off-icon w-4 h-4" style="display: none;" xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path
+                          d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24">
+                        </path>
+                        <line x1="1" y1="1" x2="23" y2="23"></line>
+                      </svg>
+                    </button>
+                  </div>
                 </div>
                 <div class="form-group">
                   <label for="env_AWS_SECRET_ACCESS_KEY">AWS Gizli Erişim Anahtarı (AWS_SECRET_ACCESS_KEY)</label>
@@ -4018,8 +4059,27 @@
                 <!-- Azure -->
                 <div class="form-group env-card-wide">
                   <label for="env_AZURE_CONNECTION_STRING">Azure Bağlantı Dizesi (AZURE_CONNECTION_STRING)</label>
-                  <input type="text" id="env_AZURE_CONNECTION_STRING"
-                    placeholder="DefaultEndpointsProtocol=https;AccountName=...">
+                  <div class="password-input-wrapper">
+                    <input type="password" id="env_AZURE_CONNECTION_STRING"
+                      placeholder="DefaultEndpointsProtocol=https;AccountName=...">
+                    <button type="button" class="password-toggle-btn"
+                      onclick="togglePasswordVisibility('env_AZURE_CONNECTION_STRING', this)"
+                      title="Şifreyi Göster/Gizle">
+                      <svg class="eye-icon w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                        <circle cx="12" cy="12" r="3"></circle>
+                      </svg>
+                      <svg class="eye-off-icon w-4 h-4" style="display: none;" xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path
+                          d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24">
+                        </path>
+                        <line x1="1" y1="1" x2="23" y2="23"></line>
+                      </svg>
+                    </button>
+                  </div>
                 </div>
                 <div class="form-group env-card-wide">
                   <label for="env_AZURE_FOLDER_PATH">Azure Klasör Yolu (AZURE_FOLDER_PATH)</label>
@@ -4528,6 +4588,42 @@
   </div>
 
   <script>
+    // ─── Güvenlik: Oturum Tokenı ve Fetch Monkeypatch ─────────────────────────
+    let DASHBOARD_TOKEN = '';
+    window.originalFetch = window.fetch;
+    window.fetch = async function(resource, options = {}) {
+      if (typeof resource === 'string' && resource.endsWith('/api/token')) {
+        return window.originalFetch(resource, options);
+      }
+      if (typeof resource === 'string' && resource.startsWith('/api/')) {
+        options.headers = options.headers || {};
+        const token = DASHBOARD_TOKEN || sessionStorage.getItem('dashboard_token') || '';
+        if (token) {
+          if (options.headers instanceof Headers) {
+            options.headers.set('X-Dashboard-Token', token);
+          } else if (Array.isArray(options.headers)) {
+            options.headers.push(['X-Dashboard-Token', token]);
+          } else {
+            options.headers['X-Dashboard-Token'] = token;
+          }
+        }
+      }
+      return window.originalFetch(resource, options);
+    };
+
+    async function initSecurityToken() {
+      try {
+        const res = await window.originalFetch('/api/token');
+        if (res.ok) {
+          const data = await res.json();
+          DASHBOARD_TOKEN = data.token;
+          sessionStorage.setItem('dashboard_token', DASHBOARD_TOKEN);
+        }
+      } catch (err) {
+        console.error('Güvenlik tokenı alınamadı:', err);
+      }
+    }
+
     const activeCardIds = new Set();
     const consoleBuffers = {}; // cardId -> array of log lines
     const testStartTimes = {}; // cardId -> timestamp
@@ -4561,7 +4657,8 @@
       'card-auth-register': 'Kayıt Testi',
       'card-activity-log': 'Aktivite Günlükleri',
       'card-full-flow-auditor': 'Genel Entegrasyon Akışı',
-      'card-activity-ui': 'Aktivite Arayüzü'
+      'card-activity-ui': 'Aktivite Arayüzü',
+      'card-storage-ui': 'Depolama Arayüz Testi'
     };
 
     function getCardDisplayName(cardId, englishMode = false) {
@@ -4595,7 +4692,8 @@
           'card-auth-register': 'Register E2E',
           'card-activity-log': 'Activity & Audit Logs',
           'card-full-flow-auditor': 'Grand Integration Flow',
-          'card-activity-ui': 'Activity UI Logs'
+          'card-activity-ui': 'Activity UI Logs',
+          'card-storage-ui': 'Storage UI & Buttons'
         };
         return engMap[cardId] || cardId;
       }
@@ -5815,7 +5913,8 @@
             'card-auth-register': 'Register E2E',
             'card-activity-log': 'Activity & Audit Logs',
             'card-full-flow-auditor': 'Grand Integration Flow',
-            'card-activity-ui': 'Activity UI Logs'
+            'card-activity-ui': 'Activity UI Logs',
+            'card-storage-ui': 'Storage UI & Buttons'
           };
 
           const testName = getCardDisplayName(run.cardId, true);
@@ -5932,7 +6031,8 @@
         'card-auth-register': 'Register E2E',
         'card-activity-log': 'Activity & Audit Logs',
         'card-full-flow-auditor': 'Grand Integration Flow',
-        'card-activity-ui': 'Activity UI Logs'
+        'card-activity-ui': 'Activity UI Logs',
+        'card-storage-ui': 'Storage UI & Buttons'
       };
 
       const testName = getCardDisplayName(cardId, true);
@@ -6837,7 +6937,8 @@
     });
 
     // Sayfa açılışında SSE, Env, Google oturum durumu ve E2E istatistiklerini yükleyelim
-    window.addEventListener('load', () => {
+    window.addEventListener('load', async () => {
+      await initSecurityToken();
       initSSE();
       loadEnvVars();
       updateGoogleSessionStatus();

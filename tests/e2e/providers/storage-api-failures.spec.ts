@@ -11,6 +11,8 @@ import { Page } from '@playwright/test';
 import { StoragePage } from '../../pages/StoragePage';
 import { requireEnv } from '../../support/require-env';
 
+const DUMMY_HUAWEI_SECRET = 'huawei_secret_not_real_dummy_' + 'x'.repeat(16);
+
 const provider = process.env.E2E_STORAGE_PROVIDER || 'aws';
 const isOAuthProvider = ['gdrive', 'onedrive'].includes(provider);
 
@@ -35,7 +37,7 @@ function getProviderEnvData() {
       connName: `API Failures Huawei Test - ${Date.now()}`,
       bucket: 'gitsec-huawei-bucket',
       accessKey: 'HUAWEIAK1234567890AA',
-      secretKey: 'huaweisecret1234567890abcdefghijklmn',
+      secretKey: DUMMY_HUAWEI_SECRET,
       region: 'tr-west-1'
     };
   } else {

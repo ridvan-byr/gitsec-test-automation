@@ -39,10 +39,10 @@ Projedeki test senaryoları GitSec platformunun aşağıdaki temel işlevlerini 
 ### 4. Geri Yükleme (Restore)
 * **Geri Yükleme Süreçleri**: Yedeklenmiş depoların hedef depolara geri yüklenmesi, dosya bazlı kontroller ve lisans sınırlarındaki 403 engellemeleri.
 
-### 5. Denetim ve Güvenlik (Audit & Security Edge Cases)
+### 5. Denetim ve Arayüz Esnekliği (Audit & Frontend Resilience)
 * **Denetim Günlükleri (Audit Logs)**: Yapılan kritik işlemlerin (sağlayıcı ekleme/silme, zamanlayıcı oluşturma vb.) veritabanına doğru parametrelerle (IP, User Agent, Tarih) yazıldığının API seviyesinde doğrulanması.
-* **Workspace Yalıtımı**: Yetkisiz çalışma alanlarına (Workspace ID) erişim isteklerinin engellenmesi.
-* **Token Yönetimi**: JWT token yenileme yarış durumlarının (Token Refresh Race Condition) arayüzü çökertmeden yönetilmesi.
+* **Workspace Yalıtımı (Mock)**: API mock'lama (page.route) yöntemiyle yetkisiz çalışma alanlarına (Workspace ID) erişim isteklerinde (403/404 yanıtları) frontend arayüzünün doğru hata durumlarını gösterdiğinin testi.
+* **Token Yönetimi (Mock)**: API mock'lama yöntemiyle JWT token yenileme yarış durumlarının (Token Refresh Race Condition) arayüzü çökertmeden istemci tarafında yönetilmesi.
 
 ---
 

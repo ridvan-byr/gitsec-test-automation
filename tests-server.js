@@ -1,9 +1,37 @@
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const { spawn } = require('child_process');
 
 const PORT = process.env.PORT || 3000;
+
+// ─── Güvenlik: Oturum Token'ı ───────────────────────────────────────────────
+// Sunucu her başlatıldığında benzersiz bir token üretilir.
+// Tüm /api/* isteklerinde X-Dashboard-Token header'ı ile doğrulama yapılır.
+const DASHBOARD_TOKEN = crypto.randomBytes(32).toString('hex');
+const ALLOWED_ORIGIN = `http://127.0.0.1:${PORT}`;
+
+// Hassas .env anahtarlarını maskelemek için kullanılan kalıplar
+const SENSITIVE_KEY_PATTERNS = [
+  /PASSWORD/i, /SECRET/i, /KEY/i, /TOKEN/i,
+  /CONNECTION_STRING/i, /TOTP/i
+];
+
+function isSensitiveKey(key) {
+  return SENSITIVE_KEY_PATTERNS.some(pattern => pattern.test(key));
+}
+
+function maskValue(value) {
+  if (!value || value.length <= 6) return '••••••';
+  const visibleStart = value.slice(0, 3);
+  const visibleEnd = value.slice(-3);
+  return `${visibleStart}${'•'.repeat(Math.min(value.length - 6, 20))}${visibleEnd}`;
+}
+
+function isMaskedValue(value) {
+  return typeof value === 'string' && value.includes('••');
+}
 
 // Aktif bağlantıları saklayacağımız küme
 const clients = new Set();
@@ -31,14 +59,52 @@ function serveStaticFile(res, filePath, contentType) {
 }
 
 const server = http.createServer((req, res) => {
-  // CORS ayarları
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  // ─── Güvenlik: CORS — Sadece localhost origin'ine izin ver ───────────────
+  const requestOrigin = req.headers['origin'] || '';
+  if (requestOrigin === ALLOWED_ORIGIN || requestOrigin === `http://localhost:${PORT}`) {
+    res.setHeader('Access-Control-Allow-Origin', requestOrigin);
+  } else {
+    // Origin yoksa (same-origin istekler) veya eşleşmiyorsa CORS header'ı ekleme
+    // Same-origin istekleri (tarayıcıdan doğrudan) Origin header'ı göndermez
+    if (requestOrigin) {
+      // Bilinmeyen origin — CORS header'ı ekleme, tarayıcı bloklasın
+      console.warn(`[GÜVENLİK] Reddedilen CORS isteği — Origin: ${requestOrigin}`);
+    }
+  }
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Dashboard-Token');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  // Tarayıcının credentials göndermesini engelle (ek güvenlik katmanı)
+  res.setHeader('Access-Control-Max-Age', '0');
 
   if (req.method === 'OPTIONS') {
     res.writeHead(204);
     res.end();
+    return;
+  }
+
+  // ─── Güvenlik: Token Doğrulama — /api/* endpoint'leri koruması ──────────
+  if (req.url.startsWith('/api/') && req.url !== '/api/logs' && req.url !== '/api/token') {
+    const clientToken = req.headers['x-dashboard-token'];
+    if (clientToken !== DASHBOARD_TOKEN) {
+      console.warn(`[GÜVENLİK] Yetkisiz API erişim denemesi engellendi — URL: ${req.url}, Origin: ${requestOrigin || 'none'}`);
+      res.writeHead(401, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Unauthorized. Geçersiz veya eksik dashboard token.' }));
+      return;
+    }
+  }
+
+  // 0. Token Endpoint — Dashboard başlatıldığında token'ı almak için
+  if (req.url === '/api/token' && req.method === 'GET') {
+    // Sadece same-origin isteklerine token ver (Origin header'ı olmamalı)
+    const tokenOrigin = req.headers['origin'];
+    if (tokenOrigin && tokenOrigin !== ALLOWED_ORIGIN && tokenOrigin !== `http://localhost:${PORT}`) {
+      console.warn(`[GÜVENLİK] Cross-origin token isteği engellendi — Origin: ${tokenOrigin}`);
+      res.writeHead(403, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Forbidden. Token sadece localhost üzerinden alınabilir.' }));
+      return;
+    }
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ token: DASHBOARD_TOKEN }));
     return;
   }
 
@@ -498,7 +564,7 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  // 5. env Ayarlarını Oku (API)
+  // 5. env Ayarlarını Oku (API) — Hassas değerler maskelenerek döndürülür
   if (req.url === '/api/env' && req.method === 'GET') {
     try {
       const envPath = path.join(__dirname, '.env');
@@ -520,7 +586,8 @@ const server = http.createServer((req, res) => {
         if (eqIdx > 0) {
           const key = trimmed.slice(0, eqIdx).trim();
           const val = trimmed.slice(eqIdx + 1).trim();
-          envVars[key] = val;
+          // ─── Güvenlik: Hassas değerleri maskele ─────────────────────────
+          envVars[key] = isSensitiveKey(key) ? maskValue(val) : val;
         }
       }
 
@@ -544,20 +611,47 @@ const server = http.createServer((req, res) => {
       try {
         const newVars = JSON.parse(body || '{}');
         const envPath = path.join(__dirname, '.env');
+
+        // ─── Güvenlik: Mevcut .env değerlerini oku (maskelenmiş değerleri korumak için) ──
+        const existingVars = {};
+        if (fs.existsSync(envPath)) {
+          const existingContent = fs.readFileSync(envPath, 'utf8');
+          for (const line of existingContent.split(/\r?\n/)) {
+            const trimmed = line.trim();
+            if (!trimmed || trimmed.startsWith('#')) continue;
+            const eqIdx = trimmed.indexOf('=');
+            if (eqIdx > 0) {
+              existingVars[trimmed.slice(0, eqIdx).trim()] = trimmed.slice(eqIdx + 1).trim();
+            }
+          }
+        }
         
         let output = '# Gitsec Test Automation - Cevre Degiskenleri\n';
+        let updatedCount = 0;
+        let preservedCount = 0;
+
         for (const [key, val] of Object.entries(newVars)) {
           if (key && val !== undefined) {
-            output += `${key}=${val}\n`;
-            // Update in-memory process.env so spawned tests immediately receive it
-            process.env[key] = val;
-            console.log(`[Server] Environment variable HOT-LOADED: ${key}=${val}`);
+            // ─── Güvenlik: Maskelenmiş değer geri gönderildiyse mevcut değeri koru ──
+            if (isMaskedValue(val) && existingVars[key]) {
+              output += `${key}=${existingVars[key]}\n`;
+              process.env[key] = existingVars[key];
+              preservedCount++;
+            } else {
+              output += `${key}=${val}\n`;
+              process.env[key] = val;
+              updatedCount++;
+              // Güvenlik: Hassas değerleri konsola loglarken maskele
+              const logVal = isSensitiveKey(key) ? maskValue(String(val)) : val;
+              console.log(`[Server] Environment variable HOT-LOADED: ${key}=${logVal}`);
+            }
           }
         }
 
         fs.writeFileSync(envPath, output, 'utf8');
+        console.log(`[Server] .env güncellendi: ${updatedCount} değiştirildi, ${preservedCount} korundu (maskelenmiş).`);
         res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ success: true, message: '.env dosyası güncellendi ve çalışma ortamına yüklendi.' }));
+        res.end(JSON.stringify({ success: true, message: `.env dosyası güncellendi. ${updatedCount} değişken güncellendi, ${preservedCount} hassas değer korundu.` }));
       } catch (err) {
         res.writeHead(500, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ error: err.message }));
@@ -575,4 +669,7 @@ server.listen(PORT, '127.0.0.1', () => {
   console.log(`==================================================`);
   console.log(`[DASHBOARD] Sunucu http://127.0.0.1:${PORT} adresinde aktif!`);
   console.log(`==================================================`);
+  console.log(`[GÜVENLİK] CORS kısıtlaması: Sadece ${ALLOWED_ORIGIN} origin'i kabul ediliyor.`);
+  console.log(`[GÜVENLİK] API token koruması aktif. Tüm /api/* istekleri X-Dashboard-Token header'ı gerektirir.`);
+  console.log(`[GÜVENLİK] Hassas .env değerleri maskelenerek servis ediliyor.`);
 });

@@ -10,10 +10,12 @@ test.beforeEach(async () => {
   apiBaseUrl = requireEnv('API_BASE_URL');
 });
 
-test.describe('System Level Edge Cases — Workspace Yetki Yalıtımı ve Token Geçersizliği', () => {
+test.describe('System Level Edge Cases — Frontend Hata Yönetimi & Simüle Edilmiş Yetkilendirme (API Mocking)', () => {
   
-  test('Yetkisiz WORKSPACE_ID (999999) ile dashboard veya API erişimi engellenmeli ve 403/404 veya UI hata ekranı gösterilmelidir', async ({ page }) => {
+  test('Yetkisiz WORKSPACE_ID (999999) ile erişimde UI hata ekranı gösterimi (Simüle Edilmiş / Mocked)', async ({ page }) => {
     test.setTimeout(90000);
+    // NOT: Bu test, backend yetki kontrolünün kendisini değil, API'den 403 yanıtı 
+    // geldiğinde frontend'in kullanıcıya doğru hata ekranını gösterdiğini test eder (Mock yetkilendirme).
     // 1. API'yi bu sahte workspace için 403 Forbidden dönecek şekilde route edelim
     await page.route(`${apiBaseUrl}/api/**/999999/**`, async (route) => {
       console.log('🛡️ [MOCK WORKSPACE ISOLATION] Yetkisiz workspace API isteği engellendi.');
