@@ -12,8 +12,6 @@
 import { test, expect } from '../../fixtures/test';
 import { requireEnv } from '../../support/require-env';
 
-const workspaceId = requireEnv('WORKSPACE_ID');
-
 test.describe('Login — UI Giriş Formu E2E Akışı', () => {
   // Temiz bir oturum durumu ile başla (Önceki oturum çerezlerini temizle)
   test.use({ storageState: { cookies: [], origins: [] } });
@@ -22,6 +20,7 @@ test.describe('Login — UI Giriş Formu E2E Akışı', () => {
     // Captcha çözmeniz için geniş bekleme süresi (180 saniye / 3 dakika)
     test.setTimeout(180000); 
 
+    const workspaceId = requireEnv('WORKSPACE_ID');
     const email = requireEnv('E2E_USER_EMAIL');
     const password = requireEnv('E2E_USER_PASSWORD');
 

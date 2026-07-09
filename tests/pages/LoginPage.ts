@@ -1,13 +1,15 @@
 import { Page, Locator, expect } from '@playwright/test';
 import { requireEnv } from '../support/require-env';
 
-const dashboardBaseUrl = requireEnv('DASHBOARD_BASE_URL');
-
 export class LoginPage {
   readonly page: Page;
   readonly emailInput: Locator;
   readonly passwordInput: Locator;
   readonly signInButton: Locator;
+
+  get dashboardBaseUrl() {
+    return requireEnv('DASHBOARD_BASE_URL');
+  }
 
   constructor(page: Page) {
     this.page = page;
@@ -21,7 +23,7 @@ export class LoginPage {
   }
 
   async goto(): Promise<void> {
-    const signInUrl = `${dashboardBaseUrl}/sign-in`;
+    const signInUrl = `${this.dashboardBaseUrl}/sign-in`;
     console.log(`🚀 [POM] Giriş sayfasına gidiliyor: ${signInUrl}`);
     await this.page.goto(signInUrl, { waitUntil: 'load' });
     await expect(this.emailInput).toBeVisible({ timeout: 15000 });

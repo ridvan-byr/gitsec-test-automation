@@ -508,9 +508,7 @@ test.describe('Backups Restore - Form ve Sınır Doğrulama (Validation)', () =>
       await expect(dialog).toBeVisible({ timeout: 4000 });
     }).toPass({ timeout: 15000, intervals: [1000] });
 
-    // 3. Select Repository combobox'ına tıkla
     console.log('[e2e] Source Repository combobox seçiliyor...');
-    await page.waitForTimeout(1000);
     const combobox = page.locator('div[role="dialog"] button[role="combobox"]').first();
     await combobox.waitFor({ state: 'visible', timeout: 15000 });
     await expect(async () => {

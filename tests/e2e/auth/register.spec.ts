@@ -35,7 +35,7 @@ function generateRandomLetters(length: number) {
   return result;
 }
 
-const dashboardBaseUrl = requireEnv('DASHBOARD_BASE_URL');
+let dashboardBaseUrl: string;
 
 test.describe('Register — UI Kayıt Formu E2E & Mail.tm Akışı', () => {
   test.use({ storageState: { cookies: [], origins: [] } });
@@ -79,6 +79,9 @@ test.describe('Register — UI Kayıt Formu E2E & Mail.tm Akışı', () => {
     // ─── ADIM 2: Sign-up sayfasına git ───
     await registerPage.goto();
 
+    // Sayfa açıldığında ilk olası Captcha varsa çözülmesini bekle (Giriş alanları odağını bozmamak için)
+    await registerPage.handleCaptchaIfVisible(90000);
+
     // ─── ADIM 3: Tüm form alanlarını doldur (Sırayla ve kesintisiz) ───
     await registerPage.fillForm(randomFirstName, randomLastName, randomEmail, randomPassword);
 
@@ -113,6 +116,20 @@ test.describe('Register — UI Kayıt Formu E2E & Mail.tm Akışı', () => {
 
     // ─── ADIM 5: Kayıt işlemini gerçekleştir ───
     await registerPage.submit();
+
+    // ─── ADIM 5b: Gönderim sonrasında olası ek Captcha / doğrulama kontrolü ───
+    console.log('⏳ [E2E] Yönlendirme durumu veya olası Captcha kilidi kontrol ediliyor...');
+    const isRedirected = await page.waitForURL(/\/login|verify|confirm|success/i, { timeout: 7000 }).then(() => true).catch(() => false);
+    if (!isRedirected) {
+      console.log('ℹ️ [E2E] Hemen yönlendirme olmadı, ek Captcha çıkmış olabilir. Kontrol ediliyor...');
+      await registerPage.handleCaptchaIfVisible(90000);
+      
+      if (page.url().includes('sign-up')) {
+        console.log('👆 [E2E] Çözüm sonrasında form tekrar submit ediliyor...');
+        await registerPage.submit();
+        await page.waitForURL(/\/login|verify|confirm|success/i, { timeout: 15000 }).catch(() => {});
+      }
+    }
 
     // ─── ADIM 6: Mail.tm gelen kutusunu dinle (Polling) ───
     console.log('⏳ [E2E] Aktivasyon e-postası bekleniyor (Mail.tm dinleniyor)...');
@@ -208,7 +225,7 @@ test.describe('Register — UI Kayıt Formu E2E & Mail.tm Akışı', () => {
     };
 
     try {
-      const outputPath = path.join(__dirname, '../../../../last-registered-user.json');
+      const outputPath = path.join(process.cwd(), 'last-registered-user.json');
       fs.writeFileSync(outputPath, JSON.stringify(userData, null, 2), 'utf-8');
       console.log(`💾 [E2E] Kullanıcı bilgileri dosyaya kaydedildi: ${path.resolve(outputPath)}`);
     } catch (err) {
@@ -223,6 +240,7 @@ test.describe('Register — UI Kayıt Formu Edge Case ve Hata Senaryoları', () 
   test.use({ storageState: { cookies: [], origins: [] } });
 
   test.beforeEach(async ({ page }) => {
+    dashboardBaseUrl = requireEnv('DASHBOARD_BASE_URL');
     const signUpUrl = `${dashboardBaseUrl}/sign-up`;
     console.log(`🚀 [Register Edge Cases] Kayıt sayfasına gidiliyor: ${signUpUrl}`);
     await page.goto(signUpUrl, { waitUntil: 'domcontentloaded' });

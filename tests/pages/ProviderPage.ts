@@ -1,24 +1,31 @@
 import { expect, Locator, Page } from '@playwright/test';
 import { requireEnv } from '../support/require-env';
 
-const workspaceId = requireEnv('WORKSPACE_ID');
-const dashboardBaseUrl = requireEnv('DASHBOARD_BASE_URL');
+// workspaceId and dashboardBaseUrl are defined as getters inside the class
 
 export class ProviderPage {
   readonly page: Page;
+
+  get workspaceId() {
+    return requireEnv('WORKSPACE_ID');
+  }
+
+  get dashboardBaseUrl() {
+    return requireEnv('DASHBOARD_BASE_URL');
+  }
 
   constructor(page: Page) {
     this.page = page;
   }
 
   async navigateToDashboard(): Promise<void> {
-    const dashboardUrl = `${dashboardBaseUrl}/${workspaceId}/dashboard`;
+    const dashboardUrl = `${this.dashboardBaseUrl}/${this.workspaceId}/dashboard`;
     await this.page.goto(dashboardUrl, { waitUntil: 'load' });
-    await expect(this.page).toHaveURL(new RegExp(`/${workspaceId}/dashboard`));
+    await expect(this.page).toHaveURL(new RegExp(`/${this.workspaceId}/dashboard`));
   }
 
   async waitForDashboardReady(): Promise<void> {
-    await this.page.waitForURL(new RegExp(`/${workspaceId}/dashboard`), { timeout: 30000 });
+    await this.page.waitForURL(new RegExp(`/${this.workspaceId}/dashboard`), { timeout: 30000 });
     await this.page.waitForLoadState('domcontentloaded');
     await expect(this.page.locator('main').first()).toBeVisible({ timeout: 20000 });
   }
@@ -36,7 +43,7 @@ export class ProviderPage {
   }
 
   async goToAddProviderPage(): Promise<void> {
-    await this.page.goto(`${dashboardBaseUrl}/${workspaceId}/repositories/add`, { waitUntil: 'load' });
+    await this.page.goto(`${this.dashboardBaseUrl}/${this.workspaceId}/repositories/add`, { waitUntil: 'load' });
     await expect(this.page).toHaveURL(/\/repositories\/add/);
   }
 
@@ -61,15 +68,33 @@ export class ProviderPage {
 
   async goToRepositoriesGithub(): Promise<void> {
     // Metin/çeviriye bağlı kalmamak için doğrudan rota (workspace zaten sabit).
-    await this.page.goto(`${dashboardBaseUrl}/${workspaceId}/repositories/github`, { waitUntil: 'load' });
+    await this.page.goto(`${this.dashboardBaseUrl}/${this.workspaceId}/repositories/github`, { waitUntil: 'load' });
     await expect(this.page).toHaveURL(/\/repositories\/github\b/);
     await expect(this.page.locator('table').first()).toBeVisible({ timeout: 30000 });
   }
 
   /** Direct navigation to Bitbucket repositories. */
   async goToRepositoriesBitbucket(): Promise<void> {
-    await this.page.goto(`${dashboardBaseUrl}/${workspaceId}/repositories/bitbucket`, { waitUntil: 'load' });
+    await this.page.goto(`${this.dashboardBaseUrl}/${this.workspaceId}/repositories/bitbucket`, { waitUntil: 'load' });
     await expect(this.page).toHaveURL(/\/repositories\/bitbucket\b/);
+    await expect(this.page.locator('table').first()).toBeVisible({ timeout: 30000 });
+  }
+
+  /** Kenar çubuğu üzerinden generic sağlayıcı sayfasına git. */
+  async goToRepositoriesViaSidebar(provider: 'github' | 'bitbucket'): Promise<void> {
+    const providerName = provider === 'bitbucket' ? 'Bitbucket' : 'GitHub';
+    const link = this.page.getByRole('link', { name: new RegExp(`^${providerName}$`, 'i') });
+    const repositoriesToggle = this.page.getByRole('button', { name: /Repositories/i });
+
+    await repositoriesToggle.waitFor({ state: 'visible', timeout: 15000 });
+    if (!(await link.isVisible().catch(() => false))) {
+      await repositoriesToggle.click();
+    }
+
+    await link.waitFor({ state: 'visible', timeout: 15000 });
+    await link.click();
+
+    await this.page.waitForURL(new RegExp(`/repositories/${provider}\\b`), { timeout: 30000 });
     await expect(this.page.locator('table').first()).toBeVisible({ timeout: 30000 });
   }
 
@@ -193,7 +218,7 @@ export class ProviderPage {
     await this.closeOnboardingIfVisible();
 
     // Önce workspace’e özgü href (metin/rol değişse bile çalışır).
-    const byWorkspaceHref = this.page.locator(`a[href*="/${workspaceId}/backups"]`).first();
+    const byWorkspaceHref = this.page.locator(`a[href*="/${this.workspaceId}/backups"]`).first();
     const backupsLink = this.page
       .getByRole('link', { name: /^Backups$/i })
       .or(this.page.getByRole('link', { name: /Backups/i }))
@@ -229,11 +254,11 @@ export class ProviderPage {
 
     try {
       await clickBackups();
-      await this.page.waitForURL(new RegExp(`/${workspaceId}/backups`), { timeout: 30000 });
+      await this.page.waitForURL(new RegExp(`/${this.workspaceId}/backups`), { timeout: 30000 });
     } catch {
       // Sidebar tıklaması overlay / layout değişiminde kırılırsa doğrudan rota.
-      await this.page.goto(`${dashboardBaseUrl}/${workspaceId}/backups`, { waitUntil: 'load' });
-      await expect(this.page).toHaveURL(new RegExp(`/${workspaceId}/backups`));
+      await this.page.goto(`${this.dashboardBaseUrl}/${this.workspaceId}/backups`, { waitUntil: 'load' });
+      await expect(this.page).toHaveURL(new RegExp(`/${this.workspaceId}/backups`));
     }
 
     await expect(this.page.locator('main').first()).toBeVisible({ timeout: 20000 });

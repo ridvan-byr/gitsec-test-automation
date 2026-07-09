@@ -200,7 +200,7 @@
   {
     "category": "Schedule",
     "action": "Deleted",
-    "normalizedDescription": "Backup schedule named Act-Sched-{timestamp} has been deleted by {actor}.",
+    "normalizedDescription": "Backup schedule named {scheduleName} has been deleted by {actor}.",
     "exampleDescription": "Backup schedule named Act-Sched-1780555819222 has been deleted by Gitsec Testt.",
     "exampleActor": "Gitsec Testt",
     "exampleIpAddress": "78.189.48.21",
@@ -209,7 +209,7 @@
   {
     "category": "Schedule",
     "action": "Created",
-    "normalizedDescription": "Backup schedule named Act-Sched-{timestamp} has been created by {actor}.",
+    "normalizedDescription": "Backup schedule named {scheduleName} has been created by {actor}.",
     "exampleDescription": "Backup schedule named Act-Sched-1780555819222 has been created by Gitsec Testt.",
     "exampleActor": "Gitsec Testt",
     "exampleIpAddress": "78.189.48.21",
@@ -268,5 +268,14 @@
     "exampleActor": "Gitsec Testt",
     "exampleIpAddress": "78.189.48.21",
     "expandedDetailsText": "EVENT ID\n6872\nIP ADDRESS\n78.189.48.21\nUSER AGENT\nMozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36\nTIMESTAMP\n2026-05-20 09:38:41\nDESCRIPTION\nStorage provider deneme (GoogleDrive) has been disabled by Gitsec Testt.\nDETAILS\nOPERATOR\nOPERATOR NAME\nGitsec\nOPERATOR SURNAME\nTestt\nPROVIDER\nPROVIDER ID\n167\nPROVIDER NAME\ndeneme\nGENERAL\nPROVIDER\nGoogleDrive"
+  },
+  {
+    "category": "Auth",
+    "action": "Login Failed",
+    "normalizedDescription": "Login attempt failed for {actor}.",
+    "exampleDescription": "Login attempt failed for Gitsec Test.",
+    "exampleActor": "Gitsec Test",
+    "exampleIpAddress": "78.189.48.21",
+    "expandedDetailsText": "EVENT ID\n10001\nIP ADDRESS\n78.189.48.21\nUSER AGENT\nnode\nTIMESTAMP\n2026-06-03 10:19:24\nDESCRIPTION\nLogin attempt failed for Gitsec Test.\nDETAILS\nOPERATOR\nOPERATOR NAME\nGitsec\nOPERATOR SURNAME\nTest\nGENERAL\nEMAIL\n-"
   }
 ]

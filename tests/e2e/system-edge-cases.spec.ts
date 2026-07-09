@@ -2,8 +2,13 @@ import { test, expect } from '../fixtures/test';
 import { ProviderPage } from '../pages/ProviderPage';
 import { requireEnv } from '../support/require-env';
 
-const dashboardBaseUrl = requireEnv('DASHBOARD_BASE_URL');
-const apiBaseUrl = requireEnv('API_BASE_URL');
+let dashboardBaseUrl: string;
+let apiBaseUrl: string;
+
+test.beforeEach(async () => {
+  dashboardBaseUrl = requireEnv('DASHBOARD_BASE_URL');
+  apiBaseUrl = requireEnv('API_BASE_URL');
+});
 
 test.describe('System Level Edge Cases — Workspace Yetki Yalıtımı ve Token Geçersizliği', () => {
   

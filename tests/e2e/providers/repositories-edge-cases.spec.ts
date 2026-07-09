@@ -2,7 +2,14 @@ import type { Locator, Page } from '@playwright/test';
 import { test, expect } from '../../fixtures/test';
 import { ProviderPage } from '../../pages/ProviderPage';
 
-function translateToastMessage(msg: string): string {
+type CodeProvider = 'github' | 'bitbucket';
+
+function getCodeProvider(): CodeProvider {
+  const provider = (process.env.E2E_CODE_PROVIDER || 'github').trim().toLowerCase();
+  return provider === 'bitbucket' ? 'bitbucket' : 'github';
+}
+
+function translateToastMessage(msg: string, provider: CodeProvider): string {
   const normalized = msg.toLowerCase();
   if (normalized.includes('licence limit') || normalized.includes('license limit')) {
     return 'Lisans limit sınırına ulaşıldı. Daha fazla işlem gerçekleştirilemez.';
@@ -11,7 +18,8 @@ function translateToastMessage(msg: string): string {
     return 'Repository/Depo durumu güncellenemedi.';
   }
   if (normalized.includes('access is not granted') || normalized.includes('cannot be activated because access')) {
-    return 'Erişim izni verilmediği için depo etkinleştirilemedi. Sorun: GitHub üzerinde bu deponun sahibi olan kullanıcı veya organizasyon, GitSec uygulamasına üçüncü taraf (third-party) erişim veya OAuth yetkisi vermemiş olabilir.';
+    const name = provider === 'github' ? 'GitHub' : 'Bitbucket';
+    return `Erişim izni verilmediği için depo etkinleştirilemedi. Sorun: ${name} üzerinde bu deponun sahibi olan kullanıcı veya organizasyon, GitSec uygulamasına üçüncü taraf (third-party) erişim veya OAuth yetkisi vermemiş olabilir.`;
   }
   return msg.replace(/\n/g, ' ').trim();
 }
@@ -25,16 +33,17 @@ async function getRepoTable(page: Page): Promise<Locator> {
   return repoTable;
 }
 
-async function getNextPageButton(page: Page): Promise<Locator> {
-  return page.getByRole('button', { name: /Next|Sonraki/i })
-    .or(page.locator('button').filter({ hasText: /Next|Sonraki/i }))
-    .or(page.locator('button[aria-label*="Next"]'))
-    .or(page.locator('button[aria-label*="Sonraki"]'))
-    .first();
-}
-
-async function hasNextPage(nextBtn: Locator): Promise<boolean> {
-  return (await nextBtn.isVisible().catch(() => false)) && !(await nextBtn.isDisabled().catch(() => true));
+async function getCleanRepoName(row: Locator): Promise<string> {
+  const cells = row.locator('td');
+  const count = await cells.count().catch(() => 0);
+  for (let i = 0; i < count; i++) {
+    const text = (await cells.nth(i).textContent().catch(() => '')) || '';
+    const trimmed = text.trim();
+    if (trimmed && !trimmed.includes('button') && trimmed.length > 1) {
+      return trimmed;
+    }
+  }
+  return '';
 }
 
 async function scrollTableToRight(page: Page): Promise<void> {
@@ -72,45 +81,11 @@ async function waitTableLoadingFinished(repoTable: Locator): Promise<void> {
   }).toPass({ timeout: 15000, intervals: [200] });
 }
 
-async function verifySwitchStateOrDetectLicenseError(
-  page: Page,
-  targetSwitch: Locator,
-  targetState: 'true' | 'false'
-): Promise<boolean> {
-  const errorToast = page
-    .locator('text=/The licence limit within threshold has been reached|Failed to update repository status|Some repositories cannot be activated/i')
-    .first();
+const provider = getCodeProvider();
 
-  let hasError = false;
-  try {
-    await expect(async () => {
-      const errorVisible = await errorToast.isVisible().catch(() => false);
-      if (errorVisible) {
-        hasError = true;
-        return;
-      }
-      
-      const isChecked = await targetSwitch.getAttribute('aria-checked').catch(() => null);
-      expect(isChecked).toBe(targetState);
-    }).toPass({ timeout: 7000, intervals: [200] });
-  } catch (err) {
-    // Timeout or assertion failed
-  }
-
-  if (hasError) {
-    const toastText = await errorToast.innerText().catch(() => '');
-    console.log(`🚨 [HATA NEDENİ] ${translateToastMessage(toastText)}`);
-    console.log('🏁 Test başarıyla durduruldu ve sonlandırıldı.');
-    return false;
-  }
-
-  const isChecked = await targetSwitch.getAttribute('aria-checked').catch(() => null);
-  return isChecked === targetState;
-}
-
-async function navigateToRepositoriesGithubAndEnsureStable(page: Page, providerPage: ProviderPage): Promise<Locator> {
-  console.log('🚀 [BAŞLANGIÇ] Doğrudan GitHub Repositories sayfasına gidiliyor...');
-  await providerPage.goToRepositoriesGithub();
+async function navigateToRepositoriesAndEnsureStable(page: Page, providerPage: ProviderPage): Promise<Locator> {
+  console.log(`🚀 [BAŞLANGIÇ] Doğrudan ${provider.toUpperCase()} Repositories sayfasına gidiliyor...`);
+  await providerPage.goToRepositoriesViaSidebar(provider);
   
   await page.waitForLoadState('domcontentloaded');
   await expect(page.locator('table').first()).toBeVisible({ timeout: 30000 });
@@ -122,20 +97,7 @@ async function navigateToRepositoriesGithubAndEnsureStable(page: Page, providerP
   return repoTable;
 }
 
-async function getCleanRepoName(row: Locator): Promise<string> {
-  const cells = row.locator('td');
-  const count = await cells.count().catch(() => 0);
-  for (let i = 0; i < count; i++) {
-    const text = (await cells.nth(i).textContent().catch(() => '')) || '';
-    const trimmed = text.trim();
-    if (trimmed && !trimmed.includes('button') && trimmed.length > 1) {
-      return trimmed;
-    }
-  }
-  return '';
-}
-
-test.describe('Repositories - GitHub Include/Exclude Edge Cases & Chaos', () => {
+test.describe(`Repositories - ${provider.toUpperCase()} Include/Exclude Edge Cases & Chaos`, () => {
   
   // ─────────────────────────────────────────────────────────────────
   // 💥 INCLUDE CHAOS & RESILIENCE TESTS
@@ -146,7 +108,7 @@ test.describe('Repositories - GitHub Include/Exclude Edge Cases & Chaos', () => 
     const providerPage = new ProviderPage(page);
 
     await page.route(
-      (url) => url.href.includes('/api/repositories/license-inclusion-status/'),
+      (url) => url.href.includes('/api/repositories/license-inclusion-status'),
       async (route) => {
         console.log(`🛡️ [MOCK CHAOS] Toggle API isteği yakalandı ve 500 Internal Server Error dönülüyor.`);
         await route.fulfill({
@@ -160,7 +122,7 @@ test.describe('Repositories - GitHub Include/Exclude Edge Cases & Chaos', () => 
       }
     );
 
-    const repoTable = await navigateToRepositoriesGithubAndEnsureStable(page, providerPage);
+    const repoTable = await navigateToRepositoriesAndEnsureStable(page, providerPage);
 
     await scrollTableToRight(page);
 
@@ -188,13 +150,13 @@ test.describe('Repositories - GitHub Include/Exclude Edge Cases & Chaos', () => 
     await page.evaluate(() => new Promise(requestAnimationFrame)).catch(() => {});
 
     console.log('👆 [TIKLAMA] Switch butonuna tıklanıyor (Başarısız olması bekleniyor)...');
-    await targetSwitch.click({ force: true });
+    await targetSwitch.click();
 
     console.log('⏳ [BEKLEME] Hata toast mesajı veya lisans uyarı kontrolü yapılıyor...');
     const toastError = page.locator('text=/Failed to update repository status|The licence limit within threshold has been reached/i').first();
     await expect(toastError).toBeVisible({ timeout: 10000 });
     const toastText = await toastError.innerText().catch(() => '');
-    console.log(`🚨 [HATA NEDENİ] ${translateToastMessage(toastText)}`);
+    console.log(`🚨 [HATA NEDENİ] ${translateToastMessage(toastText, provider)}`);
     
     await expect(targetSwitch).toHaveAttribute('aria-checked', 'false', { timeout: 10000 });
     console.log('🎉 [BAŞARILI] Switch butonunun durumunun pasif (false) olarak korunduğu / revert edildiği başarıyla doğrulandı.');
@@ -205,7 +167,7 @@ test.describe('Repositories - GitHub Include/Exclude Edge Cases & Chaos', () => 
     const providerPage = new ProviderPage(page);
 
     await page.route(
-      (url) => url.href.includes('/api/repositories/license-inclusion-status/'),
+      (url) => url.href.includes('/api/repositories/license-inclusion-status'),
       async (route) => {
         console.log(`🛡️ [MOCK LICENSE] Toggle API isteği yakalandı ve 500 Licence Limit Error dönülüyor.`);
         await route.fulfill({
@@ -219,7 +181,7 @@ test.describe('Repositories - GitHub Include/Exclude Edge Cases & Chaos', () => 
       }
     );
 
-    const repoTable = await navigateToRepositoriesGithubAndEnsureStable(page, providerPage);
+    const repoTable = await navigateToRepositoriesAndEnsureStable(page, providerPage);
 
     await scrollTableToRight(page);
 
@@ -243,12 +205,12 @@ test.describe('Repositories - GitHub Include/Exclude Edge Cases & Chaos', () => 
     await page.evaluate(() => new Promise(requestAnimationFrame)).catch(() => {});
 
     console.log('👆 [TIKLAMA] Switch butonuna tıklanıyor (Lisans limit aşımı testi)...');
-    await targetSwitch.click({ force: true });
+    await targetSwitch.click();
 
     const licenseToast = page.locator('text=/The licence limit within threshold has been reached/i').first();
     await expect(licenseToast).toBeVisible({ timeout: 10000 });
     const toastText = await licenseToast.innerText().catch(() => '');
-    console.log(`🚨 [HATA NEDENİ] ${translateToastMessage(toastText)}`);
+    console.log(`🚨 [HATA NEDENİ] ${translateToastMessage(toastText, provider)}`);
 
     await expect(targetSwitch).toHaveAttribute('aria-checked', 'false', { timeout: 10000 });
     console.log('🎉 [BAŞARILI] Switch butonunun aktifleşmeyip pasif kaldığı başarıyla doğrulandı.');
@@ -263,7 +225,7 @@ test.describe('Repositories - GitHub Include/Exclude Edge Cases & Chaos', () => 
     const providerPage = new ProviderPage(page);
 
     await page.route(
-      (url) => url.href.includes('/api/repositories/license-inclusion-status/'),
+      (url) => url.href.includes('/api/repositories/license-inclusion-status'),
       async (route) => {
         console.log(`🛡️ [MOCK CHAOS] Toggle API isteği yakalandı ve 500 Internal Server Error dönülüyor.`);
         await route.fulfill({
@@ -277,7 +239,7 @@ test.describe('Repositories - GitHub Include/Exclude Edge Cases & Chaos', () => 
       }
     );
 
-    const repoTable = await navigateToRepositoriesGithubAndEnsureStable(page, providerPage);
+    const repoTable = await navigateToRepositoriesAndEnsureStable(page, providerPage);
 
     await scrollTableToRight(page);
 
@@ -305,12 +267,12 @@ test.describe('Repositories - GitHub Include/Exclude Edge Cases & Chaos', () => 
     await page.evaluate(() => new Promise(requestAnimationFrame)).catch(() => {});
 
     console.log('👆 [TIKLAMA] Switch butonuna tıklanıyor (Başarısız olması bekleniyor)...');
-    await targetSwitch.click({ force: true });
+    await targetSwitch.click();
 
     // Onay modalını bekle ve tıkla
     const confirmBtn = page.getByRole('button', { name: /Yes,\s*Exclude|Confirm/i }).first();
     if (await confirmBtn.waitFor({ state: 'visible', timeout: 5000 }).then(() => true).catch(() => false)) {
-      await confirmBtn.click({ force: true });
+      await confirmBtn.click();
       await expect(confirmBtn).toBeHidden({ timeout: 5000 });
     }
 
@@ -318,7 +280,7 @@ test.describe('Repositories - GitHub Include/Exclude Edge Cases & Chaos', () => 
     const toastError = page.locator('text=/Failed to update repository status|The licence limit within threshold has been reached/i').first();
     await expect(toastError).toBeVisible({ timeout: 10000 });
     const toastText = await toastError.innerText().catch(() => '');
-    console.log(`🚨 [HATA NEDENİ] ${translateToastMessage(toastText)}`);
+    console.log(`🚨 [HATA NEDENİ] ${translateToastMessage(toastText, provider)}`);
 
     await expect(targetSwitch).toHaveAttribute('aria-checked', 'true', { timeout: 10000 });
     console.log('🎉 [BAŞARILI] Switch butonunun durumunun aktif (true) olarak korunduğu / revert edildiği başarıyla doğrulandı.');

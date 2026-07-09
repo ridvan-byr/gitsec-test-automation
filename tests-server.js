@@ -131,6 +131,70 @@ const server = http.createServer((req, res) => {
           includeMode, includeProvider, excludeMode, backupMode, workers, cardId
         } = JSON.parse(body || '{}');
 
+        // Whitelist validations
+        if (testFile) {
+          const files = testFile.trim().split(/\s+/);
+          const fileRegex = /^tests\/e2e\/(?:[a-zA-Z0-9_-]+\/)*[a-zA-Z0-9_-]+\.spec\.ts$/;
+          for (const f of files) {
+            if (!fileRegex.test(f)) {
+              res.writeHead(400, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ error: `Geçersiz test dosyası yolu: ${f}` }));
+              return;
+            }
+          }
+        }
+
+        if (tag) {
+          const tagRegex = /^@[a-zA-Z0-9_-]+$/;
+          if (!tagRegex.test(tag)) {
+            res.writeHead(400, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: `Geçersiz etiket formatı: ${tag}` }));
+            return;
+          }
+        }
+
+        if (includeProvider && !['github', 'bitbucket'].includes(includeProvider.toLowerCase())) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: `Geçersiz sağlayıcı: ${includeProvider}` }));
+          return;
+        }
+
+        const validModes = ['one_repo', 'one_page', 'all_pages', 'happy_path', 'edge_cases', 'all', 'validation'];
+        if (includeMode && !validModes.includes(includeMode)) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: `Geçersiz dahil etme modu: ${includeMode}` }));
+          return;
+        }
+        if (excludeMode && !validModes.includes(excludeMode)) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: `Geçersiz dışlama modu: ${excludeMode}` }));
+          return;
+        }
+        if (backupMode && !validModes.includes(backupMode)) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: `Geçersiz yedekleme modu: ${backupMode}` }));
+          return;
+        }
+
+        const parsedWorkers = parseInt(workers);
+        if (workers && (isNaN(parsedWorkers) || parsedWorkers < 1 || parsedWorkers > 16)) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: `Geçersiz worker sayısı (1-16 arası olmalıdır): ${workers}` }));
+          return;
+        }
+
+        if (cardId && !/^[a-zA-Z0-9_-]+$/.test(cardId)) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: `Geçersiz kart kimliği: ${cardId}` }));
+          return;
+        }
+
+        if (scheduleType && !['Daily', 'Weekly', 'Monthly', 'Cron'].includes(scheduleType)) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: `Geçersiz zamanlayıcı tipi: ${scheduleType}` }));
+          return;
+        }
+
         const maxWorkers = parseInt(workers) || 1;
         if (activeProcesses.size >= maxWorkers) {
           res.writeHead(400, { 'Content-Type': 'application/json' });
@@ -212,8 +276,13 @@ const server = http.createServer((req, res) => {
         if (excludeMode) runEnv.E2E_EXCLUDE_MODE = excludeMode;
         if (backupMode) runEnv.E2E_BACKUP_MODE = backupMode;
 
-        const proc = spawn(cmd, args, {
-          shell: !runWithNode,
+        let commandToRun = cmd;
+        if (process.platform === 'win32' && commandToRun === 'npx') {
+          commandToRun = 'npx.cmd';
+        }
+
+        const proc = spawn(commandToRun, args, {
+          shell: false,
           cwd: __dirname,
           env: runEnv
         });
@@ -502,8 +571,8 @@ const server = http.createServer((req, res) => {
   res.end('404 Not Found');
 });
 
-server.listen(PORT, () => {
+server.listen(PORT, '127.0.0.1', () => {
   console.log(`==================================================`);
-  console.log(`[DASHBOARD] Sunucu http://localhost:${PORT} adresinde aktif!`);
+  console.log(`[DASHBOARD] Sunucu http://127.0.0.1:${PORT} adresinde aktif!`);
   console.log(`==================================================`);
 });

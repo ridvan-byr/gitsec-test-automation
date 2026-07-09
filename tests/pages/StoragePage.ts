@@ -1,9 +1,6 @@
 import { expect, Locator, Page } from '@playwright/test';
 import { requireEnv } from '../support/require-env';
 
-const workspaceId = requireEnv('WORKSPACE_ID');
-const dashboardBaseUrl = requireEnv('DASHBOARD_BASE_URL');
-
 export class StoragePage {
   readonly page: Page;
 
@@ -33,6 +30,14 @@ export class StoragePage {
   readonly dialog: Locator;
   readonly confirmDeleteBtn: Locator;
   readonly alertDialogOverlay: Locator;
+
+  get workspaceId() {
+    return requireEnv('WORKSPACE_ID');
+  }
+
+  get dashboardBaseUrl() {
+    return requireEnv('DASHBOARD_BASE_URL');
+  }
 
   constructor(page: Page) {
     this.page = page;
@@ -93,9 +98,23 @@ export class StoragePage {
   }
 
   async navigateToStoragePage(): Promise<void> {
-    console.log('[POM] Doğrudan URL ile Storage listeleme sayfasına gidiliyor...');
-    await this.page.goto(`${dashboardBaseUrl}/${workspaceId}/storage`, { waitUntil: 'load' });
-    await this.page.waitForURL(new RegExp(`/${workspaceId}/storage`), { timeout: 20000 });
+    console.log('[POM] Storage listeleme sayfasına gidiliyor...');
+    const storageLink = this.page.getByRole('link', { name: /Storage|Depolama/i })
+      .or(this.page.locator(`a[href*="/${this.workspaceId}/storage"]`))
+      .first();
+
+    if (await storageLink.isVisible().catch(() => false)) {
+      console.log('[POM] Sidebar Storage linki bulundu, tıklanıyor...');
+      await storageLink.click();
+    } else {
+      console.log('[POM] Sidebar linki bulunamadı. Doğrudan URL ile gidiliyor...');
+      await this.page.goto(`${this.dashboardBaseUrl}/${this.workspaceId}/storage`, { waitUntil: 'load' }).catch(err => {
+        if (!err.message.includes('net::ERR_ABORTED')) throw err;
+        console.log('⚠️ [POM] page.goto aborted for storage, continuing to wait for URL...');
+      });
+    }
+
+    await this.page.waitForURL(new RegExp(`/${this.workspaceId}/storage`), { timeout: 20000 });
     await this.page.waitForLoadState('load').catch(() => {});
     await this.page.waitForLoadState('domcontentloaded').catch(() => {});
     await this.page.waitForLoadState('networkidle').catch(() => {});
@@ -104,11 +123,11 @@ export class StoragePage {
 
   async clickAddStorageProvider(): Promise<void> {
     console.log('[POM] Doğrudan URL ile "Add Storage Provider" sayfasına gidiliyor...');
-    await this.page.goto(`${dashboardBaseUrl}/${workspaceId}/storage/add`, { waitUntil: 'load' }).catch(err => {
+    await this.page.goto(`${this.dashboardBaseUrl}/${this.workspaceId}/storage/add`, { waitUntil: 'load' }).catch(err => {
       if (!err.message.includes('net::ERR_ABORTED')) throw err;
       console.log('⚠️ [POM] page.goto aborted, but continuing to wait for target URL...');
     });
-    await this.page.waitForURL(new RegExp(`/${workspaceId}/storage/add`), { timeout: 30000 });
+    await this.page.waitForURL(new RegExp(`/${this.workspaceId}/storage/add`), { timeout: 30000 });
     
     await this.page.waitForLoadState('load').catch(() => {});
     await this.page.waitForLoadState('domcontentloaded').catch(() => {});
@@ -309,7 +328,7 @@ export class StoragePage {
     await this.saveBtn.waitFor({ state: 'visible', timeout: 15_000 });
     await this.saveBtn.click();
 
-    await this.page.waitForURL(new RegExp(`/${workspaceId}/storage(\\?|#|$)`), { timeout: 15_000 });
+    await this.page.waitForURL(new RegExp(`/${this.workspaceId}/storage(\\?|#|$)`), { timeout: 15_000 });
   }
 
   async fillAWSForm(connectionName: string, bucketName: string, accessKey: string, secretKey: string, region: string): Promise<void> {
@@ -419,7 +438,7 @@ export class StoragePage {
   async saveStorageProvider(): Promise<void> {
     console.log('[POM] "Save" butonuna tıklanıyor...');
     await this.saveBtn.click();
-    await this.page.waitForURL(new RegExp(`/${workspaceId}/storage(\\?|#|$)`), { timeout: 20000 });
+    await this.page.waitForURL(new RegExp(`/${this.workspaceId}/storage(\\?|#|$)`), { timeout: 20000 });
     console.log('[POM] Başarıyla depolama listesi sayfasına yönlenildi!');
   }
 
@@ -439,7 +458,7 @@ export class StoragePage {
     console.log(`[POM] Temizlik: Depolama sağlayıcısı siliniyor: ${connectionName}`);
     
     const currentUrl = this.page.url();
-    if (!currentUrl.includes(`/${workspaceId}/storage`) || currentUrl.includes(`/storage/add`)) {
+    if (!currentUrl.includes(`/${this.workspaceId}/storage`) || currentUrl.includes(`/storage/add`)) {
       console.log('[POM] Silme işlemi öncesinde depolama sayfasına yönlendiriliyor...');
       await this.navigateToStoragePage();
     }
@@ -484,7 +503,7 @@ export class StoragePage {
     console.log(`[POM] Arka plan temizliği: Eski E2E test sağlayıcıları (${provider.toUpperCase()}) temizleniyor...`);
     
     const currentUrl = this.page.url();
-    if (!currentUrl.includes(`/${workspaceId}/storage`) || currentUrl.includes(`/storage/add`)) {
+    if (!currentUrl.includes(`/${this.workspaceId}/storage`) || currentUrl.includes(`/storage/add`)) {
       await this.navigateToStoragePage();
     }
 

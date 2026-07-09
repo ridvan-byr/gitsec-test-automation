@@ -3,9 +3,15 @@ import type { Page } from '@playwright/test';
 import { RestorePage } from '../pages/RestorePage';
 import { requireEnv } from '../support/require-env';
 
-const dashboardBaseUrl = requireEnv('DASHBOARD_BASE_URL');
-const apiBaseUrl = requireEnv('API_BASE_URL');
-const workspaceId = requireEnv('WORKSPACE_ID');
+let dashboardBaseUrl: string;
+let apiBaseUrl: string;
+let workspaceId: string;
+
+test.beforeEach(async () => {
+  dashboardBaseUrl = requireEnv('DASHBOARD_BASE_URL');
+  apiBaseUrl = requireEnv('API_BASE_URL');
+  workspaceId = requireEnv('WORKSPACE_ID');
+});
 
 // UI Butonunu JavaScript ile aktif edip tıklama fonksiyonu (Turnstile/reCAPTCHA kilidini aşmak için)
 async function forceEnableAndClick(page: Page, selectorText: string | RegExp) {

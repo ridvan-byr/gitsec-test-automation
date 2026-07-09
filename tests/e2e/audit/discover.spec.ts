@@ -14,8 +14,8 @@
 import { test, expect } from '../../fixtures/test';
 import { requireEnv } from '../../support/require-env';
 
-const dashboardBaseUrl = requireEnv('DASHBOARD_BASE_URL');
-const workspaceId = requireEnv('WORKSPACE_ID');
+let dashboardBaseUrl: string;
+let workspaceId: string;
 
 // Form elemanlarını tarayıp haritalandıran yardımcı fonksiyon
 async function scanFormElements(page: any, regionName: string) {
@@ -105,6 +105,8 @@ async function scrollEntirePage(page: any) {
 test.describe('Gitsec Dynamic Site Discovery Crawler & Form Mapper', () => {
 
   test('Tüm sayfaları keşfet, modalları aç ve form girdilerini haritalandır', async ({ page }) => {
+    dashboardBaseUrl = requireEnv('DASHBOARD_BASE_URL');
+    workspaceId = requireEnv('WORKSPACE_ID');
     // 6 sayfa + modal keşifleri için geniş süre (4 dakika)
     test.setTimeout(240000);
     

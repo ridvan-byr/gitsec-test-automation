@@ -1,8 +1,6 @@
 import { Page, Locator, expect } from '@playwright/test';
 import { requireEnv } from '../support/require-env';
 
-const dashboardBaseUrl = requireEnv('DASHBOARD_BASE_URL');
-
 export class RegisterPage {
   readonly page: Page;
   readonly nameInput: Locator;
@@ -10,6 +8,10 @@ export class RegisterPage {
   readonly emailInput: Locator;
   readonly passwordInputs: Locator;
   readonly submitButton: Locator;
+
+  get dashboardBaseUrl() {
+    return requireEnv('DASHBOARD_BASE_URL');
+  }
 
   constructor(page: Page) {
     this.page = page;
@@ -26,7 +28,7 @@ export class RegisterPage {
   }
 
   async goto(): Promise<void> {
-    const signUpUrl = `${dashboardBaseUrl}/sign-up`;
+    const signUpUrl = `${this.dashboardBaseUrl}/sign-up`;
     console.log(`🚀 [POM] Kayıt sayfasına gidiliyor: ${signUpUrl}`);
     await this.page.goto(signUpUrl, { waitUntil: 'load' });
     await expect(this.nameInput).toBeVisible({ timeout: 15000 });
@@ -65,21 +67,23 @@ export class RegisterPage {
   }
 
   async handleCaptchaIfVisible(timeoutMs = 120000): Promise<void> {
-    console.log('⏳ [POM] Captcha iframe\'inin yüklenmesi bekleniyor (maksimum 10 saniye)...');
+    console.log('⏳ [POM] Captcha varlığı kontrol ediliyor...');
     
+    // 2 saniye içinde DOM'da Cloudflare Turnstile veya Google reCAPTCHA iframe'i var mı hızlıca tara
     const captchaType = await Promise.race([
-      this.page.locator('iframe[src*="challenges.cloudflare.com"]').first().waitFor({ state: 'visible', timeout: 10000 }).then(() => 'Cloudflare Turnstile').catch(() => null),
-      this.page.locator('iframe[src*="google.com/recaptcha"]').first().waitFor({ state: 'visible', timeout: 10000 }).then(() => 'Google reCAPTCHA').catch(() => null)
+      this.page.locator('iframe[src*="challenges.cloudflare.com"], .cf-turnstile, [id*="turnstile"]').first().waitFor({ state: 'attached', timeout: 2000 }).then(() => 'Cloudflare Turnstile').catch(() => null),
+      this.page.locator('iframe[src*="google.com/recaptcha"], .g-recaptcha').first().waitFor({ state: 'attached', timeout: 2000 }).then(() => 'Google reCAPTCHA').catch(() => null)
     ]);
 
     if (captchaType) {
       console.log('\n=========================================');
       console.log('⚠️⚠️ [CAPTCHA TESPİT EDİLDİ] ⚠️⚠️');
-      console.log(`💡 Sayfa yüklendiğinde Captcha aktif durumda! (${captchaType})`);
-      console.log('💡 Lütfen açılan Chrome tarayıcısından Captcha\'yı MANUEL olarak çözün.');
-      console.log('💡 Çözdüğünüz an test bilgileri doldurup otomatik devam edecektir.');
+      console.log(`💡 Sayfada Captcha aktif durumda! (${captchaType})`);
+      console.log('💡 Lütfen açılan tarayıcıdan Captcha\'yı MANUEL olarak çözün.');
+      console.log('💡 Çözdüğünüz an test kaldığı yerden otomatik olarak devam edecektir.');
       console.log('=========================================\n');
 
+      // Token alanının dolmasını bekle
       await this.page.waitForFunction(() => {
         const turnstile = document.querySelector('[name="cf-turnstile-response"]') as HTMLInputElement | HTMLTextAreaElement | null;
         const recaptcha = document.querySelector('[name="g-recaptcha-response"]') as HTMLInputElement | HTMLTextAreaElement | null;
@@ -93,7 +97,7 @@ export class RegisterPage {
       console.log('✅ [POM] Captcha başarıyla çözüldü (Token algılandı)!');
       await expect(this.submitButton).toBeEnabled({ timeout: 5000 }).catch(() => {});
     } else {
-      console.log('ℹ️ [POM] Captcha iframe\'i bulunamadı veya pasif. Doğrudan veri girişine geçiliyor.');
+      console.log('ℹ️ [POM] Captcha bulunamadı veya pasif. Devam ediliyor.');
     }
   }
 }

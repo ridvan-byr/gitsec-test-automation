@@ -13,8 +13,8 @@ import { GoogleLoginPage } from '../../pages/GoogleLoginPage';
 import fs from 'fs';
 import path from 'path';
 
-const workspaceId = requireEnv('WORKSPACE_ID');
-const dashboardBaseUrl = requireEnv('DASHBOARD_BASE_URL');
+let workspaceId: string;
+let dashboardBaseUrl: string;
 
 async function injectSavedGoogleSession(context: any): Promise<boolean> {
   const googleSessionPath = path.join(process.cwd(), 'playwright/.auth/google-session.json');
@@ -105,6 +105,8 @@ test.describe('Bitbucket Provider Entegrasyon Testleri', () => {
   test.setTimeout(90_000);
 
   test.beforeEach(async ({ page }) => {
+    workspaceId = requireEnv('WORKSPACE_ID');
+    dashboardBaseUrl = requireEnv('DASHBOARD_BASE_URL');
     // Turnstile/reCAPTCHA bypass ve hata engellemeleri
     (page as any).ignoredErrors = [
       /Cross-Origin-Opener-Policy/,

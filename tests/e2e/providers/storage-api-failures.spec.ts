@@ -11,7 +11,6 @@ import { Page } from '@playwright/test';
 import { StoragePage } from '../../pages/StoragePage';
 import { requireEnv } from '../../support/require-env';
 
-const workspaceId = requireEnv('WORKSPACE_ID');
 const provider = process.env.E2E_STORAGE_PROVIDER || 'aws';
 const isOAuthProvider = ['gdrive', 'onedrive'].includes(provider);
 
@@ -87,8 +86,10 @@ async function prepareConnectionForSave(storagePage: StoragePage, page: Page) {
 test.describe(`${provider.toUpperCase()} Depolama Sağlayıcısı API & Ağ Hata (Network Failure) Testleri`, () => {
   test.describe.configure({ retries: 1 });
   let storagePage: StoragePage;
+  let workspaceId: string;
 
   test.beforeEach(async ({ page }) => {
+    workspaceId = requireEnv('WORKSPACE_ID');
     (page as any).ignoredErrors = [
       /api\/storage-providers/,
       /Failed to load resource: the server responded with a status of (400|500|401|403|422|502)/,

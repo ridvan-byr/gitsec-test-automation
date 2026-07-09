@@ -29,7 +29,16 @@ setup('authenticate and connect provider', async ({ request, page }) => {
   const appEmail = requireEnv('E2E_USER_EMAIL');
   const appPassword = requireEnv('E2E_USER_PASSWORD');
 
-  const isBitbucketRun = process.env.E2E_CODE_PROVIDER === 'bitbucket' || process.argv.some(arg => arg.includes('bitbucket'));
+  let isBitbucketRun = process.env.E2E_CODE_PROVIDER === 'bitbucket' || process.argv.some(arg => arg.includes('bitbucket'));
+  
+  // Eğer explicitly github testi koşturuluyorsa, global olarak bitbucket seçilmiş olsa dahi github kurulumu yapılmalıdır.
+  if (process.argv.some(arg => arg.includes('github'))) {
+    isBitbucketRun = false;
+  }
+  // Eğer explicitly bitbucket testi koşturuluyorsa, bitbucket kurulumu yapılmalıdır.
+  if (process.argv.some(arg => arg.includes('bitbucket'))) {
+    isBitbucketRun = true;
+  }
 
   if (!isBitbucketRun) {
     logGithubAuthPlan();

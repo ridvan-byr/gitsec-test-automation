@@ -30,8 +30,7 @@ import { GoogleLoginPage } from '../../pages/GoogleLoginPage';
 import { OneDriveLoginPage } from '../../pages/OneDriveLoginPage';
 import { requireEnv } from '../../support/require-env';
 
-const workspaceId = requireEnv('WORKSPACE_ID');
-const dashboardBaseUrl = requireEnv('DASHBOARD_BASE_URL');
+// Environment variables are handled inside POM classes
 
 test.describe('Storage Provider Entegrasyonları', () => {
   // OAuth akışı uzun sürebilir (popup + giriş + izin), timeout'u artıralım

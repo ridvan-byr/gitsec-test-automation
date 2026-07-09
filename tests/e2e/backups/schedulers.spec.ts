@@ -3,8 +3,8 @@ import { ProviderPage } from '../../pages/ProviderPage';
 import type { Page } from '@playwright/test';
 import { requireEnv } from '../../support/require-env';
 
-const workspaceId = requireEnv('WORKSPACE_ID');
-const dashboardBaseUrl = requireEnv('DASHBOARD_BASE_URL');
+let workspaceId: string;
+let dashboardBaseUrl: string;
 
 async function selectScheduleType(page: Page, typeName: 'Daily' | 'Weekly' | 'Monthly' | 'Cron') {
   console.log(`⏳ [BEKLEME] Schedule Type seçiliyor: "${typeName}"`);
@@ -421,6 +421,8 @@ test.describe('Backup Schedulers - Form Yapılandırma', () => {
   test.setTimeout(120000);
 
   test.beforeEach(async ({ page }) => {
+    workspaceId = requireEnv('WORKSPACE_ID');
+    dashboardBaseUrl = requireEnv('DASHBOARD_BASE_URL');
     const providerPage = new ProviderPage(page);
 
     console.log('🌐 [NAVİGASYON] Dashboard açılıyor...');

@@ -4,6 +4,13 @@ import { ProviderPage } from '../../pages/ProviderPage';
 import { verifyAuditLogViaAPI } from '../../support/audit-helper';
 import { requireEnv } from '../../support/require-env';
 
+type CodeProvider = 'github' | 'bitbucket';
+
+function getCodeProvider(): CodeProvider {
+  const provider = (process.env.E2E_CODE_PROVIDER || 'github').trim().toLowerCase();
+  return provider === 'bitbucket' ? 'bitbucket' : 'github';
+}
+
 async function getRepoTable(page: Page): Promise<Locator> {
   const repoTable = page
     .locator('table')
@@ -47,7 +54,9 @@ async function getCleanRepoName(row: Locator): Promise<string> {
   return '';
 }
 
-test.describe('Repositories - GitHub ilk repo yedekleme', () => {
+const provider = getCodeProvider();
+
+test.describe(`Repositories - ${provider.toUpperCase()} ilk repo yedekleme`, () => {
   
   // ─────────────────────────────────────────────────────────────────
   // 🟢 SENARYO 1: HAPPY PATH VE AĞ SEVİYESİNDE PAYLOAD DOĞRULAMASI
@@ -79,7 +88,7 @@ test.describe('Repositories - GitHub ilk repo yedekleme', () => {
 
     await providerPage.navigateToDashboard();
     await providerPage.waitForDashboardReady();
-    await providerPage.goToRepositoriesGithubViaSidebar();
+    await providerPage.goToRepositoriesViaSidebar(provider);
 
     const repoTable = await getRepoTable(page);
     const firstRow = repoTable.locator('tbody tr').first();
@@ -260,7 +269,7 @@ test.describe('Repositories - GitHub ilk repo yedekleme', () => {
 
     await providerPage.navigateToDashboard();
     await providerPage.waitForDashboardReady();
-    await providerPage.goToRepositoriesGithubViaSidebar();
+    await providerPage.goToRepositoriesViaSidebar(provider);
 
     const repoTable = await getRepoTable(page);
     const firstRow = repoTable.locator('tbody tr').first();
@@ -294,7 +303,7 @@ test.describe('Repositories - GitHub ilk repo yedekleme', () => {
 
     await providerPage.navigateToDashboard();
     await providerPage.waitForDashboardReady();
-    await providerPage.goToRepositoriesGithubViaSidebar();
+    await providerPage.goToRepositoriesViaSidebar(provider);
 
     const repoTable = await getRepoTable(page);
     // Tüm checked switch'leri unchecked yapalım (0 repo seçili olması için)
@@ -355,7 +364,7 @@ test.describe('Repositories - GitHub ilk repo yedekleme', () => {
     console.log('🎉 [BAŞARILI] 0 repo seçili durumdayken yedekleme yapılamayacağı başarıyla doğrulandı.');
   });
 
-  test('GitHub tarafında silinmiş/ismi değişmiş bir depoyu yedeklemeye çalışırken sistemin hata gösterdiğini doğrula', async ({ page }) => {
+  test(`${provider.toUpperCase()} tarafında silinmiş/ismi değişmiş bir depoyu yedeklemeye çalışırken sistemin hata gösterdiğini doğrula`, async ({ page }) => {
     const mode = process.env.E2E_BACKUP_MODE || 'all';
     test.skip(mode === 'happy_path', 'Running happy path mode instead');
     test.setTimeout(90000);
@@ -374,7 +383,7 @@ test.describe('Repositories - GitHub ilk repo yedekleme', () => {
             contentType: 'application/json',
             body: JSON.stringify({
               success: false,
-              message: 'Repository not found on GitHub or has been renamed/deleted.'
+              message: `Repository not found on ${provider === 'github' ? 'GitHub' : 'Bitbucket'} or has been renamed/deleted.`
             })
           });
         } else {
@@ -385,7 +394,7 @@ test.describe('Repositories - GitHub ilk repo yedekleme', () => {
 
     await providerPage.navigateToDashboard();
     await providerPage.waitForDashboardReady();
-    await providerPage.goToRepositoriesGithubViaSidebar();
+    await providerPage.goToRepositoriesViaSidebar(provider);
 
     const repoTable = await getRepoTable(page);
     const firstRow = repoTable.locator('tbody tr').first();
@@ -405,4 +414,3 @@ test.describe('Repositories - GitHub ilk repo yedekleme', () => {
     console.log('🎉 [BAŞARILI] Silinmiş/ismi değişmiş repo yedekleme denemesinde UI hata bildirimi başarıyla doğrulandı.');
   });
 });
-

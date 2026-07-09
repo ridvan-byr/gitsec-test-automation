@@ -61,7 +61,6 @@ async function assertAndLogDynamicError(page: any, expectedPattern: RegExp): Pro
   }
 }
 
-const workspaceId = requireEnv('WORKSPACE_ID');
 const provider = process.env.E2E_STORAGE_PROVIDER || 'aws';
 const isOAuthProvider = ['gdrive', 'onedrive'].includes(provider);
 

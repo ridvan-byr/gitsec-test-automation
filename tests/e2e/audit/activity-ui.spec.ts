@@ -4,8 +4,8 @@ import fs from 'fs';
 import path from 'path';
 import { requireEnv } from '../../support/require-env';
 
-const workspaceId = requireEnv('WORKSPACE_ID');
-const dashboardBaseUrl = requireEnv('DASHBOARD_BASE_URL');
+let workspaceId: string;
+let dashboardBaseUrl: string;
 
 /**
  * Dynamically loads and extracts all possible key labels from the unique audit log templates file.
@@ -107,6 +107,8 @@ test.describe('Activity UI Logs Verification (Aktivite Paneli E2E)', () => {
   test.setTimeout(120000);
 
   test.beforeEach(async ({ page }) => {
+    workspaceId = requireEnv('WORKSPACE_ID');
+    dashboardBaseUrl = requireEnv('DASHBOARD_BASE_URL');
     // Go to Activity page directly
     const activityPageUrl = `${dashboardBaseUrl}/${workspaceId}/activity`;
     console.log(`🌐 [UI TEST] Activity sayfasına yönleniliyor: ${activityPageUrl}`);

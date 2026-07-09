@@ -2993,6 +2993,22 @@
                 </div>
               </div>
 
+              <div class="form-group">
+                <label for="e2eCodeProvider">Kod Sağlayıcısı (Code Provider)</label>
+                <div class="gitsec-select-wrapper no-left-icon">
+                  <select id="e2eCodeProvider" class="gitsec-select" style="padding-left: 0.875rem;" onchange="onCodeProviderChange()">
+                    <option value="github">GitHub</option>
+                    <option value="bitbucket">Bitbucket</option>
+                  </select>
+                  <span class="select-chevron-right">
+                    <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                  </span>
+                </div>
+              </div>
+
               <button id="btnSaveRunSettings" class="btn-settings-save" onclick="saveRunSettings()">
                 <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
                   stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round">
@@ -3237,7 +3253,7 @@
                   SaÄŸlayÄ±cÄ±sÄ± (Provider)</label>
                 <div class="gitsec-select-wrapper no-left-icon">
                   <select id="includeProviderSelect" class="gitsec-select" style="padding-left: 0.875rem;"
-                    onchange="updateCardUI('card-github-include', 'includeProviderSelect', 'include-desc'); saveSettings(); if(typeof renderConsoleTabs === 'function') renderConsoleTabs()">
+                    onchange="onCardProviderChange('includeProviderSelect'); if(typeof renderConsoleTabs === 'function') renderConsoleTabs()">
                     <option value="github">GitHub</option>
                     <option value="bitbucket">Bitbucket</option>
                   </select>
@@ -3300,7 +3316,7 @@
                   style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Kod Provider</label>
                 <div class="gitsec-select-wrapper no-left-icon">
                   <select id="excludeProviderSelect" class="gitsec-select" style="padding-left: 0.875rem;"
-                    onchange="updateCardUI('card-github-exclude', 'excludeProviderSelect', 'exclude-desc'); saveSettings(); if(typeof renderConsoleTabs === 'function') renderConsoleTabs()">
+                    onchange="onCardProviderChange('excludeProviderSelect'); if(typeof renderConsoleTabs === 'function') renderConsoleTabs()">
                     <option value="github">GitHub</option>
                     <option value="bitbucket">Bitbucket</option>
                   </select>
@@ -3378,9 +3394,9 @@
               </div>
             </div>
             <div class="card-footer">
-              <span class="card-meta">github-repositories-backup.spec.ts</span>
+              <span class="card-meta">repositories-backup.spec.ts</span>
               <button class="btn-run"
-                onclick="runTest('', 'card-github-backup', 'tests/e2e/providers/github-repositories-backup.spec.ts')">
+                onclick="runTest('', 'card-github-backup', 'tests/e2e/providers/repositories-backup.spec.ts')">
                 <span>Çalıştır</span>
               </button>
             </div>
@@ -6248,6 +6264,53 @@
       }
     }
 
+    function onCodeProviderChange() {
+      const providerSelect = document.getElementById('e2eCodeProvider');
+      if (!providerSelect) return;
+      const provider = providerSelect.value;
+      
+      if (document.getElementById('includeProviderSelect')) {
+        document.getElementById('includeProviderSelect').value = provider;
+        updateCardUI('card-github-include', 'includeProviderSelect', 'include-desc');
+      }
+      if (document.getElementById('excludeProviderSelect')) {
+        document.getElementById('excludeProviderSelect').value = provider;
+        updateCardUI('card-github-exclude', 'excludeProviderSelect', 'exclude-desc');
+      }
+      
+      // Update Card Tags
+      const includeCard = document.getElementById('card-github-include');
+      if (includeCard) {
+        const tag = includeCard.querySelector('.card-tag');
+        if (tag) tag.textContent = provider.toUpperCase();
+      }
+      
+      const excludeCard = document.getElementById('card-github-exclude');
+      if (excludeCard) {
+        const tag = excludeCard.querySelector('.card-tag');
+        if (tag) tag.textContent = provider.toUpperCase();
+      }
+      
+      const backupCard = document.getElementById('card-github-backup');
+      if (backupCard) {
+        const tag = backupCard.querySelector('.card-tag');
+        if (tag) tag.textContent = provider.toUpperCase();
+      }
+
+      saveSettings();
+    }
+
+    function onCardProviderChange(selectId) {
+      const select = document.getElementById(selectId);
+      if (!select) return;
+      const val = select.value;
+      const globalSelect = document.getElementById('e2eCodeProvider');
+      if (globalSelect) {
+        globalSelect.value = val;
+      }
+      onCodeProviderChange();
+    }
+
     // 10. Arayüz Ayarlarını Kaydetme ve Yükleme (Persistence)
     function saveSettings() {
       const settings = {
@@ -6275,7 +6338,8 @@
         restoreMode: document.getElementById('restoreModeSelect') ? document.getElementById('restoreModeSelect').value : 'happy_path',
         loginMode: document.getElementById('loginModeSelect') ? document.getElementById('loginModeSelect').value : 'happy_path',
         storageMode: document.getElementById('storageModeSelect') ? document.getElementById('storageModeSelect').value : 'happy_path',
-        workers: document.getElementById('workersCount') ? document.getElementById('workersCount').value : 1
+        workers: document.getElementById('workersCount') ? document.getElementById('workersCount').value : 1,
+        e2eCodeProvider: document.getElementById('e2eCodeProvider') ? document.getElementById('e2eCodeProvider').value : 'github'
       };
       localStorage.setItem('gitsec_scheduler_settings', JSON.stringify(settings));
       console.log('Ayarlar kaydedildi:', settings);
@@ -6409,6 +6473,10 @@
           }
         }
 
+        if (settings.e2eCodeProvider !== undefined && document.getElementById('e2eCodeProvider')) {
+          document.getElementById('e2eCodeProvider').value = settings.e2eCodeProvider;
+        }
+
         onScheduleTypeChange();
 
         // Sync UI descriptions on load
@@ -6423,6 +6491,7 @@
           if (document.getElementById('restoreModeSelect')) updateCardUI('card-restore', 'restoreModeSelect', 'restore-desc', true);
           if (document.getElementById('loginModeSelect')) updateCardUI('card-auth-login', 'loginModeSelect', 'login-desc', true);
           if (document.getElementById('storageModeSelect')) updateCardUI('card-storage', 'storageModeSelect', 'storage-desc', true);
+          onCodeProviderChange();
         }, 50);
       } catch (e) {
         console.error('Ayarlar yüklenirken hata oluştu:', e);
