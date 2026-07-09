@@ -122,6 +122,20 @@ test.describe('Storage Providers — Arayüz ve Buton Durum Doğrulamaları (UI 
     console.log('[UI Test] Test Connection butonunun görünür olduğu doğrulanıyor...');
     await expect(testConnectionBtn).toBeVisible();
 
+    // 5b. AWS S3 talimat (Instructions) butonunun doğrulanması (varsa)
+    const instructionsBtn = page.getByRole('button', { name: /Instructions|Talimat/i })
+      .or(page.locator('button').filter({ hasText: /Instructions|Talimat/i }))
+      .first();
+    if (await instructionsBtn.isVisible().catch(() => false)) {
+      console.log('[UI Test] Instructions butonu bulundu, tıklandığında talimatlar kutusunun görünürlüğü doğrulanıyor...');
+      await instructionsBtn.click();
+      const instructionPanel = page.locator('aside, div, section').filter({ hasText: /AWS|S3|Configure/i }).first();
+      await expect(instructionPanel).toBeVisible({ timeout: 5000 });
+      await instructionsBtn.click({ force: true });
+      await page.keyboard.press('Escape').catch(() => {});
+      console.log('✅ Instructions butonu ve talimat paneli başarıyla doğrulandı.');
+    }
+
     // 6. Cancel/Back butonunun görünür olduğunu doğrula
     console.log('[UI Test] Cancel/Back butonunun görünür olduğu doğrulanıyor...');
     await expect(cancelBtn).toBeVisible();
@@ -162,30 +176,48 @@ test.describe('Storage Providers — Arayüz ve Buton Durum Doğrulamaları (UI 
     await expect(addStorageBtn).toBeVisible();
     await expect(addStorageBtn).toBeEnabled();
 
-    // 4. Tablonun veya "No results" mesajının varlığını doğrula
+    // 4. Tablonun varlığını doğrula
     const table = page.locator('table').first();
-    const hasTable = await table.isVisible().catch(() => false);
+    await expect(table).toBeVisible({ timeout: 15000 });
+    console.log('[UI Test] Tablo bulundu.');
 
-    if (hasTable) {
-      console.log('[UI Test] Tablo bulundu.');
+    // A. Tablo başlık sütunlarını doğrula
+    const expectedHeaders = ['Name', 'Type', 'Region', 'Status', 'Created', 'Enabled', 'Actions'];
+    for (const header of expectedHeaders) {
+      const headerCell = table.locator('thead th, thead td').filter({ hasText: new RegExp(header, 'i') }).first();
+      await expect(headerCell).toBeVisible();
+    }
+    console.log('✅ Tüm tablo başlık sütunları doğrulandı.');
 
-      // A. Tablo başlık sütunlarını doğrula
-      const expectedHeaders = ['Name', 'Type', 'Region', 'Status', 'Created', 'Enabled', 'Actions'];
-      for (const header of expectedHeaders) {
-        const headerCell = table.locator('thead th, thead td').filter({ hasText: new RegExp(header, 'i') }).first();
-        await expect(headerCell).toBeVisible();
-      }
-      console.log('✅ Tüm tablo başlık sütunları doğrulandı.');
+    // 4b. GitSec Storages (Varsayılan Depolar) kartlarındaki Toggle Switch butonlarını doğrula (En üstteki yeşil kartlar)
+    const defaultStorageSwitches = page.locator('main button[role="switch"], main input[type="checkbox"]').first();
+    if (await defaultStorageSwitches.isVisible().catch(() => false)) {
+      await expect(defaultStorageSwitches).toBeEnabled();
+      console.log('✅ GitSec Storages kartlarındaki varsayılan depolama Toggle Switch butonu doğrulandı.');
+    }
 
-      // B. Tabloda veri satırları varsa butonları denetle
-      const dataRows = table.locator('tbody tr').filter({ hasNot: page.getByText(/No results/i) });
+    // B. Tablodaki veri durumunu kontrol et
+    const noResults = page.getByText(/No results found/i).first();
+    const hasNoResults = await noResults.isVisible().catch(() => false);
+
+    if (!hasNoResults) {
+      const dataRows = table.locator('tbody tr');
       const dataRowCount = await dataRows.count();
-
+      
       if (dataRowCount > 0) {
-        console.log(`[UI Test] Tabloda ${dataRowCount} adet veri satırı bulundu. Aksiyon butonları denetleniyor...`);
+        console.log(`[UI Test] Tabloda ${dataRowCount} adet veri satırı bulundu. Satır içi tüm butonlar denetleniyor...`);
         const firstRow = dataRows.first();
 
-        // Aksiyon menüsü tetikleyicisini veya inline butonları denetle
+        // 1. Enabled/Status Toggle Switch Butonu doğrulaması
+        const toggleSwitch = firstRow.locator('button[role="switch"], input[type="checkbox"], [class*="switch"], [class*="toggle"]')
+          .or(firstRow.locator('td').nth(5).locator('button, input'))
+          .first();
+        if (await toggleSwitch.isVisible().catch(() => false)) {
+          await expect(toggleSwitch).toBeEnabled();
+          console.log('✅ Satır içi aktiflik/durum toggle butonu doğrulandı.');
+        }
+
+        // 2. Aksiyon Menüsü Tetikleyicisi doğrulaması
         const actionsTrigger = firstRow.locator('button[aria-haspopup="menu"]')
           .or(firstRow.getByRole('button', { name: /Open menu|actions/i }))
           .or(firstRow.locator('button').last())
@@ -193,15 +225,37 @@ test.describe('Storage Providers — Arayüz ve Buton Durum Doğrulamaları (UI 
 
         if (await actionsTrigger.isVisible().catch(() => false)) {
           await expect(actionsTrigger).toBeEnabled();
-          console.log('✅ Satır içi aksiyon menü butonu doğrulandı.');
+          console.log('✅ Satır içi aksiyon menü tetikleyici butonu doğrulandı.');
+
+          // 3. Menüyü açarak Edit ve Delete butonlarının varlığını doğrula
+          await actionsTrigger.click();
+          await page.waitForTimeout(500); // Açılış animasyonu için kısa bekleme
+
+          const editBtn = page.getByRole('menuitem', { name: /Edit|Düzenle/i })
+            .or(page.locator('[role="menuitem"]').filter({ hasText: /Edit|Düzenle/i }))
+            .or(page.locator('button, a').filter({ hasText: /Edit|Düzenle/i }))
+            .first();
+          await expect(editBtn).toBeVisible();
+          await expect(editBtn).toBeEnabled();
+          console.log('✅ Aksiyon menüsü içindeki Edit (Düzenle) butonu doğrulandı.');
+
+          const deleteBtn = page.getByRole('menuitem', { name: /Delete|Remove|Disconnect|Sil/i })
+            .or(page.locator('[role="menuitem"]').filter({ hasText: /Delete|Remove|Disconnect|Sil/i }))
+            .or(page.locator('button, a').filter({ hasText: /Delete|Remove|Disconnect|Sil/i }))
+            .first();
+          await expect(deleteBtn).toBeVisible();
+          await expect(deleteBtn).toBeEnabled();
+          console.log('✅ Aksiyon menüsü içindeki Delete (Sil) butonu doğrulandı.');
+
+          // ESC tuşuna basarak menüyü kapat
+          await page.keyboard.press('Escape');
+          console.log('✅ Tüm satır içi aksiyon butonları doğrulandı.');
         }
-      } else {
-        console.log('ℹ️ Tabloda veri satırı yok ("No results found"). Aksiyon buton kontrolü atlandı.');
-        // "No results found" mesajının kendisini doğrula
-        const noResults = page.getByText(/No results found/i).first();
-        await expect(noResults).toBeVisible();
-        console.log('✅ "No results found" boş durum mesajı doğru gösterildi.');
       }
+    } else {
+      console.log('ℹ️ Tabloda BYOS veri satırı yok ("No results found"). Satır içi aksiyon buton kontrolü atlandı.');
+      await expect(noResults).toBeVisible();
+      console.log('✅ "No results found" boş durum mesajı doğru gösterildi.');
     }
 
     // 5. "Filter by name" arama kutusunun varlığını doğrula
