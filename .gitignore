@@ -8,4 +8,4 @@ node_modules/
 /playwright/.auth/
 .env
 last-registered-user.json
-
+/scratch/

@@ -2792,7 +2792,7 @@
               <polyline points="12 6 12 12 16 14"></polyline>
             </svg>
             <span class="nav-label">Zamanlayıcı & Geri Yükleme</span>
-            <span class="nav-badge">4</span>
+            <span class="nav-badge">6</span>
           </button>
           <button class="nav-item" id="btn-tab-github" onclick="showTab('github')">
             <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
@@ -2802,7 +2802,7 @@
               <line x1="14" y1="4" x2="10" y2="20"></line>
             </svg>
             <span class="nav-label">Kod Sağlayıcıları</span>
-            <span class="nav-badge">6</span>
+            <span class="nav-badge">7</span>
           </button>
           <button class="nav-item" id="btn-tab-auth" onclick="showTab('auth')">
             <svg class="nav-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
@@ -3021,6 +3021,30 @@
             </div>
           </div>
         </div>
+
+        <!-- Global Layout Components Card -->
+        <div style="margin-top: 1.25rem; display: grid; grid-template-columns: 1fr; width: 100%;">
+          <div id="card-global-layout" class="test-card" style="width: 100%;">
+            <div class="card-header">
+              <div class="card-title-group">
+                <span class="card-tag">Arayüz Doğrulaması</span>
+                <h3 class="card-title">Ortak Arayüz & Navigasyon Bileşenleri</h3>
+              </div>
+              <div class="card-status-dot"></div>
+            </div>
+            <div class="card-content">
+              <p style="color: var(--text-muted); font-size: 0.8125rem; line-height: 1.5;">
+                Tüm sayfalarda ortak olan genel bileşenleri; sol menü daraltma/genişletme (Toggle Sidebar) butonunu, global arama (Search) girdisini, kullanıcı profil dropdown menüsünü ve tema değiştirici (Theme Toggle) dropdown durumunu test eder.
+              </p>
+            </div>
+            <div class="card-footer">
+              <span class="card-meta">global-layout.spec.ts</span>
+              <button class="btn-run" onclick="runTest('', 'card-global-layout', 'tests/e2e/ui/global-layout.spec.ts')">
+                <span>Çalıştır</span>
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- 2. TAB: Schedulers & Restore -->
@@ -3123,6 +3147,52 @@
             <div class="card-footer">
               <span class="card-meta">restore.spec.ts</span>
               <button class="btn-run" onclick="runTest('', 'card-restore', 'tests/e2e/backups/restore.spec.ts')">
+                <span>Çalıştır</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Scheduler UI Verification Card -->
+          <div id="card-scheduler-ui" class="test-card">
+            <div class="card-header">
+              <div class="card-title-group">
+                <span class="card-tag">Arayüz Doğrulaması</span>
+                <h3 class="card-title">Zamanlayıcı Arayüzü & Butonlar</h3>
+              </div>
+              <div class="card-status-dot"></div>
+            </div>
+            <div class="card-content">
+              <p style="color: var(--text-muted); font-size: 0.8125rem; line-height: 1.5; min-height: 3.25rem;">
+                Zamanlayıcılar (Schedulers) sayfasındaki ve ekleme modalındaki tüm butonların, sıklık seçim butonlarının, durum switchlerinin ve form bileşenlerinin doğruluğunu test eder.
+              </p>
+            </div>
+            <div class="card-footer">
+              <span class="card-meta">schedulers-ui.spec.ts</span>
+              <button class="btn-run"
+                onclick="runTest('', 'card-scheduler-ui', 'tests/e2e/ui/schedulers-ui.spec.ts')">
+                <span>Çalıştır</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Restore UI Verification Card -->
+          <div id="card-restore-ui" class="test-card">
+            <div class="card-header">
+              <div class="card-title-group">
+                <span class="card-tag">Arayüz Doğrulaması</span>
+                <h3 class="card-title">Geri Yükleme Arayüzü & Butonlar</h3>
+              </div>
+              <div class="card-status-dot"></div>
+            </div>
+            <div class="card-content">
+              <p style="color: var(--text-muted); font-size: 0.8125rem; line-height: 1.5; min-height: 3.25rem;">
+                Geri yükleme (Restores) geçmiş listesindeki tablo bileşenlerini ve geri yükleme sihirbazı modalı (Start a Restore) içindeki tüm aksiyon butonlarını test eder.
+              </p>
+            </div>
+            <div class="card-footer">
+              <span class="card-meta">restore-ui.spec.ts</span>
+              <button class="btn-run"
+                onclick="runTest('', 'card-restore-ui', 'tests/e2e/ui/restore-ui.spec.ts')">
                 <span>Çalıştır</span>
               </button>
             </div>
@@ -3397,6 +3467,29 @@
               <span class="card-meta">repositories-backup.spec.ts</span>
               <button class="btn-run"
                 onclick="runTest('', 'card-github-backup', 'tests/e2e/providers/repositories-backup.spec.ts')">
+                <span>Çalıştır</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Repositories UI Verification Card -->
+          <div id="card-repositories-ui" class="test-card">
+            <div class="card-header">
+              <div class="card-title-group">
+                <span class="card-tag">Arayüz Doğrulaması</span>
+                <h3 class="card-title">Depo Arayüzü & Butonlar</h3>
+              </div>
+              <div class="card-status-dot"></div>
+            </div>
+            <div class="card-content">
+              <p style="color: var(--text-muted); font-size: 0.8125rem; line-height: 1.5;">
+                Kod Depoları (Repositories) sayfasındaki liste görünüm değiştirme butonlarını, tablo switchlerini, arama kutusunu ve yeni sağlayıcı ekleme sayfasındaki Configure/Connect butonlarını test eder.
+              </p>
+            </div>
+            <div class="card-footer">
+              <span class="card-meta">repositories-ui.spec.ts</span>
+              <button class="btn-run"
+                onclick="runTest('', 'card-repositories-ui', 'tests/e2e/ui/repositories-ui.spec.ts')">
                 <span>Çalıştır</span>
               </button>
             </div>
@@ -4658,7 +4751,11 @@
       'card-activity-log': 'Aktivite Günlükleri',
       'card-full-flow-auditor': 'Genel Entegrasyon Akışı',
       'card-activity-ui': 'Aktivite Arayüzü',
-      'card-storage-ui': 'Depolama Arayüz Testi'
+      'card-storage-ui': 'Depolama Arayüz Testi',
+      'card-scheduler-ui': 'Zamanlayıcı Arayüz Testi',
+      'card-restore-ui': 'Geri Yükleme Arayüz Testi',
+      'card-repositories-ui': 'Depolar Arayüz Testi',
+      'card-global-layout': 'Küresel Arayüz Testi'
     };
 
     function getCardDisplayName(cardId, englishMode = false) {
@@ -4693,7 +4790,11 @@
           'card-activity-log': 'Activity & Audit Logs',
           'card-full-flow-auditor': 'Grand Integration Flow',
           'card-activity-ui': 'Activity UI Logs',
-          'card-storage-ui': 'Storage UI & Buttons'
+          'card-storage-ui': 'Storage UI & Buttons',
+          'card-scheduler-ui': 'Scheduler UI & Buttons',
+          'card-restore-ui': 'Restore UI & Buttons',
+          'card-repositories-ui': 'Repositories UI & Buttons',
+          'card-global-layout': 'Global Layout & Navigation'
         };
         return engMap[cardId] || cardId;
       }

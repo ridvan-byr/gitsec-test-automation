@@ -44,6 +44,13 @@ Projedeki test senaryoları GitSec platformunun aşağıdaki temel işlevlerini 
 * **Workspace Yalıtımı (Mock)**: API mock'lama (page.route) yöntemiyle yetkisiz çalışma alanlarına (Workspace ID) erişim isteklerinde (403/404 yanıtları) frontend arayüzünün doğru hata durumlarını gösterdiğinin testi.
 * **Token Yönetimi (Mock)**: API mock'lama yöntemiyle JWT token yenileme yarış durumlarının (Token Refresh Race Condition) arayüzü çökertmeden istemci tarafında yönetilmesi.
 
+### 6. Arayüz ve Buton Doğrulamaları (UI & Button Verification)
+* **Depolama Arayüzü** (`storage-ui.spec.ts`): Depolama sağlayıcı ekleme kartları, talimat butonları, bağlantı test form butonları ve tablo aksiyon butonları.
+* **Zamanlayıcı Arayüzü** (`schedulers-ui.spec.ts`): Yeni planlayıcı modalı butonları, gün seçici badge'ler, cron girdisi ve tablo satır içi edit/delete butonları.
+* **Geri Yükleme Arayüzü** (`restore-ui.spec.ts`): Sihirbaz pencerelerindeki navigasyon butonları ve listedeki indirme/log ikonu butonları.
+* **Kod Depoları Arayüzü** (`repositories-ui.spec.ts`): Arama filtresi, görünüm değiştirme butonları, depo bazlı dahil etme switchleri ve sağlayıcı ekleme butonları.
+* **Genel Arayüz & Ortak Bileşenler** (`global-layout.spec.ts`): Sidebar toggle trigger, global search input, kullanıcı profili dropdown menüsü ve tema değiştirici dropdown kontrolleri.
+
 ---
 
 ## 🛠️ Kurulum ve Çalıştırma
