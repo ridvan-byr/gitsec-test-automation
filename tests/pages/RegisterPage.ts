@@ -36,22 +36,16 @@ export class RegisterPage {
 
   async fillForm(name: string, surname: string, email: string, password: string): Promise<void> {
     console.log(`👤 [POM] İsim yazılıyor: ${name}`);
-    await this.nameInput.click();
-    await this.nameInput.pressSequentially(name, { delay: 50 });
+    await this.nameInput.fill(name);
 
     console.log(`👤 [POM] Soyisim yazılıyor: ${surname}`);
-    await this.surnameInput.click();
-    await this.surnameInput.pressSequentially(surname, { delay: 50 });
+    await this.surnameInput.fill(surname);
 
     console.log(`✉️ [POM] E-posta yazılıyor: ${email}`);
-    await this.emailInput.click();
     await this.emailInput.fill(email);
 
     console.log(`🔑 [POM] Şifreler dolduruluyor...`);
-    await this.passwordInputs.nth(0).click();
     await this.passwordInputs.nth(0).fill(password);
-
-    await this.passwordInputs.nth(1).click();
     await this.passwordInputs.nth(1).fill(password);
 
     // Double check values
@@ -63,7 +57,7 @@ export class RegisterPage {
 
   async submit(): Promise<void> {
     console.log('👆 [POM] "Create account" butonuna tıklanıyor...');
-    await this.submitButton.click();
+    await this.submitButton.click({ force: true });
   }
 
   async handleCaptchaIfVisible(timeoutMs = 120000): Promise<void> {
