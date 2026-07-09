@@ -898,7 +898,8 @@ test('Yedekleme ve Geri Yükleme Akışı', async ({ page, restorePage }) => {
             <div class="tree-row"><span class="tree-guide">└──</span> <span class="tree-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></span> <span class="tree-folder">e2e/</span> <span class="tree-comment">// Test paketleri (Test suites)</span></div>
             <div class="tree-row"><span class="tree-guide">    ├──</span> <span class="tree-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></span> <span class="tree-folder">auth/</span> <span class="tree-comment">// Giriş ve kimlik doğrulama testleri</span></div>
             <div class="tree-row"><span class="tree-guide">    ├──</span> <span class="tree-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></span> <span class="tree-folder">backups/</span> <span class="tree-comment">// Zamanlayıcılar ve geri yükleme testleri</span></div>
-            <div class="tree-row"><span class="tree-guide">    └──</span> <span class="tree-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></span> <span class="tree-folder">providers/</span> <span class="tree-comment">// OneDrive, GDrive, GitHub entegrasyon testleri</span></div>
+            <div class="tree-row"><span class="tree-guide">    ├──</span> <span class="tree-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></span> <span class="tree-folder">providers/</span> <span class="tree-comment">// OneDrive, GDrive, GitHub entegrasyon testleri</span></div>
+            <div class="tree-row"><span class="tree-guide">    └──</span> <span class="tree-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></span> <span class="tree-folder">ui/</span> <span class="tree-comment">// Arayüz elementleri ve buton testleri</span></div>
             <div class="tree-row"><span class="tree-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span> <span class="tree-file">playwright.config.ts</span> <span class="tree-comment">// Global test konfigürasyonu</span></div>
           </div>
         </div>
@@ -950,6 +951,11 @@ test('Yedekleme ve Geri Yükleme Akışı', async ({ page, restorePage }) => {
           Platformun en hassas bileşenlerinden biri olan yedek geri yükleme süreçlerini kapsar. Adımlar arasında
           geri/ileri gidildiğinde form verilerinin korunup korunmadığını, mükerrer repo isimleri veya geçersiz
           karakterler girildiğinde backend validation kurallarının tetiklendiğini teyit eder.
+        </p>
+
+        <h3 style="font-size: 1.25rem; font-weight: 700; margin-top: 0.5rem; color: var(--gitsec-blue);">4. Arayüz ve Buton Doğrulamaları (UI & Button Verification)</h3>
+        <p>
+          GitSec SaaS platformunun tüm kritik sayfalarındaki butonları, form alanlarını, listeleme tablolarını, arama girdilerini, durum anahtarlarını (switchler) ve genel sayfa düzeni bileşenlerini test eder. Depolama, Zamanlayıcı, Geri Yükleme, Depolar ve Genel Düzen bileşenleri için ayrı ayrı yazılmış 5 adet test paketinden oluşur.
         </p>
       </section>
 
