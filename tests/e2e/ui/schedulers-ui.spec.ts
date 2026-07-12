@@ -40,7 +40,16 @@ test.describe('Backup Schedulers — Arayüz ve Buton Durum Doğrulamaları (UI 
 
     await expect(newSchedulerBtn).toBeVisible();
     await expect(newSchedulerBtn).toBeEnabled();
-    console.log('✅ Sidebar Schedulers navigasyonu ve "New Scheduler" butonu doğrulandı.');
+
+    // 4. Yenileme (Sync/Refresh) butonunu doğrula
+    const refreshBtn = page.locator('button:has(svg.lucide-refresh-cw)')
+      .or(page.locator('button').filter({ has: page.locator('svg') }).last())
+      .first();
+
+    await expect(refreshBtn).toBeVisible();
+    await expect(refreshBtn).toBeEnabled();
+
+    console.log('✅ Sidebar Schedulers navigasyonu, "New Scheduler" ve "Refresh" butonu doğrulandı.');
   });
 
   test('Kısım 2: New Scheduler Modalı, Başlangıç Buton Durumları ve Form Kısıtları', async ({ page }) => {
@@ -156,11 +165,19 @@ test.describe('Backup Schedulers — Arayüz ve Buton Durum Doğrulamaları (UI 
           console.log('✅ Zamanlayıcı toggle switch butonu doğrulandı.');
         }
 
+        // Satır içi Çalıştır (Play/Run) butonu
+        const playBtn = firstRow.locator('button:has(svg.lucide-play), button:has(svg[class*="play"])')
+          .or(firstRow.locator('button').filter({ has: page.locator('svg') }).first());
+        if (await playBtn.isVisible().catch(() => false)) {
+          await expect(playBtn).toBeEnabled();
+          console.log('✅ Zamanlayıcı anlık çalıştırma (play) butonu doğrulandı.');
+        }
+
         // Satır içi Silme (Trash) butonu
         const trashBtn = firstRow.locator('button:has(svg[class*="trash"]), button:has(svg.lucide-trash)').first();
         if (await trashBtn.isVisible().catch(() => false)) {
           await expect(trashBtn).toBeEnabled();
-          console.log('✅ Zamanlayıcı silme butonu doğrulandı.');
+          console.log('✅ Zamanlayıcı silme (trash) butonu doğrulandı.');
         }
       }
     } else {
@@ -179,10 +196,10 @@ test.describe('Backup Schedulers — Arayüz ve Buton Durum Doğrulamaları (UI 
     // 5. Sayfalama (Pagination) butonlarını doğrula
     const pagination = page.getByText(/Page \d+ of \d+/i)
       .or(page.getByText(/Sayfa \d+/i))
+      .filter({ visible: true })
       .first();
-    if (await pagination.isVisible().catch(() => false)) {
-      await expect(pagination).toBeVisible();
-      console.log('✅ Schedulers sayfalama kontrolü doğrulandı.');
-    }
+    
+    await expect(pagination).toBeVisible();
+    console.log('✅ Schedulers sayfalama kontrolü doğrulandı.');
   });
 });
