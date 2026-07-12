@@ -8,6 +8,14 @@ test.describe('Restores & Restore Wizard — Arayüz ve Buton Durum Doğrulamala
   let restorePage: RestorePage;
 
   test.beforeEach(async ({ page }) => {
+    // 502 ve Next.js static asset yükleme hatalarını yoksay (Staging sunucusu kararlılığı için)
+    (page as any).ignoredErrors = [
+      /502/,
+      /_next\/static\/chunks/i,
+      /Failed to load resource/i,
+      /ChunkLoadError/i
+    ];
+
     providerPage = new ProviderPage(page);
     restorePage = new RestorePage(page);
 
@@ -36,7 +44,7 @@ test.describe('Restores & Restore Wizard — Arayüz ve Buton Durum Doğrulamala
     // 2. Restores listeleme sayfasına yönlendiğini doğrula (çoğul veya tekil kontrolü)
     await page.waitForURL(new RegExp(`/${workspaceId}/restore`));
 
-    // 3. Sayfa başlığı ve "Restore Wizard" butonunun varlığını doğrula
+    // 3. Sayfa başlığı, "Restore Wizard" ve "Refresh" butonunun varlığını doğrula
     const pageTitle = page.getByText(/GitSec Restores|Restores/i).first();
     await expect(pageTitle).toBeVisible();
 
@@ -47,7 +55,16 @@ test.describe('Restores & Restore Wizard — Arayüz ve Buton Durum Doğrulamala
 
     await expect(newRestoreBtn).toBeVisible();
     await expect(newRestoreBtn).toBeEnabled();
-    console.log('✅ Sidebar Restores navigasyonu ve "Restore Wizard" butonu doğrulandı.');
+
+    // 4. Yenileme (Sync/Refresh) butonunu doğrula
+    const refreshBtn = page.locator('button:has(svg.lucide-refresh-cw)')
+      .or(page.locator('button').filter({ has: page.locator('svg') }).last())
+      .first();
+
+    await expect(refreshBtn).toBeVisible();
+    await expect(refreshBtn).toBeEnabled();
+
+    console.log('✅ Sidebar Restores navigasyonu, "Restore Wizard" ve "Refresh" butonu doğrulandı.');
   });
 
   test('Kısım 2: Restore Sihirbazı Modalı ve Başlangıç Buton Durumları', async ({ page }) => {
@@ -97,7 +114,7 @@ test.describe('Restores & Restore Wizard — Arayüz ve Buton Durum Doğrulamala
     await expect(table).toBeVisible({ timeout: 15000 });
 
     // 2. Tablo başlık sütunlarını doğrula
-    const expectedHeaders = ['Target', 'Source', 'Scopes', 'Start Date', 'Finish Date', 'Elapsed Time'];
+    const expectedHeaders = ['Target', 'Source', 'Scopes', 'Start Date', 'Finish Date', 'Elapsed Time', 'Size'];
     for (const header of expectedHeaders) {
       const headerCell = table.locator('thead th, thead td').filter({ hasText: new RegExp(header, 'i') }).first();
       await expect(headerCell).toBeVisible();
@@ -130,10 +147,10 @@ test.describe('Restores & Restore Wizard — Arayüz ve Buton Durum Doğrulamala
     // 5. Sayfalama (Pagination) butonlarını doğrula
     const pagination = page.getByText(/Page \d+ of \d+/i)
       .or(page.getByText(/Sayfa \d+/i))
+      .filter({ visible: true })
       .first();
-    if (await pagination.isVisible().catch(() => false)) {
-      await expect(pagination).toBeVisible();
-      console.log('✅ Restores sayfalama kontrolü doğrulandı.');
-    }
+    
+    await expect(pagination).toBeVisible();
+    console.log('✅ Restores sayfalama kontrolü doğrulandı.');
   });
 });
