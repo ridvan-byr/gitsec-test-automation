@@ -116,7 +116,7 @@ jobs:
         if: steps.playwright-cache.outputs.cache-hit == 'true'
         run: npx playwright install-deps chrome
       - name: Run full suite
-        run: npx playwright test
+        run: npx playwright test --grep-invert "@manual-interactive"
       - name: Upload artifacts
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4

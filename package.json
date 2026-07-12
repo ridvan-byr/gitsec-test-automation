@@ -3,12 +3,13 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "test": "playwright test",
+    "test": "playwright test --grep-invert @manual-interactive",
     "test:ui": "playwright test --ui",
     "test:daily": "playwright test --grep @daily",
     "test:weekly": "playwright test --grep @weekly",
     "test:monthly": "playwright test --grep @monthly",
     "test:cron": "playwright test --grep @cron",
+    "test:manual-ui": "playwright test --grep @manual-interactive --headed",
     "report": "playwright show-report",
     "mail:github-otp": "tsx scripts/peek-github-otp.ts",
     "mail:check": "tsx scripts/check-github-mail.ts"

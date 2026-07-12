@@ -2,10 +2,7 @@ import { test, expect } from '../../fixtures/test';
 import { requireEnv } from '../../support/require-env';
 
 test.describe('Logout — Oturum Kapatma E2E Akışı', () => {
-  test('Dashboard sayfasından kullanıcı profil menüsüne tıklanmalı ve başarıyla çıkış yapılmalı', { tag: ['@smoke', '@critical'] }, async ({ page }) => {
-    const workspaceId = requireEnv('WORKSPACE_ID');
-    const dashboardBaseUrl = requireEnv('DASHBOARD_BASE_URL');
-    
+  const getDashboardAndLogout = async (page: any, dashboardBaseUrl: string, workspaceId: string) => {
     const targetUrl = `${dashboardBaseUrl}/${workspaceId}/dashboard`;
     console.log(`🌐 [LOGOUT TEST] Dashboard sayfasına yönleniliyor: ${targetUrl}`);
     await page.goto(targetUrl, { waitUntil: 'domcontentloaded' });
@@ -34,7 +31,6 @@ test.describe('Logout — Oturum Kapatma E2E Akışı', () => {
     await expect(signOutBtn).toBeEnabled();
 
     // Çıkış yap butonuna tıkla
-    // İlk çıkış tetikleyicisine tıkla
     console.log('🔘 [LOGOUT TEST] Profil menüsünden Sign out tetikleniyor...');
     await signOutBtn.click();
 
@@ -46,23 +42,38 @@ test.describe('Logout — Oturum Kapatma E2E Akışı', () => {
     
     await expect(confirmSignOutBtn).toBeVisible({ timeout: 5000 });
     await confirmSignOutBtn.click();
+  };
 
-    // Giriş sayfasına veya çıkış sonrası yönlendirme URL'ine gidildiğini doğrula
-    // NOT: Staging uygulamasında bilinen bir yönlendirme hatası (bug) sebebiyle çıkış yapınca
-    // doğrudan '/dashboard' URL'ine yönlenip 404 Page Not Found vermektedir. Testin geçmesi ve bu bulgunun
-    // doğrulanması için bu duruma göre assert ediyoruz.
-    console.log('⏳ [LOGOUT TEST] Çıkış sonrası yönlendirme doğrulanıyor...');
-    await expect(page).toHaveURL(/dashboard$/, { timeout: 20000 });
+  test('Oturum Kapatma Sonrası Korumalı Sayfalara Erişimin Engellenmesi (Güvenlik Doğrulaması)', { tag: ['@smoke', '@critical'] }, async ({ page }) => {
+    const workspaceId = requireEnv('WORKSPACE_ID');
+    const dashboardBaseUrl = requireEnv('DASHBOARD_BASE_URL');
+    const targetUrl = `${dashboardBaseUrl}/${workspaceId}/dashboard`;
 
-    // Ekranda Page Not Found ve Return to Home butonlarının görünür olduğunu doğrula
-    const pageNotFoundText = page.getByText(/Page Not Found/i);
-    const returnHomeBtn = page.getByRole('link', { name: /Return to Home/i })
-      .or(page.locator('a').filter({ hasText: /Return to Home/i }))
-      .first();
+    // 1. Giriş yap ve logout işlemini gerçekleştir
+    await getDashboardAndLogout(page, dashboardBaseUrl, workspaceId);
 
-    await expect(pageNotFoundText).toBeVisible({ timeout: 15000 });
-    await expect(returnHomeBtn).toBeVisible();
-    
-    console.log('🎉 [LOGOUT TEST] Oturum başarıyla kapatıldı (404 Yönlendirme bulgusu doğrulandı).');
+    // 2. Çıkış yapıldıktan sonra korumalı dashboard sayfasına tekrar gitmeyi dene (Güvenlik Testi)
+    console.log('🔒 [LOGOUT TEST] Çıkış sonrası korumalı sayfaya tekrar erişim deneniyor...');
+    await page.goto(targetUrl, { waitUntil: 'domcontentloaded' });
+
+    // 3. Sistem oturumun kapandığını doğrulayıp kullanıcıyı giriş sayfasına yönlendirmeli
+    console.log('⏳ [LOGOUT TEST] Giriş sayfasına yönlendirme kontrol ediliyor...');
+    await expect(page).toHaveURL(/sign-in|login/, { timeout: 20000 });
+    console.log('✅ [LOGOUT TEST] Oturumun sunucu tarafında başarıyla sonlandırıldığı doğrulandı.');
+  });
+
+  test('Oturum Kapatma Sonrası Giriş Sayfasına Doğru Yönlendirme (Yönlendirme Kontrolü)', { tag: ['@smoke'] }, async ({ page }) => {
+    // Staging uygulamasında çıkış yapınca doğrudan workspaceId olmadan '/dashboard' URL'ine yönlenip
+    // 404 Page Not Found vermesi hatasını (Known Bug) işaretliyoruz.
+    test.fail(true, 'Staging redirects to /dashboard without workspaceId causing 404 (Known Bug)');
+
+    const workspaceId = requireEnv('WORKSPACE_ID');
+    const dashboardBaseUrl = requireEnv('DASHBOARD_BASE_URL');
+
+    // 1. Giriş yap ve logout işlemini gerçekleştir
+    await getDashboardAndLogout(page, dashboardBaseUrl, workspaceId);
+
+    // 2. Çıkış yapıldığı an kullanıcının doğrudan /sign-in sayfasına yönlendirilmesi beklenir
+    await expect(page).toHaveURL(/sign-in|login/, { timeout: 15000 });
   });
 });

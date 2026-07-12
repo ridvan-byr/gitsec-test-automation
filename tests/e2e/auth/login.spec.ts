@@ -16,7 +16,7 @@ test.describe('Login — UI Giriş Formu E2E Akışı', () => {
   // Temiz bir oturum durumu ile başla (Önceki oturum çerezlerini temizle)
   test.use({ storageState: { cookies: [], origins: [] } });
 
-  test('Giriş ekranında mail/şifre yazılmalı, manuel captcha sonrası başarıyla giriş yapılmalı', { tag: ['@smoke', '@critical'] }, async ({ page, loginPage }) => {
+  test('Giriş ekranında mail/şifre yazılmalı, manuel captcha sonrası başarıyla giriş yapılmalı', { tag: ['@manual-interactive'] }, async ({ page, loginPage }) => {
     // Captcha çözmeniz için geniş bekleme süresi (180 saniye / 3 dakika)
     test.setTimeout(180000); 
 

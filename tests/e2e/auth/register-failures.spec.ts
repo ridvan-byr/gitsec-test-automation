@@ -4,7 +4,7 @@ import { requireEnv } from '../../support/require-env';
 test.describe('Register Failures — Kayıt Hata Durumları E2E Akışı', () => {
   test.use({ storageState: { cookies: [], origins: [] } });
 
-  test('Zaten kayıtlı bir e-posta ile kayıt olmaya çalışıldığında uygun hata mesajı gösterilmeli', { tag: ['@smoke'] }, async ({ page, registerPage }) => {
+  test('Zaten kayıtlı bir e-posta ile kayıt olmaya çalışıldığında uygun hata mesajı gösterilmeli', { tag: ['@manual-interactive'] }, async ({ page, registerPage }) => {
     // 400 Bad Request / 409 Conflict durumunu audit kontrolünden muaf tut
     (page as any).ignoredErrors = [/auth\/signup/, /status of 400/, /status of 409/, /already exists/i];
 

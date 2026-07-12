@@ -40,7 +40,7 @@ let dashboardBaseUrl: string;
 test.describe('Register — UI Kayıt Formu E2E & Mail.tm Akışı', () => {
   test.use({ storageState: { cookies: [], origins: [] } });
 
-  test('Mail.tm ile geçici mail alıp, UI üzerinden kayıt olma ve e-posta doğrulama', async ({ page, registerPage }) => {
+  test('Mail.tm ile geçici mail alıp, UI üzerinden kayıt olma ve e-posta doğrulama', { tag: ['@manual-interactive'] }, async ({ page, registerPage }) => {
     // Captcha çözme + e-posta doğrulama döngüsü için geniş süre (4 dakika)
     test.setTimeout(240000);
 
