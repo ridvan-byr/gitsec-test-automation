@@ -3066,6 +3066,28 @@
               </button>
             </div>
           </div>
+
+          <!-- Workspace Settings & Member UI Verification Card -->
+          <div id="card-workspace-settings-ui" class="test-card" style="width: 100%; margin-top: 0;">
+            <div class="card-header">
+              <div class="card-title-group">
+                <span class="card-tag">Arayüz Doğrulaması</span>
+                <h3 class="card-title">Workspace & Üye Yönetimi Arayüzü</h3>
+              </div>
+              <div class="card-status-dot"></div>
+            </div>
+            <div class="card-content">
+              <p style="color: var(--text-muted); font-size: 0.8125rem; line-height: 1.5;">
+                Workspace ayarlarını (General, Members, Repositories sekmeleri), üye davet etme formunu, mevcut üye/davet listelerini ve yeni Workspace oluşturma sihirbazını (Add Workspace Wizard) test eder.
+              </p>
+            </div>
+            <div class="card-footer">
+              <span class="card-meta">workspace-settings-ui.spec.ts</span>
+              <button class="btn-run" onclick="runTest('', 'card-workspace-settings-ui', 'tests/e2e/ui/workspace-settings-ui.spec.ts')">
+                <span>Çalıştır</span>
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -4866,7 +4888,8 @@
       'card-scheduler-ui': 'Zamanlayıcı Arayüz Testi',
       'card-restore-ui': 'Geri Yükleme Arayüz Testi',
       'card-repositories-ui': 'Depolar Arayüz Testi',
-      'card-global-layout': 'Küresel Arayüz Testi'
+      'card-global-layout': 'Küresel Arayüz Testi',
+      'card-workspace-settings-ui': 'Workspace & Üye Arayüzü'
     };
 
     function getCardDisplayName(cardId, englishMode = false) {
@@ -4905,7 +4928,8 @@
           'card-scheduler-ui': 'Scheduler UI & Buttons',
           'card-restore-ui': 'Restore UI & Buttons',
           'card-repositories-ui': 'Repositories UI & Buttons',
-          'card-global-layout': 'Global Layout & Navigation'
+          'card-global-layout': 'Global Layout & Navigation',
+          'card-workspace-settings-ui': 'Workspace & Member UI'
         };
         return engMap[cardId] || cardId;
       }
