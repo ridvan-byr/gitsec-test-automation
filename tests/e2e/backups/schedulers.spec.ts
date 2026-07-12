@@ -5,6 +5,7 @@ import { requireEnv } from '../../support/require-env';
 
 let workspaceId: string;
 let dashboardBaseUrl: string;
+let scheduleNameToCleanup: string | null = null;
 
 async function selectScheduleType(page: Page, typeName: 'Daily' | 'Weekly' | 'Monthly' | 'Cron') {
   console.log(`⏳ [BEKLEME] Schedule Type seçiliyor: "${typeName}"`);
@@ -479,9 +480,23 @@ test.describe('Backup Schedulers - Form Yapılandırma', () => {
     }
   });
 
+  test.afterEach(async ({ page }) => {
+    if (scheduleNameToCleanup) {
+      console.log(`🧹 [afterEach] Temizlik başlatılıyor: "${scheduleNameToCleanup}"`);
+      try {
+        await deleteSchedulerRow(page, scheduleNameToCleanup);
+      } catch (err) {
+        console.log('⚠️ [afterEach] Temizlik sırasında hata oluştu (planlayıcı zaten silinmiş veya bulunamadı):', err);
+      }
+      scheduleNameToCleanup = null;
+    }
+  });
+
   test('Daily Scheduler Senaryosu', { tag: '@daily' }, async ({ page }) => {
     console.log('🚀 [BAŞLANGIÇ] Daily Scheduler Senaryosu başlatıldı.');
     const scheduleName = await fillBaseSchedulerForm(page);
+    scheduleNameToCleanup = scheduleName;
+    
     await selectScheduleType(page, 'Daily');
     await selectTimezone(page);
     await saveScheduler(page);
@@ -493,15 +508,14 @@ test.describe('Backup Schedulers - Form Yapılandırma', () => {
     const expectedRow = page.locator('tr').filter({ hasText: scheduleName }).first();
     await expect(expectedRow).toBeVisible({ timeout: 15000 });
     console.log(`🎉 [BAŞARILI] Daily Scheduler başarıyla oluşturuldu: "${scheduleName}"`);
-
-    // Temizlik
-    await deleteSchedulerRow(page, scheduleName);
     console.log('🎉 [BAŞARILI] Daily Scheduler Senaryosu tamamlandı.');
   });
 
   test('Weekly Scheduler Senaryosu', { tag: '@weekly' }, async ({ page }) => {
     console.log('🚀 [BAŞLANGIÇ] Weekly Scheduler Senaryosu başlatıldı.');
     const scheduleName = await fillBaseSchedulerForm(page);
+    scheduleNameToCleanup = scheduleName;
+
     await selectScheduleType(page, 'Weekly');
     await selectWeeklyDay(page);
     await selectTimezone(page);
@@ -514,15 +528,14 @@ test.describe('Backup Schedulers - Form Yapılandırma', () => {
     const expectedRow = page.locator('tr').filter({ hasText: scheduleName }).first();
     await expect(expectedRow).toBeVisible({ timeout: 15000 });
     console.log(`🎉 [BAŞARILI] Weekly Scheduler başarıyla oluşturuldu: "${scheduleName}"`);
-
-    // Temizlik
-    await deleteSchedulerRow(page, scheduleName);
     console.log('🎉 [BAŞARILI] Weekly Scheduler Senaryosu tamamlandı.');
   });
 
   test('Monthly Scheduler Senaryosu', { tag: '@monthly' }, async ({ page }) => {
     console.log('🚀 [BAŞLANGIÇ] Monthly Scheduler Senaryosu başlatıldı.');
     const scheduleName = await fillBaseSchedulerForm(page);
+    scheduleNameToCleanup = scheduleName;
+
     await selectScheduleType(page, 'Monthly');
     await selectMonthlyDay(page);
     await selectTimezone(page);
@@ -535,15 +548,14 @@ test.describe('Backup Schedulers - Form Yapılandırma', () => {
     const expectedRow = page.locator('tr').filter({ hasText: scheduleName }).first();
     await expect(expectedRow).toBeVisible({ timeout: 15000 });
     console.log(`🎉 [BAŞARILI] Monthly Scheduler başarıyla oluşturuldu: "${scheduleName}"`);
-
-    // Temizlik
-    await deleteSchedulerRow(page, scheduleName);
     console.log('🎉 [BAŞARILI] Monthly Scheduler Senaryosu tamamlandı.');
   });
 
   test('Cron Scheduler Senaryosu', { tag: '@cron' }, async ({ page }) => {
     console.log('🚀 [BAŞLANGIÇ] Cron Scheduler Senaryosu başlatıldı.');
     const scheduleName = await fillBaseSchedulerForm(page);
+    scheduleNameToCleanup = scheduleName;
+
     await selectScheduleType(page, 'Cron');
     await fillCronExpression(page);
     await selectTimezone(page);
@@ -556,9 +568,6 @@ test.describe('Backup Schedulers - Form Yapılandırma', () => {
     const expectedRow = page.locator('tr').filter({ hasText: scheduleName }).first();
     await expect(expectedRow).toBeVisible({ timeout: 15000 });
     console.log(`🎉 [BAŞARILI] Cron Scheduler başarıyla oluşturuldu: "${scheduleName}"`);
-
-    // Temizlik
-    await deleteSchedulerRow(page, scheduleName);
     console.log('🎉 [BAŞARILI] Cron Scheduler Senaryosu tamamlandı.');
   });
 });
