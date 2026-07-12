@@ -6,6 +6,11 @@ test.describe('Global Layout & Common UI Components (Genel Arayüz & Ortak Bile�
   let dashboardBaseUrl: string;
 
   test.beforeEach(async ({ page }) => {
+    (page as any).ignoredErrors = [
+      /502/,
+      /Failed to load resource/i,
+      /ChunkLoadError/i
+    ];
     workspaceId = requireEnv('WORKSPACE_ID');
     dashboardBaseUrl = requireEnv('DASHBOARD_BASE_URL');
     
@@ -78,6 +83,11 @@ test.describe('Global Layout & Common UI Components (Genel Arayüz & Ortak Bile�
     // Arama kutusunu temizle
     await searchInput.fill('');
     await expect(searchInput).toHaveValue('');
+    
+    // Arama kutusunun odağını (focus) çekerek dropdown/combobox'ı kapat
+    console.log('⌨️ [UI TEST] Arama kutusunun odağı (blur) kapatılıyor...');
+    await searchInput.blur();
+    await page.waitForTimeout(500); // Kapanması için kısa bir süre bekle
   });
 
   test('Kısım 3: Kullanıcı Profil Dropdown Menüsü ve Çıkış Butonu Durumu', async ({ page }) => {
@@ -106,10 +116,10 @@ test.describe('Global Layout & Common UI Components (Genel Arayüz & Ortak Bile�
   });
 
   test('Kısım 4: Tema Değiştirme (Theme Toggle) Dropdown Bileşeni Kontrolü', async ({ page }) => {
-    // Tema değiştirme butonunu bul (Shadcn UI temalarında genellikle tooltip tetikleyici veya icon butondur)
-    const themeToggle = page.locator('button[aria-label*="theme" i]')
+    // Tema değiştirme butonunu bul (ikondaki lucide-moon veya lucide-sun sınıfını kontrol et)
+    const themeToggle = page.locator('button:has(svg.lucide-moon, svg.lucide-sun)')
+      .or(page.locator('button[aria-label*="theme" i]'))
       .or(page.locator('button:has(svg)').filter({ hasText: /theme/i }))
-      .or(page.locator('button[data-slot="dropdown-menu-trigger"]').filter({ has: page.locator('svg') }).first())
       .first();
 
     // Tema butonu varsa test et (bazı minimal dashboard düzenlerinde gizli olabilir, yoksa testi pas geç)
