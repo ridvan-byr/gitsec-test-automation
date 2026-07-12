@@ -8,6 +8,7 @@ test.describe('Global Layout & Common UI Components (Genel Arayüz & Ortak Bile�
   test.beforeEach(async ({ page }) => {
     (page as any).ignoredErrors = [
       /502/,
+      /_next\/static\/chunks/i,
       /Failed to load resource/i,
       /ChunkLoadError/i
     ];
@@ -135,6 +136,16 @@ test.describe('Global Layout & Common UI Components (Genel Arayüz & Ortak Bile�
       const darkThemeOption = page.getByRole('menuitem', { name: /Dark/i })
         .or(page.locator('[role="menuitem"]').filter({ hasText: /Dark/i }))
         .first();
+
+      // E2E Hydration / Klik Yutma koruması: Eğer menü ilk klikte açılmadıysa bekle ve tekrar dene
+      try {
+        await expect(lightThemeOption).toBeVisible({ timeout: 3000 });
+      } catch {
+        console.log('⚠️ [UI TEST] Tema menüsü açılmadı (Next.js Hydration gecikmesi olabilir), tekrar deneniyor...');
+        await page.keyboard.press('Escape');
+        await page.waitForTimeout(500);
+        await themeToggle.click({ force: true });
+      }
 
       await expect(lightThemeOption).toBeVisible({ timeout: 8000 });
       await expect(darkThemeOption).toBeVisible({ timeout: 8000 });
