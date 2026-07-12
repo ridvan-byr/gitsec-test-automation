@@ -3022,9 +3022,9 @@
           </div>
         </div>
 
-        <!-- Global Layout Components Card -->
-        <div style="margin-top: 1.25rem; display: grid; grid-template-columns: 1fr; width: 100%;">
-          <div id="card-global-layout" class="test-card" style="width: 100%;">
+        <!-- Global Layout & Dashboard Components Cards -->
+        <div style="margin-top: 1.25rem; display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; width: 100%;">
+          <div id="card-global-layout" class="test-card" style="width: 100%; margin-top: 0;">
             <div class="card-header">
               <div class="card-title-group">
                 <span class="card-tag">Arayüz Doğrulaması</span>
@@ -3040,6 +3040,28 @@
             <div class="card-footer">
               <span class="card-meta">global-layout.spec.ts</span>
               <button class="btn-run" onclick="runTest('', 'card-global-layout', 'tests/e2e/ui/global-layout.spec.ts')">
+                <span>Çalıştır</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Dashboard UI Verification Card -->
+          <div id="card-dashboard-ui" class="test-card" style="width: 100%; margin-top: 0;">
+            <div class="card-header">
+              <div class="card-title-group">
+                <span class="card-tag">Arayüz Doğrulaması</span>
+                <h3 class="card-title">Dashboard Arayüzü & Butonlar</h3>
+              </div>
+              <div class="card-status-dot"></div>
+            </div>
+            <div class="card-content">
+              <p style="color: var(--text-muted); font-size: 0.8125rem; line-height: 1.5;">
+                Ana Dashboard sayfasındaki dinamik lisans butonunu, rehber turunu (Take a Tour), tamamlanan/aktif görevlerin "View All" linklerini ve son aktiviteler listesini test eder.
+              </p>
+            </div>
+            <div class="card-footer">
+              <span class="card-meta">dashboard-ui.spec.ts</span>
+              <button class="btn-run" onclick="runTest('', 'card-dashboard-ui', 'tests/e2e/ui/dashboard-ui.spec.ts')">
                 <span>Çalıştır</span>
               </button>
             </div>
@@ -3563,6 +3585,72 @@
             <div class="card-footer">
               <span class="card-meta">register.spec.ts</span>
               <button class="btn-run" onclick="runTest('', 'card-auth-register', 'tests/e2e/auth/register.spec.ts')">
+                <span>Çalıştır</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Login Mocked Card -->
+          <div id="card-auth-login-mocked" class="test-card">
+            <div class="card-header">
+              <div class="card-title-group">
+                <span class="card-tag">Kimlik Doğrulama (Mock)</span>
+                <h3 class="card-title">Giriş E2E (Mocked UI)</h3>
+              </div>
+              <div class="card-status-dot"></div>
+            </div>
+            <div class="card-content">
+              <p style="color: var(--text-muted); font-size: 0.8125rem; line-height: 1.5;">
+                Giriş formunu doldurup, arka plandaki API çağrılarını mock'layarak captcha'sız ve rate-limitsiz güvenli bir UI yönlendirme akışını doğrular.
+              </p>
+            </div>
+            <div class="card-footer">
+              <span class="card-meta">login-mocked.spec.ts</span>
+              <button class="btn-run" onclick="runTest('', 'card-auth-login-mocked', 'tests/e2e/auth/login-mocked.spec.ts')">
+                <span>Çalıştır</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- API Login Smoke Card -->
+          <div id="card-auth-api-smoke" class="test-card">
+            <div class="card-header">
+              <div class="card-title-group">
+                <span class="card-tag">Kimlik Doğrulama</span>
+                <h3 class="card-title">Giriş Servisi API Smoke</h3>
+              </div>
+              <div class="card-status-dot"></div>
+            </div>
+            <div class="card-content">
+              <p style="color: var(--text-muted); font-size: 0.8125rem; line-height: 1.5;">
+                Staging identity sunucusunun `/auth/signin` ve `/api/workspaces` servislerinin genel sağlığını ve yanıt yapılarını test eder.
+              </p>
+            </div>
+            <div class="card-footer">
+              <span class="card-meta">api-login-smoke.spec.ts</span>
+              <button class="btn-run" onclick="runTest('', 'card-auth-api-smoke', 'tests/e2e/auth/api-login-smoke.spec.ts')">
+                <span>Çalıştır</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Forgot Password Mocked Card -->
+          <div id="card-auth-forgot-password" class="test-card">
+            <div class="card-header">
+              <div class="card-title-group">
+                <span class="card-tag">Kimlik Doğrulama (Mock)</span>
+                <h3 class="card-title">Şifremi Unuttum E2E</h3>
+              </div>
+              <div class="card-status-dot"></div>
+            </div>
+            <div class="card-content">
+              <p style="color: var(--text-muted); font-size: 0.8125rem; line-height: 1.5;">
+                Giriş ekranından şifre sıfırlama linkine geçerek e-posta girişi yapmayı ve başarılı sıfırlama bildirimini test eder.
+              </p>
+            </div>
+            <div class="card-footer">
+              <span class="card-meta">forgot-password-mocked.spec.ts</span>
+              <button class="btn-run" onclick="runTest('', 'card-auth-forgot-password', 'tests/e2e/auth/forgot-password-mocked.spec.ts')">
                 <span>Çalıştır</span>
               </button>
             </div>
