@@ -4,7 +4,7 @@
  * Bu test, giriş sayfasında ağ kopması veya sunucu hatası durumunda 
  * arayüzün (UI) kilitlenmeden doğru hata mesajlarını gösterdiğini doğrular.
  */
-import { test, expect } from '../../fixtures/test';
+import { test, expect, GitSecPage } from '../../fixtures/test';
 import { requireEnv } from '../../support/require-env';
 
 test.describe('Login — UI Ağ Hata (Network & Server Failure) Senaryoları', { tag: ['@regression', '@mocked'] }, () => {
@@ -13,7 +13,7 @@ test.describe('Login — UI Ağ Hata (Network & Server Failure) Senaryoları', {
 
   test.beforeEach(async ({ page, loginPage }) => {
     // Engellenen ağ veya sunucu isteklerinin testin sonunda sahte hata raporlamasını engellemek için yoksayılacak listeyi tanımla
-    (page as any).ignoredErrors = [
+    (page as GitSecPage).ignoredErrors = [
       /auth\/signin/i,
       /status of 500/i,
       /status of 429/i,

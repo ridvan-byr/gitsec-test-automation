@@ -1,4 +1,4 @@
-import { test, expect } from '../../fixtures/test';
+import { test, expect, GitSecPage } from '../../fixtures/test';
 import { requireEnv } from '../../support/require-env';
 
 test.describe('Register Failures — Kayıt Hata Durumları E2E Akışı', () => {
@@ -6,7 +6,7 @@ test.describe('Register Failures — Kayıt Hata Durumları E2E Akışı', () =>
 
   test('Zaten kayıtlı bir e-posta ile kayıt olmaya çalışıldığında uygun hata mesajı gösterilmeli', { tag: ['@manual-interactive'] }, async ({ page, registerPage }) => {
     // 400 Bad Request / 409 Conflict durumunu audit kontrolünden muaf tut
-    (page as any).ignoredErrors = [/auth\/signup/, /status of 400/, /status of 409/, /already exists/i];
+    (page as GitSecPage).ignoredErrors = [/auth\/signup/, /status of 400/, /status of 409/, /already exists/i];
 
     const email = requireEnv('E2E_USER_EMAIL');
     const password = 'Password123!';

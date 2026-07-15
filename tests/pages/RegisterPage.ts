@@ -7,6 +7,8 @@ export class RegisterPage {
   readonly surnameInput: Locator;
   readonly emailInput: Locator;
   readonly passwordInputs: Locator;
+  readonly passwordInput: Locator;
+  readonly confirmPasswordInput: Locator;
   readonly submitButton: Locator;
 
   get dashboardBaseUrl() {
@@ -23,6 +25,8 @@ export class RegisterPage {
     this.emailInput = page.getByRole('textbox', { name: /email/i })
       .or(page.locator('input[name="email"]')).first();
     this.passwordInputs = page.locator('input[type="password"]');
+    this.passwordInput = page.locator('input[name="password"]').first();
+    this.confirmPasswordInput = page.locator('input[name="confirmPassword"]').first();
     this.submitButton = page.getByRole('button', { name: /Create account/i })
       .or(page.locator('button').filter({ hasText: /Create account/i })).first();
   }
@@ -45,8 +49,8 @@ export class RegisterPage {
     await this.emailInput.fill(email);
 
     console.log(`🔑 [POM] Şifreler dolduruluyor...`);
-    await this.passwordInputs.nth(0).fill(password);
-    await this.passwordInputs.nth(1).fill(password);
+    await this.passwordInput.fill(password);
+    await this.confirmPasswordInput.fill(password);
 
     // Double check values
     const currentEmailValue = await this.emailInput.inputValue();

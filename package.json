@@ -12,13 +12,18 @@
     "test:manual-ui": "playwright test --grep @manual-interactive --headed",
     "report": "playwright show-report",
     "mail:github-otp": "tsx scripts/peek-github-otp.ts",
-    "mail:check": "tsx scripts/check-github-mail.ts"
+    "mail:check": "tsx scripts/check-github-mail.ts",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.59.1",
     "@types/node": "^25.6.0",
     "dotenv": "^16.6.1",
-    "tsx": "^4.22.0"
+    "eslint": "^10.7.0",
+    "tsx": "^4.22.0",
+    "typescript-eslint": "^8.64.0"
   },
   "dependencies": {
     "imapflow": "^1.3.3",

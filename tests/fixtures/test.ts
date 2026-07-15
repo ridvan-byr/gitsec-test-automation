@@ -1,9 +1,14 @@
-import { test as base, expect } from '@playwright/test';
+import { test as base, expect, Page } from '@playwright/test';
 import { LoginPage } from '../pages/LoginPage';
 import { RegisterPage } from '../pages/RegisterPage';
 import { ProviderPage } from '../pages/ProviderPage';
 import { StoragePage } from '../pages/StoragePage';
 import { RestorePage } from '../pages/RestorePage';
+
+// GitSec custom page interface to eliminate 'any' type castings
+export interface GitSecPage extends Page {
+  ignoredErrors?: (string | RegExp)[];
+}
 
 // Tespit edilen arka plan hatalarının veri yapısı
 interface DetectedError {
@@ -40,7 +45,7 @@ export const test = base.extend<GitSecFixtures>({
         const text = msg.text();
         if (text.includes('MISSING_MESSAGE')) return;
 
-        const isIgnored = ((page as any).ignoredErrors || []).some((pattern: string | RegExp) => {
+        const isIgnored = ((page as GitSecPage).ignoredErrors || []).some((pattern: string | RegExp) => {
           if (typeof pattern === 'string') return text.includes(pattern) || page.url().includes(pattern);
           return pattern.test(text) || pattern.test(page.url());
         });
@@ -63,7 +68,7 @@ export const test = base.extend<GitSecFixtures>({
         !url.includes('google-analytics') &&
         errText !== 'net::ERR_ABORTED'
       ) {
-        const isIgnored = ((page as any).ignoredErrors || []).some((pattern: string | RegExp) => {
+        const isIgnored = ((page as GitSecPage).ignoredErrors || []).some((pattern: string | RegExp) => {
           if (typeof pattern === 'string') return url.includes(pattern) || errText.includes(pattern);
           return pattern.test(url) || pattern.test(errText);
         });
@@ -82,7 +87,7 @@ export const test = base.extend<GitSecFixtures>({
       const status = response.status();
       const url = response.url();
       if (status >= 400 && !url.includes('google-analytics')) {
-        const isIgnored = ((page as any).ignoredErrors || []).some((pattern: string | RegExp) => {
+        const isIgnored = ((page as GitSecPage).ignoredErrors || []).some((pattern: string | RegExp) => {
           if (typeof pattern === 'string') return url.includes(pattern);
           return pattern.test(url);
         });
