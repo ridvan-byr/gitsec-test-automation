@@ -1,5 +1,5 @@
 import type { Locator, Page } from '@playwright/test';
-import { test, expect } from '../../fixtures/test';
+import { test, expect, GitSecPage } from '../../fixtures/test';
 import { ProviderPage } from '../../pages/ProviderPage';
 import { verifyAuditLogViaAPI } from '../../support/audit-helper';
 import { requireEnv } from '../../support/require-env';
@@ -245,7 +245,7 @@ test.describe(`Repositories - ${provider.toUpperCase()} ilk repo yedekleme`, () 
     const providerPage = new ProviderPage(page);
 
     // Arka plan hata denetiminde bu mock hatayı yoksayalım
-    (page as any).ignoredErrors = ['/api/backup/schedules/trigger', 'Failed to load resource', 'status of 500', 'status of 400'];
+    (page as GitSecPage).ignoredErrors = ['/api/backup/schedules/trigger', 'Failed to load resource', 'status of 500', 'status of 400'];
 
     // Ağ seviyesinde backup API'sini (Server Action veya REST API) 500 hatası dönecek şekilde kes
     await page.route(
@@ -371,7 +371,7 @@ test.describe(`Repositories - ${provider.toUpperCase()} ilk repo yedekleme`, () 
     const providerPage = new ProviderPage(page);
 
     // Arka plan hata denetiminde bu mock hatayı yoksayalım
-    (page as any).ignoredErrors = ['/api/backup/schedules/trigger', 'Failed to load resource', 'status of 500', 'status of 400'];
+    (page as GitSecPage).ignoredErrors = ['/api/backup/schedules/trigger', 'Failed to load resource', 'status of 500', 'status of 400'];
 
     await page.route(
       (url) => url.hostname.includes('api.gitsec.io') && (url.href.includes('/repositories') || url.href.includes('/backup')),

@@ -23,7 +23,7 @@
  *   API isteklerinin `/storage` POST endpoint'ine ulaştığı ve HTTP 200 OK döndüğü API seviyesinde doğrulanır.
  */
 
-import { test, expect } from '../../fixtures/test';
+import { test, expect, GitSecPage } from '../../fixtures/test';
 import { ProviderPage } from '../../pages/ProviderPage';
 import { StoragePage } from '../../pages/StoragePage';
 import { GoogleLoginPage } from '../../pages/GoogleLoginPage';
@@ -37,7 +37,7 @@ test.describe('Storage Provider Entegrasyonları', () => {
   test.setTimeout(120_000);
 
   test('Seçilen bulut depolama sağlayıcısını bağlamayı dene', { tag: ['@smoke', '@critical'] }, async ({ page }) => {
-    (page as any).ignoredErrors = [
+    (page as GitSecPage).ignoredErrors = [
       /Cross-Origin-Opener-Policy/,
       /Failed to load resource: the server responded with a status of (400|500|401|403|422|502)/,
       /HTTP Status 502/

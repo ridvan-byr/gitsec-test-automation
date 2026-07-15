@@ -1,5 +1,5 @@
 import type { Locator, Page } from '@playwright/test';
-import { test, expect } from '../../fixtures/test';
+import { test, expect, GitSecPage } from '../../fixtures/test';
 import { GithubLoginPage } from '../../pages/GithubLoginPage';
 import { ProviderPage } from '../../pages/ProviderPage';
 import { RestorePage } from '../../pages/RestorePage';
@@ -428,7 +428,7 @@ async function findAndPrepareValidRestoreRow(
 test.describe('Backups — restore sayfasına yönlendirme', () => {
   test('Completed satırı veya Partially Completed filtresi ile restore', async ({ page }) => {
     test.setTimeout(300000);
-    (page as any).ignoredErrors = [/restore\/schedules\/trigger/, /status of 500/];
+    (page as GitSecPage).ignoredErrors = [/restore\/schedules\/trigger/, /status of 500/];
     const providerPage = new ProviderPage(page);
     const restorePage = new RestorePage(page);
     const workspaceId = requireEnv('WORKSPACE_ID');

@@ -1,4 +1,4 @@
-import { test, expect } from '../../fixtures/test';
+import { test, expect, GitSecPage } from '../../fixtures/test';
 import { requireEnv } from '../../support/require-env';
 
 test.describe('Forgot Password Mocked — Şifremi Unuttum Mock Akışı', () => {
@@ -9,7 +9,7 @@ test.describe('Forgot Password Mocked — Şifremi Unuttum Mock Akışı', () =>
     const apiBaseUrl = requireEnv('API_BASE_URL');
 
     // Hata filtreleme
-    (page as any).ignoredErrors = [
+    (page as GitSecPage).ignoredErrors = [
       /Failed to load resource/i,
       /Cannot read properties of undefined/i
     ];

@@ -1,4 +1,4 @@
-import { test, expect } from '../../fixtures/test';
+import { test, expect, GitSecPage } from '../../fixtures/test';
 import { ProviderPage } from '../../pages/ProviderPage';
 import { RestorePage } from '../../pages/RestorePage';
 import { requireEnv } from '../../support/require-env';
@@ -9,7 +9,7 @@ test.describe('Restores & Restore Wizard — Arayüz ve Buton Durum Doğrulamala
 
   test.beforeEach(async ({ page }) => {
     // 502 ve Next.js static asset yükleme hatalarını yoksay (Staging sunucusu kararlılığı için)
-    (page as any).ignoredErrors = [
+    (page as GitSecPage).ignoredErrors = [
       /502/,
       /_next\/static\/chunks/i,
       /Failed to load resource/i,

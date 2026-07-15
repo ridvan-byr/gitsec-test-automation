@@ -1,4 +1,4 @@
-import { test, expect } from '../../fixtures/test';
+import { test, expect, GitSecPage } from '../../fixtures/test';
 import { ProviderPage } from '../../pages/ProviderPage';
 import type { Page } from '@playwright/test';
 import { requireEnv } from '../../support/require-env';
@@ -258,7 +258,7 @@ test.describe('Backup Schedulers - Form ve Sınır Doğrulama (Validation)', () 
   test.beforeEach(async ({ page }) => {
     workspaceId = requireEnv('WORKSPACE_ID');
     dashboardBaseUrl = requireEnv('DASHBOARD_BASE_URL');
-    (page as any).ignoredErrors = [
+    (page as GitSecPage).ignoredErrors = [
       /status of 502/,
       /status of 500/,
       /chunk|loading chunk/i,
@@ -462,8 +462,8 @@ test.describe('Backup Schedulers - Form ve Sınır Doğrulama (Validation)', () 
   });
 
   test('Planlayıcı isminde Null Byte, RTL karakterler ve Zero-width space içeren veriler girildiğinde uygulama çökmemeli ve hata uyarısı veya başarılı kayıt işlemiyle sonuçlanmalıdır', async ({ page }) => {
-    (page as any).ignoredErrors = [
-      ...((page as any).ignoredErrors || []),
+    (page as GitSecPage).ignoredErrors = [
+      ...((page as GitSecPage).ignoredErrors || []),
       /\/api\/backup\/schedules/
     ];
     console.log('🚀 [BAŞLANGIÇ] Karakter seti sınır testi başladı.');

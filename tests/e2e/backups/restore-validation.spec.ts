@@ -1,5 +1,5 @@
 import type { Locator, Page } from '@playwright/test';
-import { test, expect } from '../../fixtures/test';
+import { test, expect, GitSecPage } from '../../fixtures/test';
 import { GithubLoginPage } from '../../pages/GithubLoginPage';
 import { ProviderPage } from '../../pages/ProviderPage';
 import { RestorePage } from '../../pages/RestorePage';
@@ -790,7 +790,7 @@ test.describe('Backups Restore - Form ve Sınır Doğrulama (Validation)', () =>
   });
 
   test('Aynı depo için devam eden bir geri yükleme varken ikinci kez restore tetiklendiğinde API 409 Conflict dönmelidir', async ({ page }) => {
-    (page as any).ignoredErrors = [/restore\/schedules\/trigger/, /status of 409/];
+    (page as GitSecPage).ignoredErrors = [/restore\/schedules\/trigger/, /status of 409/];
     // 1. Adım: Hedef organizasyonu tamamla
     await restorePage.completeTargetOrganizationStep(async () => {
       await handleGithubOAuthPopup(page, providerPage);

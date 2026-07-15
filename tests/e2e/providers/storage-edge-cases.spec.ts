@@ -6,7 +6,7 @@
  * ve silme (DELETE) işlemi veri tutarlılığı senaryolarını dinamik olarak test eder.
  */
 
-import { test, expect } from '../../fixtures/test';
+import { test, expect, GitSecPage } from '../../fixtures/test';
 import { Page } from '@playwright/test';
 import { StoragePage } from '../../pages/StoragePage';
 import { requireEnv } from '../../support/require-env';
@@ -143,7 +143,7 @@ test.describe(`${provider.toUpperCase()} Depolama Sağlayıcısı Edge Case & St
 
   test.beforeEach(async ({ page }) => {
     workspaceId = requireEnv('WORKSPACE_ID');
-    (page as any).ignoredErrors = [
+    (page as GitSecPage).ignoredErrors = [
       /api\/storage-providers/,
       /Failed to load resource: the server responded with a status of (400|500|401|403|422|502)/,
       /Cross-Origin-Opener-Policy/,

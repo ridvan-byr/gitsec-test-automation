@@ -1,4 +1,4 @@
-import { test, expect } from '../../fixtures/test';
+import { test, expect, GitSecPage } from '../../fixtures/test';
 import { requireEnv } from '../../support/require-env';
 
 test.describe('Global Layout & Common UI Components (Genel Arayüz & Ortak Bileşenler)', () => {
@@ -6,7 +6,7 @@ test.describe('Global Layout & Common UI Components (Genel Arayüz & Ortak Bile�
   let dashboardBaseUrl: string;
 
   test.beforeEach(async ({ page }) => {
-    (page as any).ignoredErrors = [
+    (page as GitSecPage).ignoredErrors = [
       /502/,
       /_next\/static\/chunks/i,
       /Failed to load resource/i,

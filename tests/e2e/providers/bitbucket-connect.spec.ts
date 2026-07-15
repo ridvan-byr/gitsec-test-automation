@@ -7,7 +7,7 @@
  * 3. Bitbucket bağlantısı kurulduktan sonra repository listesinin yüklendiğini ve lisans dahil etme (toggle) işlemlerinin yapılabildiğini gerçek API ile uçtan uca doğrular.
  */
 
-import { test, expect } from '../../fixtures/test';
+import { test, expect, GitSecPage } from '../../fixtures/test';
 import { requireEnv } from '../../support/require-env';
 import { GoogleLoginPage } from '../../pages/GoogleLoginPage';
 import fs from 'fs';
@@ -108,7 +108,7 @@ test.describe('Bitbucket Provider Entegrasyon Testleri', () => {
     workspaceId = requireEnv('WORKSPACE_ID');
     dashboardBaseUrl = requireEnv('DASHBOARD_BASE_URL');
     // Turnstile/reCAPTCHA bypass ve hata engellemeleri
-    (page as any).ignoredErrors = [
+    (page as GitSecPage).ignoredErrors = [
       /Cross-Origin-Opener-Policy/,
       /Failed to load resource: the server responded with a status of (400|500|401|403|422|502)/,
       /HTTP Status 502/

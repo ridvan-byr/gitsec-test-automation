@@ -1,4 +1,4 @@
-import { test, expect } from '../../fixtures/test';
+import { test, expect, GitSecPage } from '../../fixtures/test';
 import { StoragePage } from '../../pages/StoragePage';
 import { ProviderPage } from '../../pages/ProviderPage';
 import { RestorePage } from '../../pages/RestorePage';
@@ -156,7 +156,7 @@ test.describe('GitSec Grand Integration Flow (Toplu Entegrasyon Akışı E2E)', 
   test.setTimeout(360000);
 
   test('Tüm platform adımlarını koştur ve Audit Log detaylarını doğrula', async ({ page }) => {
-    (page as any).ignoredErrors = [
+    (page as GitSecPage).ignoredErrors = [
       /Cross-Origin-Opener-Policy/,
       /Failed to load resource: the server responded with a status of (400|500|401|403|422|502)/,
       /HTTP Status 502/

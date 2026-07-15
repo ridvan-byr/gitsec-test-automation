@@ -1,4 +1,4 @@
-import { test, expect } from '../../fixtures/test';
+import { test, expect, GitSecPage } from '../../fixtures/test';
 import { requireEnv } from '../../support/require-env';
 import fs from 'fs';
 import path from 'path';
@@ -42,7 +42,7 @@ test.describe('Login Mocked — UI Giriş Formu Mock Akışı', () => {
   test.use({ storageState: { cookies: [], origins: [] } });
 
   test('Giriş formunun doldurulması ve mock API sonrası dashboard yönlendirmesi', { tag: ['@smoke', '@critical'] }, async ({ page, loginPage }) => {
-    (page as any).ignoredErrors = [
+    (page as GitSecPage).ignoredErrors = [
       /currentRate/i,
       /Cannot read properties of undefined/i,
       /Failed to load resource/i
