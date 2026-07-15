@@ -9,14 +9,14 @@ export default defineConfig({
   testMatch: '**/*.spec.ts',
   /* Global timeout for each test */
   timeout: 60000,
-  /* Tek akış: aynı anda tek test */
-  fullyParallel: false,
+  /* Sıralı/Paralel koşum ayarı (env ile esnetilebilir) */
+  fullyParallel: process.env.FULLY_PARALLEL === 'true',
   /* Fail the build on CI if you accidentally left test.only in the source code. */
   forbidOnly: !!process.env.CI,
   /* Retry on CI only */
   retries: process.env.CI ? 2 : 0,
-  /* Lokal/CI fark etmeksizin tek worker */
-  workers: 1,
+  /* Varsayılan olarak tek worker (OAuth/CI çakışmalarını önlemek için), env ile artırılabilir */
+  workers: process.env.PLAYWRIGHT_WORKERS ? parseInt(process.env.PLAYWRIGHT_WORKERS) : 1,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: 'html',
   expect: {

@@ -7,11 +7,18 @@
 import { test, expect } from '../../fixtures/test';
 import { requireEnv } from '../../support/require-env';
 
-test.describe('Login — UI Ağ Hata (Network & Server Failure) Senaryoları', () => {
+test.describe('Login — UI Ağ Hata (Network & Server Failure) Senaryoları', { tag: ['@regression', '@mocked'] }, () => {
   // Temiz bir oturum durumu ile başla
   test.use({ storageState: { cookies: [], origins: [] } });
 
   test.beforeEach(async ({ page, loginPage }) => {
+    // Engellenen ağ veya sunucu isteklerinin testin sonunda sahte hata raporlamasını engellemek için yoksayılacak listeyi tanımla
+    (page as any).ignoredErrors = [
+      /auth\/signin/i,
+      /status of 500/i,
+      /status of 429/i,
+      /failed/i
+    ];
     test.setTimeout(180000); // 3 dakika bekleme süresi tanıyarak manuel captcha çözümüne izin veriyoruz
     await loginPage.goto();
     await loginPage.handleCaptchaIfVisible();
@@ -34,7 +41,8 @@ test.describe('Login — UI Ağ Hata (Network & Server Failure) Senaryoları', (
     console.log('👆 [Failure Test] "Sign in" butonuna tıklandı, ağ hatasına tepki bekleniyor...');
 
     // 3. Arayüzün çökmediğini ve hata uyarısı gösterdiğini doğrula
-    const errorAlert = page.getByText(/failed|error|hata|fetch/i).first();
+    const toastOrAlert = page.locator('[class*="toast"], [id*="toast"], [role="alert"], div[role="status"]').first();
+    const errorAlert = toastOrAlert.getByText(/failed|error|hata|fetch/i);
     await expect(errorAlert).toBeVisible({ timeout: 15000 });
     console.log('✅ Giriş esnasında ağ bağlantısı koptuğunda UI\'ın hata mesajı gösterdiği başarıyla doğrulandı.');
   });
@@ -63,7 +71,8 @@ test.describe('Login — UI Ağ Hata (Network & Server Failure) Senaryoları', (
     console.log('👆 [Failure Test] "Sign in" butonuna tıklandı, 500 hatasına tepki bekleniyor...');
 
     // 3. Hata mesajını doğrula
-    const errorAlert = page.getByText(/internal|failed|error|hata/i).first();
+    const toastOrAlert = page.locator('[class*="toast"], [id*="toast"], [role="alert"], div[role="status"]').first();
+    const errorAlert = toastOrAlert.getByText(/internal|failed|error|hata/i);
     await expect(errorAlert).toBeVisible({ timeout: 15000 });
     console.log('✅ Giriş esnasında sunucu çöktüğünde (500) UI\'ın hata mesajı gösterdiği başarıyla doğrulandı.');
   });
@@ -118,7 +127,8 @@ test.describe('Login — UI Ağ Hata (Network & Server Failure) Senaryoları', (
     await loginPage.submit();
 
     // 3. Hata mesajını doğrula
-    const errorAlert = page.getByText(/too many|çok fazla|attempts|deneme|limit/i).first();
+    const toastOrAlert = page.locator('[class*="toast"], [id*="toast"], [role="alert"], div[role="status"]').first();
+    const errorAlert = toastOrAlert.getByText(/too many|çok fazla|attempts|deneme|limit/i);
     await expect(errorAlert).toBeVisible({ timeout: 15000 });
     console.log('✅ API 429 (Rate Limit) döndüğünde kullanıcıya engel uyarısı gösterildiği başarıyla doğrulandı.');
   });

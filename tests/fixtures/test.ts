@@ -161,7 +161,8 @@ export const test = base.extend<GitSecFixtures>({
         }
       } else if (hasErrors) {
         // Test başarılı bitse bile arka plan hatası varsa testi başarısız yap
-        expect(errors, '🚨 [SİTE/SUNUCU HATASI] Test adımları başarıyla tamamlansa da arayüzde veya API isteklerinde hatalar tespit edildi! Sorun web sitesi/sunucu kaynaklıdır. Detaylar yukarıdaki loglardadır.').toHaveLength(0);
+        const errorSummary = errors.map((err, i) => `   [${i+1}] TİP: ${err.type} | KAYNAK: ${err.source} | MESAJ: ${err.message.substring(0, 150)}`).join('\n');
+        expect(errors, `🚨 [SİTE/SUNUCU HATASI] "${testInfo.title}" test adımları başarıyla tamamlansa da arayüzde veya API isteklerinde arka plan hataları tespit edildi! Sorun web sitesi/sunucu kaynaklıdır.\n\nYakalanan Arka Plan Hataları:\n${errorSummary}\n\nDetaylar yukarıdaki console loglarındadır.`).toHaveLength(0);
       }
     }
   },

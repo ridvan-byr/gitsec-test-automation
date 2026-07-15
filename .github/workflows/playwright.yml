@@ -57,8 +57,8 @@ jobs:
       - name: Install Playwright OS dependencies
         if: steps.playwright-cache.outputs.cache-hit == 'true'
         run: npx playwright install-deps chrome
-      - name: Run tagged smoke suite
-        run: npx playwright test --grep "@smoke|@critical|@daily|@weekly|@monthly|@cron"
+      - name: Run tagged smoke and regression suite
+        run: npx playwright test --grep "@smoke|@critical|@daily|@weekly|@monthly|@cron|@regression|@mocked"
       - name: Upload artifacts
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4

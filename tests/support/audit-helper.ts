@@ -6,6 +6,7 @@ export interface AuditLogExpectation {
   category: string;
   descriptionRegex: RegExp;
   timeoutMs?: number;
+  strictFields?: boolean; // If true, asserts that checked fields are not placeholders/empty
 }
 
 /**
@@ -144,7 +145,11 @@ export async function verifyAuditLogViaAPI(page: Page, expectation: AuditLogExpe
   for (const field of rootFieldsToCheck) {
     const val = matchedItem[field];
     if (isPlaceholder(val)) {
-      console.warn(`⚠️ [AUDIT WARNING] Root field '${field}' is empty/placeholder in API log (Value: ${JSON.stringify(val)}) for Category "${matchedItem.category}" / Description: "${matchedItem.description}"`);
+      const msg = `⚠️ [AUDIT WARNING] Root field '${field}' is empty/placeholder in API log (Value: ${JSON.stringify(val)}) for Category "${matchedItem.category}" / Description: "${matchedItem.description}"`;
+      console.warn(msg);
+      if (expectation.strictFields) {
+        expect(isPlaceholder(val), `Root field '${field}' must not be empty or a placeholder: ${msg}`).toBeFalsy();
+      }
     }
   }
 
@@ -152,7 +157,11 @@ export async function verifyAuditLogViaAPI(page: Page, expectation: AuditLogExpe
   if (matchedItem.details && typeof matchedItem.details === 'object') {
     for (const [key, val] of Object.entries(matchedItem.details)) {
       if (isPlaceholder(val)) {
-        console.warn(`⚠️ [AUDIT WARNING] Detail field '${key}' is empty/placeholder in API log (Value: ${JSON.stringify(val)}) for Category "${matchedItem.category}" / Description: "${matchedItem.description}"`);
+        const msg = `⚠️ [AUDIT WARNING] Detail field '${key}' is empty/placeholder in API log (Value: ${JSON.stringify(val)}) for Category "${matchedItem.category}" / Description: "${matchedItem.description}"`;
+        console.warn(msg);
+        if (expectation.strictFields) {
+          expect(isPlaceholder(val), `Detail field '${key}' must not be empty or a placeholder: ${msg}`).toBeFalsy();
+        }
       }
     }
   }

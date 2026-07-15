@@ -13,9 +13,17 @@ import {
 
 setup('authenticate and connect provider', async ({ request, page }) => {
   setup.setTimeout(180000);
-  // Eğer register, login veya herhangi bir auth testi çalıştırılıyorsa setup'ı tamamen atlıyoruz.
-  if (process.env.SKIP_GLOBAL_SETUP === 'true' || process.argv.some(arg => arg.includes('register') || arg.includes('login') || arg.includes('auth/') || arg.includes('--skip-gs'))) {
-    console.log('[auth-setup] ⚠️ [DİKKAT] SKIP_GLOBAL_SETUP/--skip-gs veya Auth/Login/Register testi algılandı. Kurulum adımı atlanıyor.');
+  
+  const skipGlobalSetupEnv = process.env.SKIP_GLOBAL_SETUP === 'true';
+  const hasSkipArgs = process.argv.some(arg => 
+    arg.includes('register') || 
+    arg.includes('login') || 
+    arg.includes('auth/') || 
+    arg.includes('--skip-gs')
+  );
+
+  if (skipGlobalSetupEnv || hasSkipArgs) {
+    console.log(`[auth-setup] ⚠️ [DİKKAT] Kurulum adımı atlanıyor. (SKIP_GLOBAL_SETUP: ${skipGlobalSetupEnv}, CLI Argümanı Eşleşmesi: ${hasSkipArgs})`);
     return;
   }
 
@@ -29,15 +37,20 @@ setup('authenticate and connect provider', async ({ request, page }) => {
   const appEmail = requireEnv('E2E_USER_EMAIL');
   const appPassword = requireEnv('E2E_USER_PASSWORD');
 
-  let isBitbucketRun = process.env.E2E_CODE_PROVIDER === 'bitbucket' || process.argv.some(arg => arg.includes('bitbucket'));
-  
-  // Eğer explicitly github testi koşturuluyorsa, global olarak bitbucket seçilmiş olsa dahi github kurulumu yapılmalıdır.
-  if (process.argv.some(arg => arg.includes('github'))) {
+  const codeProviderEnv = process.env.E2E_CODE_PROVIDER;
+  let isBitbucketRun = codeProviderEnv === 'bitbucket';
+
+  const hasBitbucketArg = process.argv.some(arg => arg.includes('bitbucket'));
+  const hasGithubArg = process.argv.some(arg => arg.includes('github'));
+
+  if (codeProviderEnv) {
+    console.log(`[auth-setup] ℹ️ E2E_CODE_PROVIDER env değeri kullanılıyor: "${codeProviderEnv}"`);
+  } else if (hasBitbucketArg || hasGithubArg) {
+    isBitbucketRun = hasBitbucketArg && !hasGithubArg;
+    console.warn(`[auth-setup] ⚠️ Ortam değişkeni (E2E_CODE_PROVIDER) tanımlanmamış. CLI argümanlarından tahmin ediliyor: Bitbucket=${hasBitbucketArg}, GitHub=${hasGithubArg}. Seçilen sağlayıcı: ${isBitbucketRun ? 'Bitbucket' : 'GitHub'}`);
+  } else {
     isBitbucketRun = false;
-  }
-  // Eğer explicitly bitbucket testi koşturuluyorsa, bitbucket kurulumu yapılmalıdır.
-  if (process.argv.some(arg => arg.includes('bitbucket'))) {
-    isBitbucketRun = true;
+    console.log('[auth-setup] ℹ️ Varsayılan kod sağlayıcı olarak GitHub seçildi.');
   }
 
   if (!isBitbucketRun) {
@@ -66,10 +79,10 @@ setup('authenticate and connect provider', async ({ request, page }) => {
     state: {
       auth: {
         user: {
-          userId: body?.data?.user?.id || body?.data?.user?.userId || 797,
-          tenantId: body?.data?.user?.tenantId || 720,
-          name: body?.data?.user?.name || "Gitsec",
-          surName: body?.data?.user?.surName || "Testt",
+          userId: body?.data?.userId || body?.data?.user?.id || body?.data?.user?.userId || 797,
+          tenantId: body?.data?.tenantId || body?.data?.user?.tenantId || 720,
+          name: body?.data?.name || body?.data?.user?.name || "Gitsec",
+          surName: body?.data?.surName || body?.data?.user?.surName || "Testt",
           email: appEmail,
           token: "",
           refreshToken: "",
