@@ -31,6 +31,29 @@ setup('authenticate and connect provider', async ({ request, page }) => {
   const withProviderFile = path.join(process.cwd(), 'playwright/.auth/user-with-provider.json');
   fs.mkdirSync(path.dirname(authFile), { recursive: true });
 
+  // Akıllı Oturum Kontrolü (Session Cache Check)
+  if (fs.existsSync(authFile)) {
+    try {
+      const authData = JSON.parse(fs.readFileSync(authFile, 'utf8'));
+      const gsTokenCookie = authData.cookies?.find((c: any) => c.name === 'gs_token');
+      if (gsTokenCookie && gsTokenCookie.value) {
+        const token = gsTokenCookie.value;
+        const payloadBase64 = token.split('.')[1];
+        if (payloadBase64) {
+          const payload = JSON.parse(Buffer.from(payloadBase64, 'base64').toString('utf8'));
+          const exp = payload.exp * 1000; // milisaniye cinsinden exp
+          // Eğer token'ın bitmesine 5 dakikadan fazla varsa, login adımlarını atla
+          if (exp - Date.now() > 5 * 60 * 1000) {
+            console.log('[auth-setup] ✅ [GEÇERLİ OTURUM] Mevcut oturum çerezi (user.json) geçerli olduğu için login adımları atlanıyor.');
+            return;
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('[auth-setup] ⚠️ Mevcut user.json dosyası okunurken hata oluştu, yeniden giriş yapılacak:', err);
+    }
+  }
+
   const workspaceId = requireEnv('WORKSPACE_ID');
   const dashboardBaseUrl = requireEnv('DASHBOARD_BASE_URL');
   const apiBaseUrl = requireEnv('API_BASE_URL');
