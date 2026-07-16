@@ -418,6 +418,45 @@ async function deleteSchedulerRow(page: Page, schedulerName: string) {
   }
 }
 
+async function disableSchedulerRow(page: Page, schedulerName: string) {
+  const matchingRows = page.locator('tr').filter({ hasText: schedulerName });
+  const count = await matchingRows.count();
+
+  if (count === 0) {
+    console.log(`🔍 [KONTROL] "${schedulerName}" planlayıcısı bulunamadı, devre dışı bırakma atlanıyor.`);
+    return;
+  }
+
+  console.log(`📦 [İŞLEM] "${schedulerName}" planlayıcısı devre dışı bırakılıyor...`);
+  const schedulerRow = matchingRows.first();
+
+  // Switch butonunu bul (aktif/pasif toggle)
+  const toggleSwitch = schedulerRow.locator('button[role="switch"]').first();
+  if (await toggleSwitch.isVisible().catch(() => false)) {
+    const isChecked = await toggleSwitch.getAttribute('aria-checked');
+    if (isChecked === 'true' || isChecked === 'checked') {
+      console.log('👆 [TIKLAMA] Switch aktif durumda, devre dışı bırakmak için tıklanıyor...');
+      await toggleSwitch.click();
+
+      // Onay diyalogu varsa onayla
+      const confirmBtn = page.getByRole('dialog').or(page.getByRole('alertdialog')).first()
+        .getByRole('button', { name: /confirm|yes|sure|disable|devre dışı|continue/i }).first();
+      if (await confirmBtn.waitFor({ state: 'visible', timeout: 3000 }).then(() => true).catch(() => false)) {
+        console.log('👆 [TIKLAMA] Onay diyalogu bulundu, onaylanıyor...');
+        await confirmBtn.click();
+      }
+
+      // Switch durumunu doğrula
+      await expect(toggleSwitch).toHaveAttribute('aria-checked', 'false', { timeout: 10000 });
+      console.log('🎉 [BAŞARILI] Planlayıcı başarıyla devre dışı bırakıldı.');
+    } else {
+      console.log('🔍 [KONTROL] Planlayıcı zaten devre dışı durumda (aria-checked=false).');
+    }
+  } else {
+    console.log('⚠️ [UYARI] Satırda switch butonu bulunamadı, devre dışı bırakma işlemi atlanıyor.');
+  }
+}
+
 test.describe('Backup Schedulers - Form Yapılandırma', () => {
   test.setTimeout(120000);
 
@@ -447,49 +486,63 @@ test.describe('Backup Schedulers - Form Yapılandırma', () => {
     await providerPage.recoverFromChunkLoadError();
 
     // Önceki başarısız test koşularından kalan e2e-schedule-* artıklarını temizle
-    const staleRows = page.locator('tr').filter({ hasText: /e2e-schedule-\d+/ });
-    const staleCount = await staleRows.count().catch(() => 0);
-    if (staleCount > 0) {
-      console.log(`🧹 [TEMİZLİK] ${staleCount} adet eski e2e-schedule artığı tespit edildi, temizleniyor...`);
-      for (let i = 0; i < staleCount; i++) {
-        // Her silme sonrası DOM değiştiği için her seferinde ilk satırı hedefle
-        const row = page.locator('tr').filter({ hasText: /e2e-schedule-\d+/ }).first();
-        if (await row.isVisible().catch(() => false)) {
-          const trashBtn = row.getByRole('button', { name: /delete|trash|remove|sil/i })
-            .or(row.locator('button:has(svg[class*="trash"])'))
-            .or(row.getByRole('button').last())
-            .first();
-          if (await trashBtn.isVisible().catch(() => false)) {
-            await trashBtn.click();
-            // Onay diyalogu
-            const confirmBtn = page.getByRole('dialog').or(page.getByRole('alertdialog')).first()
-              .getByRole('button', { name: /confirm|delete|yes|sure|sil|remove|continue/i }).first();
-            if (await confirmBtn.waitFor({ state: 'visible', timeout: 3000 }).then(() => true).catch(() => false)) {
-              await confirmBtn.click();
+    // Sadece 'delete' modunda eski artıkları temizle
+    const cleanupMode = process.env.E2E_SCHEDULER_CLEANUP || 'delete';
+    if (cleanupMode === 'delete') {
+      const staleRows = page.locator('tr').filter({ hasText: /e2e-schedule-\d+/ });
+      const staleCount = await staleRows.count().catch(() => 0);
+      if (staleCount > 0) {
+        console.log(`🧹 [TEMİZLİK] ${staleCount} adet eski e2e-schedule artığı tespit edildi, temizleniyor...`);
+        for (let i = 0; i < staleCount; i++) {
+          // Her silme sonrası DOM değiştiği için her seferinde ilk satırı hedefle
+          const row = page.locator('tr').filter({ hasText: /e2e-schedule-\d+/ }).first();
+          if (await row.isVisible().catch(() => false)) {
+            const trashBtn = row.getByRole('button', { name: /delete|trash|remove|sil/i })
+              .or(row.locator('button:has(svg[class*="trash"])'))
+              .or(row.getByRole('button').last())
+              .first();
+            if (await trashBtn.isVisible().catch(() => false)) {
+              await trashBtn.click();
+              // Onay diyalogu
+              const confirmBtn = page.getByRole('dialog').or(page.getByRole('alertdialog')).first()
+                .getByRole('button', { name: /confirm|delete|yes|sure|sil|remove|continue/i }).first();
+              if (await confirmBtn.waitFor({ state: 'visible', timeout: 3000 }).then(() => true).catch(() => false)) {
+                await confirmBtn.click();
+              }
+              // Satırın silinmesini bekle
+              await expect(row).toBeHidden({ timeout: 10000 }).catch(() => {});
             }
-            // Satırın silinmesini bekle
-            await expect(row).toBeHidden({ timeout: 10000 }).catch(() => {});
           }
         }
+        // Sayfayı yenile ve temizliği doğrula
+        await page.reload({ waitUntil: 'domcontentloaded' });
+        await providerPage.recoverFromChunkLoadError();
+        const remainingStale = await page.locator('tr').filter({ hasText: /e2e-schedule-\d+/ }).count().catch(() => 0);
+        console.log(`🧹 [TEMİZLİK] Temizlik tamamlandı. Kalan artık: ${remainingStale}`);
       }
-      // Sayfayı yenile ve temizliği doğrula
-      await page.reload({ waitUntil: 'domcontentloaded' });
-      await providerPage.recoverFromChunkLoadError();
-      const remainingStale = await page.locator('tr').filter({ hasText: /e2e-schedule-\d+/ }).count().catch(() => 0);
-      console.log(`🧹 [TEMİZLİK] Temizlik tamamlandı. Kalan artık: ${remainingStale}`);
+    } else {
+      console.log(`📋 [beforeEach] Temizlik modu "${cleanupMode}" — eski artıklar silinmeyecek.`);
     }
   });
 
   test.afterEach(async ({ page }) => {
-    if (scheduleNameToCleanup) {
-      console.log(`🧹 [afterEach] Temizlik başlatılıyor: "${scheduleNameToCleanup}"`);
-      try {
+    if (!scheduleNameToCleanup) return;
+
+    const cleanupMode = process.env.E2E_SCHEDULER_CLEANUP || 'delete';
+    console.log(`🧹 [afterEach] Temizlik modu: "${cleanupMode}" | Hedef: "${scheduleNameToCleanup}"`);
+
+    try {
+      if (cleanupMode === 'delete') {
         await deleteSchedulerRow(page, scheduleNameToCleanup);
-      } catch (err) {
-        console.log('⚠️ [afterEach] Temizlik sırasında hata oluştu (planlayıcı zaten silinmiş veya bulunamadı):', err);
+      } else if (cleanupMode === 'disable') {
+        await disableSchedulerRow(page, scheduleNameToCleanup);
+      } else {
+        console.log(`📋 [afterEach] "keep" modu seçildi — planlayıcı olduğu gibi bırakılıyor: "${scheduleNameToCleanup}"`);
       }
-      scheduleNameToCleanup = null;
+    } catch (err) {
+      console.log('⚠️ [afterEach] Temizlik sırasında hata oluştu:', err);
     }
+    scheduleNameToCleanup = null;
   });
 
   test('Daily Scheduler Senaryosu', { tag: '@daily' }, async ({ page }) => {

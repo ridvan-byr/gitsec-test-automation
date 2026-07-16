@@ -3131,6 +3131,26 @@
                 </div>
               </div>
 
+              <div class="card-select-group" style="margin-top: 0.5rem; margin-bottom: 0.75rem;">
+                <label for="schedulerCleanupSelect"
+                  style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Test
+                  Sonrası İşlem (Temizlik)</label>
+                <div class="gitsec-select-wrapper no-left-icon">
+                  <select id="schedulerCleanupSelect" class="gitsec-select" style="padding-left: 0.875rem;"
+                    onchange="saveSettings()">
+                    <option value="delete">Sil (Delete)</option>
+                    <option value="disable">Devre Dışı Bırak (Disable)</option>
+                    <option value="keep">Dokunma (Olduğu Gibi Bırak)</option>
+                  </select>
+                  <span class="select-chevron-right">
+                    <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                  </span>
+                </div>
+              </div>
+
               <button type="button" id="btnToggleScheduler" class="btn-toggle-details"
                 onclick="toggleSchedulerDetails()">
                 <span>Detayları Düzenle</span>
@@ -5344,7 +5364,8 @@
             tag, headed, testFile, timezone, workspaceId, baseUrl,
             scheduleName, scheduleTime, includeCode, includePr, includeIssues,
             scheduleType: type.charAt(0).toUpperCase() + type.slice(1), // 'Daily', 'Weekly', 'Monthly', 'Cron'
-            weeklyDay, monthlyDay, cronExpression, workers, cardId
+            weeklyDay, monthlyDay, cronExpression, workers, cardId,
+            schedulerCleanup: document.getElementById('schedulerCleanupSelect') ? document.getElementById('schedulerCleanupSelect').value : 'delete'
           })
         });
 
@@ -6710,6 +6731,7 @@
         backupIncludePr: document.getElementById('backupIncludePr') ? document.getElementById('backupIncludePr').checked : false,
         backupIncludeIssues: document.getElementById('backupIncludeIssues') ? document.getElementById('backupIncludeIssues').checked : false,
         schedulerMode: document.getElementById('schedulerModeSelect') ? document.getElementById('schedulerModeSelect').value : 'happy_path',
+        schedulerCleanup: document.getElementById('schedulerCleanupSelect') ? document.getElementById('schedulerCleanupSelect').value : 'delete',
         restoreMode: document.getElementById('restoreModeSelect') ? document.getElementById('restoreModeSelect').value : 'happy_path',
         loginMode: document.getElementById('loginModeSelect') ? document.getElementById('loginModeSelect').value : 'happy_path',
         storageMode: document.getElementById('storageModeSelect') ? document.getElementById('storageModeSelect').value : 'happy_path',
@@ -6842,6 +6864,9 @@
         }
         if (settings.schedulerMode !== undefined && document.getElementById('schedulerModeSelect')) {
           document.getElementById('schedulerModeSelect').value = settings.schedulerMode;
+        }
+        if (settings.schedulerCleanup !== undefined && document.getElementById('schedulerCleanupSelect')) {
+          document.getElementById('schedulerCleanupSelect').value = settings.schedulerCleanup;
         }
         if (settings.restoreMode !== undefined && document.getElementById('restoreModeSelect')) {
           document.getElementById('restoreModeSelect').value = settings.restoreMode;
