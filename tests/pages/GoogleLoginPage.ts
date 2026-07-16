@@ -251,8 +251,15 @@ export class GoogleLoginPage {
     // TOTP input alanını bekle
     await this.totpInput.waitFor({ state: 'visible', timeout: 15_000 });
     await this.totpInput.click();
-    await this.totpInput.fill('');
-    await this.totpInput.pressSequentially(code, { delay: 50 });
+    await this.totpInput.fill(code);
+    
+    // Girilen değeri doğrulayalım, eksik karakter kalmışsa pressSequentially ile tamamlayalım
+    const value = await this.totpInput.inputValue().catch(() => '');
+    if (value !== code) {
+      console.log(`[google-login] fill ile değer tam girilemedi ("${value}"). Temizlenip pressSequentially ile yeniden yazılıyor...`);
+      await this.totpInput.fill('');
+      await this.totpInput.pressSequentially(code, { delay: 120 });
+    }
     await this.safePause(500);
 
     // Doğrula / Next butonuna tıkla
