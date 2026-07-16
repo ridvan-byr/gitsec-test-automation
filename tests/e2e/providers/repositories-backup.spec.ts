@@ -40,6 +40,17 @@ async function ensureFirstRowIncludedForBackup(firstRow: Locator): Promise<void>
   console.log('🎉 [BAŞARILI] Switch included konumuna getirildi (aria-checked=true).');
 }
 
+async function setCheckboxState(page: Page, labelText: string, shouldBeChecked: boolean) {
+  console.log(`⏳ [BEKLEME] Checkbox ayarlanıyor. Etiket: "${labelText}", Hedef Durum: ${shouldBeChecked}`);
+
+  const checkbox = page.getByRole('checkbox', { name: labelText })
+    .or(page.getByLabel(labelText))
+    .first();
+  
+  await checkbox.waitFor({ state: 'visible', timeout: 10000 });
+  await checkbox.setChecked(shouldBeChecked);
+}
+
 // Satırdan repository ismini güvenli şekilde çıkaran fonksiyon (Checkbox/Boş sütunları eler)
 async function getCleanRepoName(row: Locator): Promise<string> {
   const cells = row.locator('td');
@@ -104,6 +115,18 @@ test.describe(`Repositories - ${provider.toUpperCase()} ilk repo yedekleme`, () 
     await backupNowBtn.scrollIntoViewIfNeeded().catch(() => {});
     console.log('👆 [TIKLAMA] Backup now tıklanıyor (ilk satır).');
     await backupNowBtn.click();
+
+    // Kullanıcı tercihlerine göre Scope'ları seçelim
+    const includeCode = process.env.E2E_INCLUDE_CODE !== 'false'; // default: true
+    const includePR = process.env.E2E_INCLUDE_PR === 'true'; // default: false
+    const includeIssues = process.env.E2E_INCLUDE_ISSUES === 'true'; // default: false
+
+    console.log(`⚙️ [BİLGİ] Yedekleme kapsamları belirleniyor -> Code & Commits: ${includeCode}, Pull Requests: ${includePR}, Issues: ${includeIssues}`);
+    
+    // Checkbox'ları ayarla
+    await setCheckboxState(page, 'Code & Commits', includeCode);
+    await setCheckboxState(page, 'Pull Requests', includePR);
+    await setCheckboxState(page, 'Issues', includeIssues);
 
     const startBackupBtn = page.getByRole('button', { name: /^Start Backup$/i });
     await startBackupBtn.waitFor({ state: 'visible', timeout: 20000 });
