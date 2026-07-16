@@ -3529,6 +3529,39 @@
                   </span>
                 </div>
               </div>
+
+              <div class="card-select-group" style="margin-top: 0.75rem;">
+                <label style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Yedekleme İçeriği (Backup Scopes)</label>
+                <div class="included-items-grid" style="margin-top: 0.375rem;">
+                  <label class="included-item-card checked" id="card-backupIncludeCode">
+                    <input type="checkbox" id="backupIncludeCode" checked onchange="toggleIncludedItemClass(this)">
+                    <span class="checkbox-box">
+                      <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                      </svg>
+                    </span>
+                    <span>Code & Commits</span>
+                  </label>
+                  <label class="included-item-card" id="card-backupIncludePr">
+                    <input type="checkbox" id="backupIncludePr" onchange="toggleIncludedItemClass(this)">
+                    <span class="checkbox-box">
+                      <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                      </svg>
+                    </span>
+                    <span>Pull Requests</span>
+                  </label>
+                  <label class="included-item-card" id="card-backupIncludeIssues">
+                    <input type="checkbox" id="backupIncludeIssues" onchange="toggleIncludedItemClass(this)">
+                    <span class="checkbox-box">
+                      <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                      </svg>
+                    </span>
+                    <span>Issues</span>
+                  </label>
+                </div>
+              </div>
             </div>
             <div class="card-footer">
               <span class="card-meta">repositories-backup.spec.ts</span>
@@ -5379,7 +5412,10 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             tag, headed, testFile: finalTestFile, workspaceId, baseUrl,
-            includeMode, includeProvider: codeProvider, excludeMode, backupMode, workers, cardId
+            includeMode, includeProvider: codeProvider, excludeMode, backupMode, workers, cardId,
+            includeCode: cardId === 'card-github-backup' ? document.getElementById('backupIncludeCode').checked : undefined,
+            includePr: cardId === 'card-github-backup' ? document.getElementById('backupIncludePr').checked : undefined,
+            includeIssues: cardId === 'card-github-backup' ? document.getElementById('backupIncludeIssues').checked : undefined
           })
         });
 
@@ -6670,6 +6706,9 @@
         excludeMode: document.getElementById('excludeModeSelect') ? document.getElementById('excludeModeSelect').value : 'one_repo',
         excludeProvider: document.getElementById('excludeProviderSelect') ? document.getElementById('excludeProviderSelect').value : 'github',
         backupMode: document.getElementById('backupModeSelect') ? document.getElementById('backupModeSelect').value : 'all',
+        backupIncludeCode: document.getElementById('backupIncludeCode') ? document.getElementById('backupIncludeCode').checked : true,
+        backupIncludePr: document.getElementById('backupIncludePr') ? document.getElementById('backupIncludePr').checked : false,
+        backupIncludeIssues: document.getElementById('backupIncludeIssues') ? document.getElementById('backupIncludeIssues').checked : false,
         schedulerMode: document.getElementById('schedulerModeSelect') ? document.getElementById('schedulerModeSelect').value : 'happy_path',
         restoreMode: document.getElementById('restoreModeSelect') ? document.getElementById('restoreModeSelect').value : 'happy_path',
         loginMode: document.getElementById('loginModeSelect') ? document.getElementById('loginModeSelect').value : 'happy_path',
@@ -6785,6 +6824,21 @@
         }
         if (settings.backupMode !== undefined && document.getElementById('backupModeSelect')) {
           document.getElementById('backupModeSelect').value = settings.backupMode;
+        }
+        if (settings.backupIncludeCode !== undefined && document.getElementById('backupIncludeCode')) {
+          const cb = document.getElementById('backupIncludeCode');
+          cb.checked = settings.backupIncludeCode;
+          toggleIncludedItemClass(cb);
+        }
+        if (settings.backupIncludePr !== undefined && document.getElementById('backupIncludePr')) {
+          const cb = document.getElementById('backupIncludePr');
+          cb.checked = settings.backupIncludePr;
+          toggleIncludedItemClass(cb);
+        }
+        if (settings.backupIncludeIssues !== undefined && document.getElementById('backupIncludeIssues')) {
+          const cb = document.getElementById('backupIncludeIssues');
+          cb.checked = settings.backupIncludeIssues;
+          toggleIncludedItemClass(cb);
         }
         if (settings.schedulerMode !== undefined && document.getElementById('schedulerModeSelect')) {
           document.getElementById('schedulerModeSelect').value = settings.schedulerMode;
