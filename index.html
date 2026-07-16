@@ -3530,6 +3530,25 @@
                 başlatılmasını ve arka plandaki yedekleme durumunu doğrular.
               </p>
 
+              <div class="card-select-group" style="margin-top: 0.5rem; margin-bottom: 0.5rem;">
+                <label for="backupProviderSelect"
+                  style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Kod
+                  Sağlayıcı (Provider)</label>
+                <div class="gitsec-select-wrapper no-left-icon">
+                  <select id="backupProviderSelect" class="gitsec-select" style="padding-left: 0.875rem;"
+                    onchange="onBackupProviderChange()">
+                    <option value="github">GitHub</option>
+                    <option value="bitbucket">Bitbucket</option>
+                  </select>
+                  <span class="select-chevron-right">
+                    <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                  </span>
+                </div>
+              </div>
+
               <div class="card-select-group" style="margin-top: 0.75rem;">
                 <label for="backupModeSelect"
                   style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Backup
@@ -5215,6 +5234,32 @@
       saveSettings();
     }
 
+    function onBackupProviderChange() {
+      const select = document.getElementById('backupProviderSelect');
+      if (!select) return;
+      const provider = select.value;
+      
+      // Card tag'ini güncelle
+      const tagEl = document.querySelector('#card-github-backup .card-tag');
+      if (tagEl) {
+        tagEl.textContent = provider === 'github' ? 'GitHub' : 'Bitbucket';
+      }
+
+      // Bitbucket ise Issues checkbox'ını gizle
+      const issuesCard = document.getElementById('card-backupIncludeIssues');
+      const issuesInput = document.getElementById('backupIncludeIssues');
+      if (issuesCard && issuesInput) {
+        if (provider === 'bitbucket') {
+          issuesCard.style.display = 'none';
+          issuesInput.checked = false;
+          issuesCard.classList.remove('checked');
+        } else {
+          issuesCard.style.display = '';
+        }
+      }
+      saveSettings();
+    }
+
     // Sync all time inputs dynamically across views and update UI details
     function syncTimeInputs(el) {
       const val = el.value;
@@ -5409,7 +5454,12 @@
       const excludeMode = document.getElementById('excludeModeSelect') ? document.getElementById('excludeModeSelect').value : null;
       const excludeProvider = document.getElementById('excludeProviderSelect') ? document.getElementById('excludeProviderSelect').value : null;
       const backupMode = document.getElementById('backupModeSelect') ? document.getElementById('backupModeSelect').value : null;
-      const codeProvider = cardId === 'card-github-exclude' ? excludeProvider : includeProvider;
+      let codeProvider = includeProvider;
+      if (cardId === 'card-github-exclude') {
+        codeProvider = excludeProvider;
+      } else if (cardId === 'card-github-backup') {
+        codeProvider = document.getElementById('backupProviderSelect') ? document.getElementById('backupProviderSelect').value : 'github';
+      }
       const workers = document.getElementById('workersCount') ? document.getElementById('workersCount').value : 1;
 
       let finalTestFile = testFile;
@@ -6746,6 +6796,7 @@
         excludeMode: document.getElementById('excludeModeSelect') ? document.getElementById('excludeModeSelect').value : 'one_repo',
         excludeProvider: document.getElementById('excludeProviderSelect') ? document.getElementById('excludeProviderSelect').value : 'github',
         backupMode: document.getElementById('backupModeSelect') ? document.getElementById('backupModeSelect').value : 'all',
+        backupProvider: document.getElementById('backupProviderSelect') ? document.getElementById('backupProviderSelect').value : 'github',
         backupIncludeCode: document.getElementById('backupIncludeCode') ? document.getElementById('backupIncludeCode').checked : true,
         backupIncludePr: document.getElementById('backupIncludePr') ? document.getElementById('backupIncludePr').checked : false,
         backupIncludeIssues: document.getElementById('backupIncludeIssues') ? document.getElementById('backupIncludeIssues').checked : false,
@@ -6866,6 +6917,10 @@
         }
         if (settings.backupMode !== undefined && document.getElementById('backupModeSelect')) {
           document.getElementById('backupModeSelect').value = settings.backupMode;
+        }
+        if (settings.backupProvider !== undefined && document.getElementById('backupProviderSelect')) {
+          document.getElementById('backupProviderSelect').value = settings.backupProvider;
+          onBackupProviderChange();
         }
         if (settings.backupIncludeCode !== undefined && document.getElementById('backupIncludeCode')) {
           const cb = document.getElementById('backupIncludeCode');
