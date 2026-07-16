@@ -197,9 +197,9 @@ setup('authenticate and connect provider', async ({ request, page }) => {
   const githubUser = process.env.GITHUB_TEST_USER ?? appEmail;
   const githubPass = process.env.GITHUB_TEST_PASSWORD ?? appPassword;
 
-  // EĞER KULLANICI ÖZELLİKLE "github-connect.spec.ts" TESTİNİ ÇALIŞTIRIYORSA:
-  if (process.argv.some(arg => arg.includes('github-connect.spec.ts'))) {
-    console.log('[auth-setup] ⚠️ [DİKKAT] "github-connect" testi algılandı. Otomatik bağlantı adımı atlanıyor, süreç doğrudan test akışına bırakılıyor.');
+  // EĞER KULLANICI ÖZELLİKLE BAĞLANTI TESTLERİNİ ÇALIŞTIRIYORSA:
+  if (process.argv.some(arg => arg.includes('github-connect.spec.ts') || arg.includes('bitbucket-connect.spec.ts'))) {
+    console.log('[auth-setup] ⚠️ [DİKKAT] Bağlantı testi algılandı. Otomatik sağlayıcı bağlantı adımı atlanıyor, süreç doğrudan test akışına bırakılıyor.');
     await page.context().storageState({ path: withProviderFile });
     return;
   }
