@@ -337,9 +337,33 @@ test.describe('Repositories - Exclude Selected', () => {
       const hasNext = await hasNextPage(nextBtn);
 
       if (!hasNext) {
-        console.log('🎉 [BAŞARILI] Bütün sayfalar exclude edilmiş!');
-        console.log('🎉 [BAŞARILI] Test başarıyla tamamlandı (Tüm depolar zaten hariç tutulmuş durumda).');
-        return;
+        console.log('⚠️ [UYARI] Tüm depolar zaten exclude edilmiş. Test doğrulaması için ilk depoyu dahil ediyoruz...');
+        await navigateToRepositoriesAndEnsureStable(page, providerPage, provider);
+        const firstRow = repoTable.locator('tbody tr').first();
+        const firstSwitch = firstRow.locator('button[role="switch"]').first();
+        await scrollTableToRight(page);
+
+        const includePromise = page.waitForResponse(
+          res => res.url().includes('/api/repositories/license-inclusion-status'),
+          { timeout: 20000 }
+        ).catch(() => null);
+
+        await firstSwitch.click({ force: true });
+        
+        const confirmBtn = page.getByRole('button', { name: /Yes,\s*Include|Confirm|Dahil Et/i }).first();
+        if (await confirmBtn.waitFor({ state: 'visible', timeout: 5000 }).then(() => true).catch(() => false)) {
+          await confirmBtn.click({ force: true });
+        }
+
+        await includePromise;
+        await page.waitForTimeout(3000);
+
+        // Tekrar sayfayı stabil hale getirip ilk satırdan devam ediyoruz
+        await navigateToRepositoriesAndEnsureStable(page, providerPage, provider);
+        await scrollTableToRight(page);
+        targetSwitch = repoTable.locator('tbody tr').first().locator('button[role="switch"]').first();
+        console.log('🎉 [BAŞARILI] Depo geçici olarak dahil edildi, şimdi exclude adımına geçiliyor.');
+        break;
       }
 
       const firstRow = repoTable.locator('tbody tr').first();
@@ -437,6 +461,7 @@ test.describe('Repositories - Exclude Selected', () => {
       const switchAfterReload = foundRow.locator('button[role="switch"]').first();
       await expect(switchAfterReload).toHaveAttribute('aria-checked', 'false', { timeout: 15000 });
       console.log('🎉 [BAŞARILI] [Refresh Persistence] Sayfa yenileme sonrasında da repository\'nin backup kapsamı dışında (unchecked/false) kaldığı başarıyla doğrulandı!');
+      console.log(`📋 [TEST SONU] Exclude edilen repo: "${cleanedRepoName}"`);
     }
   });
 
