@@ -571,10 +571,14 @@ test.describe('Aktivite ve Denetim Günlükleri (Activity Logs) Mocked Edge Case
       });
     });
 
-    // Sidebar üzerinden Activity sayfasına giderek client-side navigasyonu tetikliyoruz
-    const activityLink = page.getByRole('link', { name: /^Activity$/i }).first();
+    // Sidebar üzerinden Activity grubunu genişletip Backup linkine tıklayarak client-side navigasyonu tetikliyoruz
+    const activityLink = page.getByRole('link', { name: /^Activity$/i }).or(page.getByRole('button', { name: /^Activity$/i })).first();
     await activityLink.waitFor({ state: 'visible', timeout: 10000 });
     await activityLink.click();
+
+    const backupLink = page.getByRole('link', { name: /^Backup$/i }).first();
+    await backupLink.waitFor({ state: 'visible', timeout: 10000 });
+    await backupLink.click();
 
     const emptyStateText = page.locator('text=/no activities|bulunamadı|kayıt yok|boş|empty/i').first();
     await expect(emptyStateText).toBeVisible({ timeout: 15000 });
@@ -623,10 +627,14 @@ test.describe('Aktivite ve Denetim Günlükleri (Activity Logs) Mocked Edge Case
       });
     });
 
-    // Sidebar üzerinden Activity sayfasına giderek client-side navigasyonu tetikliyoruz
-    const activityLink = page.getByRole('link', { name: /^Activity$/i }).first();
+    // Sidebar üzerinden Activity grubunu genişletip Backup linkine tıklayarak client-side navigasyonu tetikliyoruz
+    const activityLink = page.getByRole('link', { name: /^Activity$/i }).or(page.getByRole('button', { name: /^Activity$/i })).first();
     await activityLink.waitFor({ state: 'visible', timeout: 10000 });
     await activityLink.click();
+
+    const backupLink = page.getByRole('link', { name: /^Backup$/i }).first();
+    await backupLink.waitFor({ state: 'visible', timeout: 10000 });
+    await backupLink.click();
 
     const logDescription = page.getByText(emojiAndSpecialCharText).first();
     await expect(logDescription).toBeVisible({ timeout: 15000 });

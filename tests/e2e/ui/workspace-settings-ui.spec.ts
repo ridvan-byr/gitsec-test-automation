@@ -154,22 +154,30 @@ test.describe('Workspace Settings & Member Yönetimi — Arayüz ve Buton Durum 
     const wsDescInput = dialog.locator('input[name="description"], textarea[name="description"]').first();
     await expect(wsDescInput).toBeVisible();
     await expect(wsDescInput).toBeEditable();
-    console.log('✅ Workspace Description alanı doğrulandı.');
+    
+    // Benzersiz açıklama girerek kaydetme fonksiyonunu test et
+    const uniqueDesc = `GitSec E2E Test Desc - ${Date.now()}`;
+    console.log(`✏️ Workspace Description alanına "${uniqueDesc}" yazılıyor...`);
+    await wsDescInput.fill(uniqueDesc);
+    await page.waitForTimeout(500);
 
     // 5. "Accent Color" bölümü
     const accentColorLabel = dialog.getByText('Accent Color', { exact: true });
     await expect(accentColorLabel).toBeVisible();
     console.log('✅ Accent Color bölümü doğrulandı.');
 
-    // 6. "Save Changes" butonunun varlığı ve varsayılan olarak devre dışı (pristine) durumu
+    // 6. "Save Changes" butonunun varlığı, aktifliği ve kaydetme akışı
     const saveBtn = dialog.getByRole('button', { name: /Save Changes/i });
     await expect(saveBtn).toBeVisible();
-    // Accent color senkronizasyonu veya tarayıcı otomatik doldurması sebebiyle form kirli (dirty) yüklenebilir.
-    // Bu yüzden butonun devre dışı olmasını soft assert olarak denetliyoruz.
-    await expect(saveBtn).toBeDisabled().catch(() => {
-      console.log('⚠️ Save Changes butonu varsayılan olarak aktif yüklendi (form kirli veya otomatik doldurulmuş olabilir).');
-    });
-    console.log('✅ Save Changes butonu görünürlüğü doğrulandı.');
+    await expect(saveBtn).toBeEnabled();
+    
+    console.log('🔘 [UI TEST] "Save Changes" butonuna tıklanıyor...');
+    await saveBtn.click();
+    await page.waitForTimeout(3000); // Kayıt işleminin tamamlanmasını bekle
+    
+    // Değerin başarıyla kaydedildiğini doğrula
+    await expect(wsDescInput).toHaveValue(uniqueDesc);
+    console.log('✅ Workspace Description başarıyla güncellendi ve doğrulandı.');
 
     // 7. Alt bölüm: Workspaces tablosu sütun başlıkları
     // Scroll down to see the table
