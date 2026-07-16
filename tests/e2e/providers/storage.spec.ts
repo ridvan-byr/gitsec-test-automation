@@ -263,6 +263,28 @@ test.describe('Storage Provider Entegrasyonları', () => {
 
       console.log('🎉 [BAŞARILI] Storage bağlantı adım testi başarıyla tamamlandı!');
     } finally {
+      // Test bittikten sonra temizlik yapalım
+      const cleanupMode = process.env.E2E_STORAGE_CLEANUP || 'delete';
+      if (cleanupMode === 'delete' && createdConnectionName) {
+        console.log(`🧹 [KAPANIŞ] Temizlik başlatılıyor: "${createdConnectionName}"`);
+        try {
+          await storagePage.navigateToStoragePage();
+          const card = page.locator('tr').filter({
+            has: page.locator('td').filter({ hasText: createdConnectionName })
+          }).first();
+          if (await card.isVisible().catch(() => false)) {
+            console.log(`[KAPANIŞ] E2E sağlayıcı kartı siliniyor: "${createdConnectionName}"`);
+            await storagePage.deleteFirstCardFromLocator(card).catch(() => {});
+            await expect(card).toBeHidden({ timeout: 10000 }).catch(() => {});
+            console.log('🎉 [KAPANIŞ] Temizlik tamamlandı.');
+          }
+        } catch (err) {
+          console.log('⚠️ [KAPANIŞ] Temizlik sırasında hata oluştu:', err);
+        }
+      } else if (cleanupMode === 'keep') {
+        console.log(`📋 [KAPANIŞ] "keep" modu seçildi — depolama sağlayıcısı olduğu gibi bırakılıyor: "${createdConnectionName}"`);
+      }
+
       // Tarayıcı ve sayfanın açık kalmasını önlemek için kesin kapatma komutu
       console.log('🚪 [KAPANIŞ] Test bitti, tarayıcı penceresi kapatılıyor...');
       await page.context().browser()?.close().catch(() => { });

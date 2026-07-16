@@ -3819,6 +3819,24 @@
                   </span>
                 </div>
               </div>
+              <div class="card-select-group" style="margin-top: 0.5rem; margin-bottom: 0.25rem;">
+                <label for="storageCleanupSelect"
+                  style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Test
+                  Sonrası İşlem (Temizlik)</label>
+                <div class="gitsec-select-wrapper no-left-icon">
+                  <select id="storageCleanupSelect" class="gitsec-select" style="padding-left: 0.875rem;"
+                    onchange="saveSettings()">
+                    <option value="delete">Sil (Delete)</option>
+                    <option value="keep">Dokunma (Olduğu Gibi Bırak)</option>
+                  </select>
+                  <span class="select-chevron-right">
+                    <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                  </span>
+                </div>
+              </div>
             </div>
 
             <div class="card-footer">
@@ -5541,7 +5559,8 @@
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            headed, testFile, workspaceId, baseUrl, workers, cardId
+            headed, testFile, workspaceId, baseUrl, workers, cardId,
+            storageCleanup: document.getElementById('storageCleanupSelect') ? document.getElementById('storageCleanupSelect').value : 'delete'
           })
         });
 
@@ -6735,6 +6754,7 @@
         restoreMode: document.getElementById('restoreModeSelect') ? document.getElementById('restoreModeSelect').value : 'happy_path',
         loginMode: document.getElementById('loginModeSelect') ? document.getElementById('loginModeSelect').value : 'happy_path',
         storageMode: document.getElementById('storageModeSelect') ? document.getElementById('storageModeSelect').value : 'happy_path',
+        storageCleanup: document.getElementById('storageCleanupSelect') ? document.getElementById('storageCleanupSelect').value : 'delete',
         workers: document.getElementById('workersCount') ? document.getElementById('workersCount').value : 1,
         e2eCodeProvider: document.getElementById('e2eCodeProvider') ? document.getElementById('e2eCodeProvider').value : 'github'
       };
@@ -6876,6 +6896,9 @@
         }
         if (settings.storageMode !== undefined && document.getElementById('storageModeSelect')) {
           document.getElementById('storageModeSelect').value = settings.storageMode;
+        }
+        if (settings.storageCleanup !== undefined && document.getElementById('storageCleanupSelect')) {
+          document.getElementById('storageCleanupSelect').value = settings.storageCleanup;
         }
 
         if (settings.workers !== undefined) {

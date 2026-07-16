@@ -195,7 +195,7 @@ const server = http.createServer((req, res) => {
           scheduleName, scheduleTime, includeCode, includePr, includeIssues,
           scheduleType, weeklyDay, monthlyDay, cronExpression,
           includeMode, includeProvider, excludeMode, backupMode, workers, cardId,
-          schedulerCleanup
+          schedulerCleanup, storageCleanup
         } = JSON.parse(body || '{}');
 
         // Whitelist validations
@@ -343,6 +343,7 @@ const server = http.createServer((req, res) => {
         if (excludeMode) runEnv.E2E_EXCLUDE_MODE = excludeMode;
         if (backupMode) runEnv.E2E_BACKUP_MODE = backupMode;
         if (schedulerCleanup) runEnv.E2E_SCHEDULER_CLEANUP = schedulerCleanup;
+        if (storageCleanup) runEnv.E2E_STORAGE_CLEANUP = storageCleanup;
 
         let commandToRun = cmd;
         if (process.platform === 'win32' && commandToRun === 'npx') {

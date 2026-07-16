@@ -540,7 +540,7 @@ export class StoragePage {
     }
   }
 
-  private async deleteFirstCardFromLocator(card: Locator): Promise<void> {
+  async deleteFirstCardFromLocator(card: Locator): Promise<void> {
     const s3DeleteBtn = card.locator('button').filter({ hasText: /delete|remove|disconnect|sil/i })
       .or(card.locator('svg[class*="trash"]').locator('..'))
       .first();

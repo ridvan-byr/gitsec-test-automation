@@ -130,7 +130,7 @@ export const test = base.extend<GitSecFixtures>({
       } catch {
         // ignore
       }
-    }).catch(() => {});
+    }).catch(() => { });
 
     try {
       // Testi koştur
@@ -142,7 +142,7 @@ export const test = base.extend<GitSecFixtures>({
 
       console.log(`\n======================================================================`);
       console.log(`🔍 [AUDIT] "${testInfo.title}" Testi Arka Plan Hata Denetimi:`);
-      
+
       if (hasErrors) {
         console.log(`❌ DİKKAT: Test sürecinde ${errors.length} adet arka plan hatası/uyarısı yakalandı!\n`);
         errors.forEach((err, index) => {
@@ -166,21 +166,21 @@ export const test = base.extend<GitSecFixtures>({
         }
       } else if (hasErrors) {
         // Hata bekleyen testlerde (başlığında hata kodları, yetki veya mock geçen) arka plan hatalarını görmezden gel
-        const shouldIgnoreErrors = testInfo.title.toLowerCase().includes('mock') || 
-                                   testInfo.title.toLowerCase().includes('sahte') || 
-                                   testInfo.title.toLowerCase().includes('simüle') || 
-                                   testInfo.title.toLowerCase().includes('429') || 
-                                   testInfo.title.toLowerCase().includes('500') || 
-                                   testInfo.title.toLowerCase().includes('403') ||
-                                   testInfo.title.toLowerCase().includes('401') ||
-                                   testInfo.title.toLowerCase().includes('geçersiz') ||
-                                   testInfo.title.toLowerCase().includes('yetkisiz') ||
-                                   testInfo.title.toLowerCase().includes('hata') ||
-                                   testInfo.annotations.some(ann => ann.type === 'allow-errors');
-        
+        const shouldIgnoreErrors = testInfo.title.toLowerCase().includes('mock') ||
+          testInfo.title.toLowerCase().includes('sahte') ||
+          testInfo.title.toLowerCase().includes('simüle') ||
+          testInfo.title.toLowerCase().includes('429') ||
+          testInfo.title.toLowerCase().includes('500') ||
+          testInfo.title.toLowerCase().includes('403') ||
+          testInfo.title.toLowerCase().includes('401') ||
+          testInfo.title.toLowerCase().includes('geçersiz') ||
+          testInfo.title.toLowerCase().includes('yetkisiz') ||
+          testInfo.title.toLowerCase().includes('hata') ||
+          testInfo.annotations.some(ann => ann.type === 'allow-errors');
+
         if (!shouldIgnoreErrors) {
           // Test başarılı bitse bile arka plan hatası varsa testi başarısız yap
-          const errorSummary = errors.map((err, i) => `   [${i+1}] TİP: ${err.type} | KAYNAK: ${err.source} | MESAJ: ${err.message.substring(0, 150)}`).join('\n');
+          const errorSummary = errors.map((err, i) => `   [${i + 1}] TİP: ${err.type} | KAYNAK: ${err.source} | MESAJ: ${err.message.substring(0, 150)}`).join('\n');
           expect(errors, `🚨 [SİTE/SUNUCU HATASI] "${testInfo.title}" test adımları başarıyla tamamlansa da arayüzde veya API isteklerinde arka plan hataları tespit edildi! Sorun web sitesi/sunucu kaynaklıdır.\n\nYakalanan Arka Plan Hataları:\n${errorSummary}\n\nDetaylar yukarıdaki console loglarındadır.`).toHaveLength(0);
         } else {
           console.log(`ℹ️ [MOCK/HATA TESTİ] "${testInfo.title}" bir hata/mock senaryosu olduğu için yakalanan ${errors.length} adet arka plan hatası göz ardı edildi.`);
