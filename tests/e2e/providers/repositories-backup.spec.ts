@@ -126,7 +126,9 @@ test.describe(`Repositories - ${provider.toUpperCase()} ilk repo yedekleme`, () 
     // Checkbox'ları ayarla
     await setCheckboxState(page, 'Code & Commits', includeCode);
     await setCheckboxState(page, 'Pull Requests', includePR);
-    await setCheckboxState(page, 'Issues', includeIssues);
+    if (provider === 'github') {
+      await setCheckboxState(page, 'Issues', includeIssues);
+    }
 
     const startBackupBtn = page.getByRole('button', { name: /^Start Backup$/i });
     await startBackupBtn.waitFor({ state: 'visible', timeout: 20000 });
