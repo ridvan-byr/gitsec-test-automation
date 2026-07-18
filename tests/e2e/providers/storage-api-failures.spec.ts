@@ -57,11 +57,12 @@ async function fillFormForSelectedProvider(storagePage: StoragePage, connName: s
     await storagePage.fillHuaweiForm(connName, data.bucket, data.accessKey, data.secretKey, data.region);
   } else {
     // OAuth (GDrive, OneDrive) sadece Connection Name doldurulur
+    await storagePage.page.waitForLoadState('load');
     const connectionNameInput = storagePage.page.getByPlaceholder('e.g., Compliance GD')
       .or(storagePage.page.locator('input[placeholder*="Compliance"]'))
       .or(storagePage.page.locator('input[name="name"]'))
       .first();
-    await connectionNameInput.waitFor({ state: 'visible', timeout: 15000 });
+    await connectionNameInput.waitFor({ state: 'visible', timeout: 30000 });
     await connectionNameInput.fill(connName);
   }
 }
@@ -174,6 +175,10 @@ test.describe(`${provider.toUpperCase()} Depolama Sağlayıcısı API & Ağ Hata
     const errorToast = page.getByText(/failed to add|error|failed/i).first();
     await expect(errorToast).toBeVisible({ timeout: 12000 });
 
+    // UI Kurtarma (Recovery) Doğrulaması: Butonun tekrar aktif olduğunu ve kilitli kalmadığını doğrula
+    await expect(saveBtn).toBeEnabled({ timeout: 5000 });
+    console.log('✅ API 500 hatası sonrası kaydetme butonu tekrar aktifleşti (UI Kurtarma başarılı).');
+
     console.log('✅ API 500 hatası durumunda arayüzün hata bildirimini başarıyla gösterdiği doğrulandı.');
   });
 
@@ -221,7 +226,11 @@ test.describe(`${provider.toUpperCase()} Depolama Sağlayıcısı API & Ağ Hata
 
     // İstek havada iken butonun disabled olduğunu doğrula (Double-submit koruması)
     await expect(saveBtn).toBeDisabled();
-    console.log('✅ API yanıtı geciktiğinde kaydetme butonunun disabled olduğu başarıyla doğrulandı.');
+    console.log('⌛ [KONTROL] İstek devam ederken buton disabled (Double-submit koruması aktif).');
+
+    // API isteğinin tamamlanıp listeleme sayfasına yönlendirilmesini bekle (UI Başarılı Yönlendirme)
+    await expect(page).toHaveURL(/\/storage\b/, { timeout: 10000 });
+    console.log('✅ API yanıtı tamamlandığında listeleme sayfasına yönlendirme başarıyla gerçekleşti.');
   });
 
   // ─────────────────────────────────────────────────────────────────
@@ -261,6 +270,10 @@ test.describe(`${provider.toUpperCase()} Depolama Sağlayıcısı API & Ağ Hata
     // Yetkisiz işlem nedeniyle ekranda session expired veya unauthorized toast mesajının belirdiğini doğrula
     const errorToast = page.getByText(/session expired|unauthorized|failed to add|error/i).first();
     await expect(errorToast).toBeVisible({ timeout: 12000 });
+
+    // UI Kurtarma (Recovery) Doğrulaması: Yetkisiz işlem hatası sonrasında butonun tekrar aktif olduğunu doğrula
+    await expect(saveBtn).toBeEnabled({ timeout: 5000 });
+    console.log('✅ API 401 hatası sonrası kaydetme butonu tekrar aktifleşti (UI Kurtarma başarılı).');
 
     console.log('✅ Yetkisiz işlem (401) durumunda arayüzün hata toast bildirimini başarıyla gösterdiği doğrulandı.');
   });

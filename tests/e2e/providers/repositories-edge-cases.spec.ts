@@ -85,7 +85,11 @@ const provider = getCodeProvider();
 
 async function navigateToRepositoriesAndEnsureStable(page: Page, providerPage: ProviderPage): Promise<Locator> {
   console.log(`🚀 [BAŞLANGIÇ] Doğrudan ${provider.toUpperCase()} Repositories sayfasına gidiliyor...`);
-  await providerPage.goToRepositoriesViaSidebar(provider);
+  if (provider === 'bitbucket') {
+    await providerPage.goToRepositoriesBitbucket();
+  } else {
+    await providerPage.goToRepositoriesGithub();
+  }
   
   await page.waitForLoadState('domcontentloaded');
   await expect(page.locator('table').first()).toBeVisible({ timeout: 30000 });
@@ -159,7 +163,8 @@ test.describe(`Repositories - ${provider.toUpperCase()} Include/Exclude Edge Cas
     console.log(`🚨 [HATA NEDENİ] ${translateToastMessage(toastText, provider)}`);
     
     await expect(targetSwitch).toHaveAttribute('aria-checked', 'false', { timeout: 10000 });
-    console.log('🎉 [BAŞARILI] Switch butonunun durumunun pasif (false) olarak korunduğu / revert edildiği başarıyla doğrulandı.');
+    await expect(targetSwitch).toBeEnabled({ timeout: 5000 });
+    console.log('🎉 [BAŞARILI] Switch butonunun durumunun pasif (false) olarak korunduğu / revert edildiği ve butonun tekrar aktif olduğu başarıyla doğrulandı.');
   });
 
   test('Lisans limiti asildiginda sistemin hata verdigini ve islemi engelledigini doğrula (License Limit Test - Include)', async ({ page }) => {
@@ -213,7 +218,8 @@ test.describe(`Repositories - ${provider.toUpperCase()} Include/Exclude Edge Cas
     console.log(`🚨 [HATA NEDENİ] ${translateToastMessage(toastText, provider)}`);
 
     await expect(targetSwitch).toHaveAttribute('aria-checked', 'false', { timeout: 10000 });
-    console.log('🎉 [BAŞARILI] Switch butonunun aktifleşmeyip pasif kaldığı başarıyla doğrulandı.');
+    await expect(targetSwitch).toBeEnabled({ timeout: 5000 });
+    console.log('🎉 [BAŞARILI] Switch butonunun aktifleşmeyip pasif kaldığı ve butonun tekrar aktif olduğu başarıyla doğrulandı.');
   });
 
   // ─────────────────────────────────────────────────────────────────
@@ -272,7 +278,7 @@ test.describe(`Repositories - ${provider.toUpperCase()} Include/Exclude Edge Cas
     // Onay modalını bekle ve tıkla
     const confirmBtn = page.getByRole('button', { name: /Yes,\s*Exclude|Confirm/i }).first();
     if (await confirmBtn.waitFor({ state: 'visible', timeout: 5000 }).then(() => true).catch(() => false)) {
-      await confirmBtn.click();
+      await confirmBtn.click({ force: true });
       await expect(confirmBtn).toBeHidden({ timeout: 5000 });
     }
 
@@ -283,6 +289,7 @@ test.describe(`Repositories - ${provider.toUpperCase()} Include/Exclude Edge Cas
     console.log(`🚨 [HATA NEDENİ] ${translateToastMessage(toastText, provider)}`);
 
     await expect(targetSwitch).toHaveAttribute('aria-checked', 'true', { timeout: 10000 });
-    console.log('🎉 [BAŞARILI] Switch butonunun durumunun aktif (true) olarak korunduğu / revert edildiği başarıyla doğrulandı.');
+    await expect(targetSwitch).toBeEnabled({ timeout: 5000 });
+    console.log('🎉 [BAŞARILI] Switch butonunun durumunun aktif (true) olarak korunduğu / revert edildiği ve butonun tekrar aktif olduğu başarıyla doğrulandı.');
   });
 });

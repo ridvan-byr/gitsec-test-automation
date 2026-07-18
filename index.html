@@ -2973,8 +2973,9 @@
 
               <div class="form-group">
                 <label for="workspaceId">Çalışma Alanı Kimliği (Workspace ID)</label>
-                <input type="text" id="workspaceId" value="883" placeholder="Örn: 883"
+                <input type="text" id="workspaceId" value="" placeholder="Boşsa Otomatik Algılanır (Örn: 278)"
                   oninput="syncEnvField('WORKSPACE_ID', this.value)">
+                <span class="field-hint" style="color: var(--text-muted); font-size: 0.725rem; margin-top: 0.2rem;">İsteğe bağlıdır. Boş bırakılırsa hesabın Workspace ID'si otomatik tespit edilir.</span>
               </div>
               <div class="form-group">
                 <label for="baseUrl">GitSec Panel Adresi (Dashboard Base URL)</label>
@@ -3062,6 +3063,53 @@
             <div class="card-footer">
               <span class="card-meta">dashboard-ui.spec.ts</span>
               <button class="btn-run" onclick="runTest('', 'card-dashboard-ui', 'tests/e2e/ui/dashboard-ui.spec.ts')">
+                <span>Çalıştır</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Real License Change Card -->
+          <div id="card-license-change" class="test-card" style="width: 100%; margin-top: 0;">
+            <div class="card-header">
+              <div class="card-title-group">
+                <span class="card-tag">@license-change</span>
+                <h3 class="card-title">Gerçek Lisans Değiştirme</h3>
+              </div>
+              <div class="card-status-dot"></div>
+            </div>
+            <div class="card-content">
+              <p style="color: var(--text-muted); font-size: 0.8125rem; line-height: 1.5; margin-bottom: 0.75rem;">
+                Seçilen hedef plana arayüz üzerinden geçer ve değişikliği gerçek backend lisans cevabıyla doğrular.
+                Hesabın lisansını gerçekten değiştirir; mevcut plandan farklı bir plan seçilmelidir.
+              </p>
+              <div class="card-select-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                <div>
+                  <label for="licenseTargetPlanSelect" style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted);">HEDEF LİSANS</label>
+                  <select id="licenseTargetPlanSelect" class="gitsec-select" onchange="saveSettings()">
+                    <option value="Freemium">Freemium</option>
+                    <option value="Startup" selected>Startup</option>
+                    <option value="Premium">Premium</option>
+                    <option value="Premium+">Premium+</option>
+                  </select>
+                </div>
+                <div>
+                  <label for="licenseBillingCycleSelect" style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted);">FATURALANDIRMA</label>
+                  <select id="licenseBillingCycleSelect" class="gitsec-select" onchange="saveSettings()">
+                    <option value="monthly">Aylık</option>
+                    <option value="yearly">Yıllık</option>
+                  </select>
+                </div>
+              </div>
+              <div style="margin-top: 0.75rem;">
+                <label for="iyzicoSmsCodeInput" style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted);">IYZICO YEDEK SMS KODU</label>
+                <input id="iyzicoSmsCodeInput" type="text" inputmode="numeric" maxlength="6" value="123456"
+                  pattern="[0-9]{6}" class="gitsec-select" onchange="saveSettings()">
+                <span class="field-hint" style="color: #64748b; font-size: 0.75rem;">Öncelikle Iyzico mesajındaki parantez içi kod kullanılır; bu değer yalnızca kod okunamazsa devreye girer.</span>
+              </div>
+            </div>
+            <div class="card-footer">
+              <span class="card-meta">license-change.spec.ts</span>
+              <button class="btn-run" onclick="runTest('', 'card-license-change', 'tests/e2e/billing/license-change.spec.ts')">
                 <span>Çalıştır</span>
               </button>
             </div>
@@ -3694,10 +3742,29 @@
               <div class="card-status-dot"></div>
             </div>
             <div class="card-content">
-              <p style="color: var(--text-muted); font-size: 0.8125rem; line-height: 1.5;">
-                Yeni kullanıcı kayıt formunun şifre gücü gereksinimlerini, e-posta formatı doğrulamalarını ve başarılı
-                kayıt işlemlerini uçtan uca doğrular.
+              <p id="register-desc"
+                style="color: var(--text-muted); font-size: 0.8125rem; line-height: 1.5; min-height: 3.25rem;">
+                Yeni kullanıcı kayıt formunun başarılı kayıt ve e-posta onay adımlarını uçtan uca doğrular.
               </p>
+
+              <div class="card-select-group" style="margin-top: 0.75rem;">
+                <label for="registerModeSelect"
+                  style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Kayıt Kapsamı (Scope)</label>
+                <div class="gitsec-select-wrapper no-left-icon">
+                  <select id="registerModeSelect" class="gitsec-select" style="padding-left: 0.875rem;"
+                    onchange="updateCardUI('card-auth-register', 'registerModeSelect', 'register-desc'); saveSettings()">
+                    <option value="happy_path">Normal Kayıt Akışı (Happy Path)</option>
+                    <option value="failures">Kayıt Hataları & Sınır Değerler (Failures)</option>
+                    <option value="all">Tüm Kayıt Testleri (Hepsi)</option>
+                  </select>
+                  <span class="select-chevron-right">
+                    <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                  </span>
+                </div>
+              </div>
             </div>
             <div class="card-footer">
               <span class="card-meta">register.spec.ts</span>
@@ -3768,6 +3835,29 @@
             <div class="card-footer">
               <span class="card-meta">forgot-password-mocked.spec.ts</span>
               <button class="btn-run" onclick="runTest('', 'card-auth-forgot-password', 'tests/e2e/auth/forgot-password-mocked.spec.ts')">
+                <span>Çalıştır</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Forgot Password Real Email Card -->
+          <div id="card-auth-forgot-password-real" class="test-card">
+            <div class="card-header">
+              <div class="card-title-group">
+                <span class="card-tag">Kimlik Doğrulama (Gerçek E-posta)</span>
+                <h3 class="card-title">Şifremi Unuttum — Backend & Gmail</h3>
+              </div>
+              <div class="card-status-dot"></div>
+            </div>
+            <div class="card-content">
+              <p style="color: var(--text-muted); font-size: 0.8125rem; line-height: 1.5;">
+                Gerçek staging backend'e sıfırlama talebi gönderir, HTTP 200 yanıtını doğrular
+                ve Reset Password e-postasının Gmail kutusuna ulaştığını IMAP üzerinden kontrol eder. Link açılmaz.
+              </p>
+            </div>
+            <div class="card-footer">
+              <span class="card-meta">forgot-password.spec.ts</span>
+              <button class="btn-run" onclick="runTest('', 'card-auth-forgot-password-real', 'tests/e2e/auth/forgot-password.spec.ts')">
                 <span>Çalıştır</span>
               </button>
             </div>
@@ -4117,6 +4207,34 @@
                     </button>
                   </div>
                 </div>
+                <div class="form-group">
+                  <label for="env_FORGOT_PASSWORD_EMAIL">Şifre Sıfırlama GitSec E-postası (FORGOT_PASSWORD_EMAIL)</label>
+                  <input type="text" id="env_FORGOT_PASSWORD_EMAIL"
+                    placeholder="Boşsa E2E_USER_EMAIL kullanılır">
+                </div>
+                <div class="form-group">
+                  <label for="env_FORGOT_PASSWORD_MAIL_USER">IMAP Oturum E-postası (FORGOT_PASSWORD_MAIL_USER)</label>
+                  <input type="text" id="env_FORGOT_PASSWORD_MAIL_USER"
+                    placeholder="Boşsa şifre sıfırlama e-postası kullanılır">
+                </div>
+                <div class="form-group">
+                  <label for="env_FORGOT_PASSWORD_MAIL_PASSWORD">IMAP Uygulama Şifresi (FORGOT_PASSWORD_MAIL_PASSWORD)</label>
+                  <div class="password-input-wrapper">
+                    <input type="password" id="env_FORGOT_PASSWORD_MAIL_PASSWORD"
+                      placeholder="Boşsa GITHUB_MAIL_PASSWORD kullanılır">
+                    <button type="button" class="password-toggle-btn"
+                      onclick="togglePasswordVisibility('env_FORGOT_PASSWORD_MAIL_PASSWORD', this)"
+                      title="Şifreyi Göster/Gizle">Göster</button>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="env_FORGOT_PASSWORD_MAIL_IMAP_HOST">IMAP Sunucusu (FORGOT_PASSWORD_MAIL_IMAP_HOST)</label>
+                  <input type="text" id="env_FORGOT_PASSWORD_MAIL_IMAP_HOST" placeholder="imap.gmail.com">
+                </div>
+                <div class="form-group">
+                  <label for="env_FORGOT_PASSWORD_MAIL_IMAP_PORT">IMAP Portu (FORGOT_PASSWORD_MAIL_IMAP_PORT)</label>
+                  <input type="number" id="env_FORGOT_PASSWORD_MAIL_IMAP_PORT" placeholder="993">
+                </div>
               </div>
             </div>
 
@@ -4273,8 +4391,9 @@
               <div class="env-accordion-body env-grid">
                 <div class="form-group">
                   <label for="env_WORKSPACE_ID">Çalışma Alanı Kimliği (WORKSPACE_ID)</label>
-                  <input type="text" id="env_WORKSPACE_ID" placeholder="Örn: 883"
+                  <input type="text" id="env_WORKSPACE_ID" placeholder="Boşsa Otomatik Algılanır (Örn: 278)"
                     oninput="syncSettingsField('workspaceId', this.value)">
+                  <span class="field-hint" style="color: var(--text-muted); font-size: 0.725rem; margin-top: 0.2rem;">İsteğe bağlıdır. Boş bırakırsanız oturum açan hesabın Workspace ID'si otomatik tespit edilir.</span>
                 </div>
                 <div class="form-group">
                   <label for="env_DASHBOARD_BASE_URL">GitSec Kontrol Paneli Adresi (DASHBOARD_BASE_URL)</label>
@@ -4487,6 +4606,14 @@
                   <input type="text" id="env_E2E_EXCLUDE_MODE" placeholder="one_repo">
                 </div>
               </div>
+            </div>
+
+            <div class="env-accordion-item active" id="env-group-dynamic">
+              <div class="env-accordion-header" onclick="toggleEnvAccordion('env-group-dynamic')">
+                <span class="env-accordion-title">Diğer .env Değerleri</span>
+                <span class="env-accordion-chevron">▼</span>
+              </div>
+              <div class="env-accordion-body env-grid" id="envDynamicFields"></div>
             </div>
 
           </div>
@@ -5461,6 +5588,12 @@
         codeProvider = document.getElementById('backupProviderSelect') ? document.getElementById('backupProviderSelect').value : 'github';
       }
       const workers = document.getElementById('workersCount') ? document.getElementById('workersCount').value : 1;
+      const licenseTargetPlan = cardId === 'card-license-change'
+        ? document.getElementById('licenseTargetPlanSelect').value : null;
+      const licenseBillingCycle = cardId === 'card-license-change'
+        ? document.getElementById('licenseBillingCycleSelect').value : null;
+      const iyzicoSmsCode = cardId === 'card-license-change'
+        ? document.getElementById('iyzicoSmsCodeInput').value : null;
 
       let finalTestFile = testFile;
       if (cardId === 'card-restore') {
@@ -5476,6 +5609,13 @@
           finalTestFile = 'tests/e2e/auth/login-failures.spec.ts';
         } else if (loginMode === 'all') {
           finalTestFile = 'tests/e2e/auth/login.spec.ts tests/e2e/auth/login-failures.spec.ts';
+        }
+      } else if (cardId === 'card-auth-register') {
+        const registerMode = document.getElementById('registerModeSelect') ? document.getElementById('registerModeSelect').value : 'happy_path';
+        if (registerMode === 'failures') {
+          finalTestFile = 'tests/e2e/auth/register-failures.spec.ts';
+        } else if (registerMode === 'all') {
+          finalTestFile = 'tests/e2e/auth/register.spec.ts tests/e2e/auth/register-failures.spec.ts';
         }
       }
 
@@ -5504,7 +5644,8 @@
             includeMode, includeProvider: codeProvider, excludeMode, backupMode, workers, cardId,
             includeCode: cardId === 'card-github-backup' ? document.getElementById('backupIncludeCode').checked : undefined,
             includePr: cardId === 'card-github-backup' ? document.getElementById('backupIncludePr').checked : undefined,
-            includeIssues: cardId === 'card-github-backup' ? document.getElementById('backupIncludeIssues').checked : undefined
+            includeIssues: cardId === 'card-github-backup' ? document.getElementById('backupIncludeIssues').checked : undefined,
+            licenseTargetPlan, licenseBillingCycle, iyzicoSmsCode
           })
         });
 
@@ -6605,31 +6746,59 @@
     }
 
     // 9. .env Çevre Değişkenleri Yönetimi
+    function renderDynamicEnvFields(envVars) {
+      const container = document.getElementById('envDynamicFields');
+      if (!container) return;
+      container.innerHTML = '';
+
+      Object.keys(envVars).sort().forEach(key => {
+        if (document.getElementById('env_' + key)) return;
+
+        const group = document.createElement('div');
+        group.className = 'form-group';
+        const label = document.createElement('label');
+        label.htmlFor = 'env_' + key;
+        label.textContent = key;
+        const input = document.createElement('input');
+        input.id = 'env_' + key;
+        input.type = /PASSWORD|SECRET|KEY|TOKEN|CONNECTION_STRING|TOTP/i.test(key) ? 'password' : 'text';
+        input.value = envVars[key] ?? '';
+        group.append(label, input);
+        container.appendChild(group);
+      });
+    }
+
+    function getEnvFields() {
+      return Array.from(document.querySelectorAll('input[id^="env_"], select[id^="env_"]'));
+    }
+
     async function loadEnvVars() {
       try {
         const response = await fetch('/api/env');
         if (!response.ok) throw new Error('Çevre değişkenleri yüklenemedi.');
         const envVars = await response.json();
 
-        const envKeys = [
-          'E2E_USER_EMAIL', 'E2E_USER_PASSWORD',
-          'GITHUB_TEST_USER', 'GITHUB_TEST_PASSWORD',
-          'WORKSPACE_ID', 'DASHBOARD_BASE_URL',
-          'API_BASE_URL', 'GITHUB_MAIL_USER', 'GITHUB_MAIL_PASSWORD',
-          'E2E_STORAGE_PROVIDER',
-          'GOOGLE_TEST_USER', 'GOOGLE_TEST_PASSWORD', 'GOOGLE_TOTP_SECRET',
-          'AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY', 'AWS_REGION', 'AWS_S3_BUCKET',
-          'AZURE_CONNECTION_STRING', 'AZURE_FOLDER_PATH',
-          'HUAWEI_ACCESS_KEY_ID', 'HUAWEI_SECRET_ACCESS_KEY', 'HUAWEI_BUCKET', 'HUAWEI_REGION',
-          'E2E_INCLUDE_MODE', 'E2E_CODE_PROVIDER', 'E2E_EXCLUDE_MODE'
-        ];
-
-        envKeys.forEach(key => {
-          const input = document.getElementById('env_' + key);
-          if (input && envVars[key] !== undefined) {
+        renderDynamicEnvFields(envVars);
+        getEnvFields().forEach(input => {
+          const key = input.id.slice(4);
+          if (envVars[key] !== undefined) {
             input.value = envVars[key];
           }
         });
+
+        const gitsecEmailInput = document.getElementById('env_E2E_USER_EMAIL');
+        const forgotEmailInput = document.getElementById('env_FORGOT_PASSWORD_EMAIL');
+        const forgotMailUserInput = document.getElementById('env_FORGOT_PASSWORD_MAIL_USER');
+        const sharedMailUserInput = document.getElementById('env_GITHUB_MAIL_USER');
+        if (forgotEmailInput && !forgotEmailInput.value && gitsecEmailInput?.value) {
+          forgotEmailInput.value = gitsecEmailInput.value;
+        }
+        if (
+          forgotMailUserInput &&
+          (!forgotMailUserInput.value || forgotMailUserInput.value === forgotEmailInput?.value)
+        ) {
+          forgotMailUserInput.value = sharedMailUserInput?.value || forgotEmailInput?.value || '';
+        }
 
         // Dashboard altındaki genel ayarları da eşitleyelim
         if (envVars['WORKSPACE_ID'] !== undefined) {
@@ -6653,25 +6822,9 @@
     }
 
     async function saveEnvVars(silent = false) {
-      const envKeys = [
-        'E2E_USER_EMAIL', 'E2E_USER_PASSWORD',
-        'GITHUB_TEST_USER', 'GITHUB_TEST_PASSWORD',
-        'WORKSPACE_ID', 'DASHBOARD_BASE_URL',
-        'API_BASE_URL', 'GITHUB_MAIL_USER', 'GITHUB_MAIL_PASSWORD',
-        'E2E_STORAGE_PROVIDER',
-        'GOOGLE_TEST_USER', 'GOOGLE_TEST_PASSWORD', 'GOOGLE_TOTP_SECRET',
-        'AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY', 'AWS_REGION', 'AWS_S3_BUCKET',
-        'AZURE_CONNECTION_STRING', 'AZURE_FOLDER_PATH',
-        'HUAWEI_ACCESS_KEY_ID', 'HUAWEI_SECRET_ACCESS_KEY', 'HUAWEI_BUCKET', 'HUAWEI_REGION',
-        'E2E_INCLUDE_MODE', 'E2E_CODE_PROVIDER', 'E2E_EXCLUDE_MODE'
-      ];
-
       const envVars = {};
-      envKeys.forEach(key => {
-        const input = document.getElementById('env_' + key);
-        if (input) {
-          envVars[key] = input.value;
-        }
+      getEnvFields().forEach(input => {
+        envVars[input.id.slice(4)] = input.value;
       });
 
       try {
@@ -6804,10 +6957,14 @@
         schedulerCleanup: document.getElementById('schedulerCleanupSelect') ? document.getElementById('schedulerCleanupSelect').value : 'delete',
         restoreMode: document.getElementById('restoreModeSelect') ? document.getElementById('restoreModeSelect').value : 'happy_path',
         loginMode: document.getElementById('loginModeSelect') ? document.getElementById('loginModeSelect').value : 'happy_path',
+        registerMode: document.getElementById('registerModeSelect') ? document.getElementById('registerModeSelect').value : 'happy_path',
         storageMode: document.getElementById('storageModeSelect') ? document.getElementById('storageModeSelect').value : 'happy_path',
         storageCleanup: document.getElementById('storageCleanupSelect') ? document.getElementById('storageCleanupSelect').value : 'delete',
         workers: document.getElementById('workersCount') ? document.getElementById('workersCount').value : 1,
-        e2eCodeProvider: document.getElementById('e2eCodeProvider') ? document.getElementById('e2eCodeProvider').value : 'github'
+        e2eCodeProvider: document.getElementById('e2eCodeProvider') ? document.getElementById('e2eCodeProvider').value : 'github',
+        licenseTargetPlan: document.getElementById('licenseTargetPlanSelect') ? document.getElementById('licenseTargetPlanSelect').value : 'Startup',
+        licenseBillingCycle: document.getElementById('licenseBillingCycleSelect') ? document.getElementById('licenseBillingCycleSelect').value : 'monthly',
+        iyzicoSmsCode: document.getElementById('iyzicoSmsCodeInput') ? document.getElementById('iyzicoSmsCodeInput').value : '123456'
       };
       localStorage.setItem('gitsec_scheduler_settings', JSON.stringify(settings));
       console.log('Ayarlar kaydedildi:', settings);
@@ -6949,11 +7106,23 @@
         if (settings.loginMode !== undefined && document.getElementById('loginModeSelect')) {
           document.getElementById('loginModeSelect').value = settings.loginMode;
         }
+        if (settings.registerMode !== undefined && document.getElementById('registerModeSelect')) {
+          document.getElementById('registerModeSelect').value = settings.registerMode;
+        }
         if (settings.storageMode !== undefined && document.getElementById('storageModeSelect')) {
           document.getElementById('storageModeSelect').value = settings.storageMode;
         }
         if (settings.storageCleanup !== undefined && document.getElementById('storageCleanupSelect')) {
           document.getElementById('storageCleanupSelect').value = settings.storageCleanup;
+        }
+        if (settings.licenseTargetPlan !== undefined && document.getElementById('licenseTargetPlanSelect')) {
+          document.getElementById('licenseTargetPlanSelect').value = settings.licenseTargetPlan;
+        }
+        if (settings.licenseBillingCycle !== undefined && document.getElementById('licenseBillingCycleSelect')) {
+          document.getElementById('licenseBillingCycleSelect').value = settings.licenseBillingCycle;
+        }
+        if (settings.iyzicoSmsCode !== undefined && document.getElementById('iyzicoSmsCodeInput')) {
+          document.getElementById('iyzicoSmsCodeInput').value = settings.iyzicoSmsCode;
         }
 
         if (settings.workers !== undefined) {
@@ -6983,6 +7152,7 @@
           if (document.getElementById('schedulerModeSelect')) updateCardUI('card-scheduler', 'schedulerModeSelect', 'scheduler-desc', true);
           if (document.getElementById('restoreModeSelect')) updateCardUI('card-restore', 'restoreModeSelect', 'restore-desc', true);
           if (document.getElementById('loginModeSelect')) updateCardUI('card-auth-login', 'loginModeSelect', 'login-desc', true);
+          if (document.getElementById('registerModeSelect')) updateCardUI('card-auth-register', 'registerModeSelect', 'register-desc', true);
           if (document.getElementById('storageModeSelect')) updateCardUI('card-storage', 'storageModeSelect', 'storage-desc', true);
           onCodeProviderChange();
         }, 50);
@@ -7037,6 +7207,11 @@
         'happy_path': 'GitSec platformuna kullanıcı giriş formunun alan doğrulamalarını, geçersiz giriş denemelerindeki hata mesajlarını ve başarılı girişteki yönlendirmeleri test eder.',
         'failures': 'Giriş işlemi sırasında yaşanabilecek ağ kopmaları veya sunucu hataları (HTTP 500 gibi) altında uygulamanın kararlılığını ve kullanıcıya gösterilen hata uyarılarını test eder.',
         'all': 'Hem başarılı giriş akışını hem de giriş esnasındaki hata/kesinti senaryolarını sırasıyla test eder.'
+      },
+      'card-auth-register': {
+        'happy_path': 'Yeni kullanıcı kayıt formunun başarılı kayıt ve e-posta onay adımlarını uçtan uca doğrular.',
+        'failures': 'Kayıt formundaki boş alanlar, geçersiz e-postalar, onay kutuları doğrulaması, sınır değerler ve sunucu hata (429/500/409) senaryolarını test eder.',
+        'all': 'Hem başarılı kayıt akışını hem de tüm kayıt hata, sınır değer ve api çökme senaryolarını sırasıyla test eder.'
       }
     };
 

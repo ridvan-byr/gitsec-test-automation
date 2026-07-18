@@ -27,6 +27,11 @@ export default defineConfig({
     /* Base URL from .env */
     baseURL: process.env.DASHBOARD_BASE_URL,
 
+    httpCredentials: process.env.E2E_BASIC_AUTH_USER ? {
+      username: process.env.E2E_BASIC_AUTH_USER,
+      password: process.env.E2E_BASIC_AUTH_PASS || '',
+    } : undefined,
+
     /* Hata durumunda ekran görüntüsü, video ve trace (iz kaydı) topla (CI/Local ayrımı yapıldı) */
     trace: process.env.CI ? 'on-first-retry' : 'off',
     screenshot: 'only-on-failure',
@@ -42,8 +47,23 @@ export default defineConfig({
       testMatch: /auth\.setup\.ts/,
     },
     {
+      name: 'chromium-unauthenticated',
+      testMatch: /tests\/e2e\/auth\/(api-login-smoke|forgot-password|forgot-password-mocked|login|login-failures|login-mocked|register|register-failures)\.spec\.ts/,
+      use: {
+        ...devices['Desktop Chrome'],
+        // Gerçek Chrome kullan — Google bot algılamasını engeller
+        channel: 'chrome',
+        launchOptions: {
+          args: [
+            '--disable-blink-features=AutomationControlled',
+          ],
+        },
+      }
+    },
+    {
       name: 'chromium',
       dependencies: ['setup'],
+      testIgnore: /tests\/e2e\/auth\/(api-login-smoke|forgot-password|forgot-password-mocked|login|login-failures|login-mocked|register|register-failures)\.spec\.ts/,
       use: { 
         ...devices['Desktop Chrome'],
         storageState: 'playwright/.auth/user-with-provider.json',

@@ -195,7 +195,7 @@ const server = http.createServer((req, res) => {
           scheduleName, scheduleTime, includeCode, includePr, includeIssues,
           scheduleType, weeklyDay, monthlyDay, cronExpression,
           includeMode, includeProvider, excludeMode, backupMode, workers, cardId,
-          schedulerCleanup, storageCleanup
+          schedulerCleanup, storageCleanup, licenseTargetPlan, licenseBillingCycle, iyzicoSmsCode
         } = JSON.parse(body || '{}');
 
         // Whitelist validations
@@ -240,6 +240,23 @@ const server = http.createServer((req, res) => {
         if (backupMode && !validModes.includes(backupMode)) {
           res.writeHead(400, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ error: `Geçersiz yedekleme modu: ${backupMode}` }));
+          return;
+        }
+
+        const validLicensePlans = ['Freemium', 'Startup', 'Premium', 'Premium+'];
+        if (licenseTargetPlan && !validLicensePlans.includes(licenseTargetPlan)) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: `Geçersiz hedef lisans: ${licenseTargetPlan}` }));
+          return;
+        }
+        if (licenseBillingCycle && !['monthly', 'yearly'].includes(licenseBillingCycle)) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: `Geçersiz lisans dönemi: ${licenseBillingCycle}` }));
+          return;
+        }
+        if (iyzicoSmsCode && !/^\d{6}$/.test(iyzicoSmsCode)) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Iyzico SMS test kodu 6 rakam olmalıdır.' }));
           return;
         }
 
@@ -344,6 +361,9 @@ const server = http.createServer((req, res) => {
         if (backupMode) runEnv.E2E_BACKUP_MODE = backupMode;
         if (schedulerCleanup) runEnv.E2E_SCHEDULER_CLEANUP = schedulerCleanup;
         if (storageCleanup) runEnv.E2E_STORAGE_CLEANUP = storageCleanup;
+        if (licenseTargetPlan) runEnv.E2E_LICENSE_TARGET_PLAN = licenseTargetPlan;
+        if (licenseBillingCycle) runEnv.E2E_LICENSE_TARGET_INTERVAL = licenseBillingCycle;
+        if (iyzicoSmsCode) runEnv.E2E_IYZICO_SMS_CODE = iyzicoSmsCode;
 
         let commandToRun = cmd;
         if (process.platform === 'win32' && commandToRun === 'npx') {
@@ -667,6 +687,15 @@ const server = http.createServer((req, res) => {
   res.writeHead(404, { 'Content-Type': 'text/plain' });
   res.end('404 Not Found');
 });
+
+// Node.js HTTP sunucusunun varsayılan zaman aşımlarını devre dışı bırak.
+// Bu ayar olmadan, uzun süren manuel captcha testlerinde SSE bağlantısı
+// (varsayılan requestTimeout: 300s veya timeout: 120s) koparak testin
+// tarayıcısının kapanmasına neden olabilir.
+server.timeout = 0;
+server.requestTimeout = 0;
+server.headersTimeout = 0;
+server.keepAliveTimeout = 0;
 
 server.listen(PORT, '127.0.0.1', () => {
   console.log(`==================================================`);

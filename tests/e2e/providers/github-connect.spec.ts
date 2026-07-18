@@ -143,10 +143,7 @@ test.describe('Provider Entegrasyonları', () => {
     const githubPassword = requireEnv('GITHUB_TEST_PASSWORD');
     const providerPage = new ProviderPage(page);
 
-    console.log('🚀 [GİRİŞ] 1. GitSec Dashboard ana sayfasına gidiliyor...');
-    await providerPage.navigateToDashboard();
-
-    console.log('📍 [NAVİGASYON] 2. Sol menü (Sidebar) üzerinden "Add Provider" sayfasına geçiliyor...');
+    console.log('🚀 [GİRİŞ] Doğrudan "Add Provider" sayfasına gidiliyor...');
     await providerPage.goToAddProviderPage();
 
     const isAlreadyConnected = await providerPage.isGithubAlreadyConnectedOnAddProvider();
@@ -252,11 +249,10 @@ test.describe('Provider Entegrasyonları', () => {
 
   test('GitHub Bağla butonuna çoklu spam tıklama yapıldığında tek bir OAuth penceresi açılmalı', async ({ page }) => {
     const providerPage = new ProviderPage(page);
-    await providerPage.navigateToDashboard();
     await providerPage.goToAddProviderPage();
 
     const githubActionButton = page.locator('button, [role="button"]')
-      .filter({ hasText: /Install the GitSec app and grant repository permissions|Configure App/i })
+      .filter({ hasText: /Install the GitSec(?:\.io)? app and grant repository permissions|Configure App/i })
       .first();
 
     await githubActionButton.waitFor({ state: 'visible', timeout: 20000 });

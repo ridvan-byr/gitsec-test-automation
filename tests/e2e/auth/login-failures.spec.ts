@@ -6,6 +6,26 @@
  */
 import { test, expect, GitSecPage } from '../../fixtures/test';
 import { requireEnv } from '../../support/require-env';
+import { LoginPage } from '../../pages/LoginPage';
+import { Page } from '@playwright/test';
+
+// Turnstile engellemelerini aşmak için butonu zorla aktif edip tıklar
+async function forceSubmit(page: Page, loginPage: LoginPage) {
+  // Next.js hydration'ın tamamlanmasını bekle
+  await page.waitForFunction(() => typeof (window as any).next !== 'undefined', { timeout: 10000 }).catch(() => {});
+  await page.waitForTimeout(2500);
+
+  console.log('🔘 [E2E Failure Test] Sign in butonu zorla aktif ediliyor ve tıklanıyor...');
+  await page.evaluate(() => {
+    const buttons = Array.from(document.querySelectorAll('button'));
+    const btn = buttons.find(b => b.getAttribute('type') === 'submit' || /Sign in/i.test(b.textContent || ''));
+    if (btn) {
+      btn.removeAttribute('disabled');
+      btn.disabled = false;
+    }
+  });
+  await loginPage.signInButton.click({ force: true });
+}
 
 test.describe('Login — UI Ağ Hata (Network & Server Failure) Senaryoları', { tag: ['@regression', '@mocked'] }, () => {
   // Temiz bir oturum durumu ile başla
@@ -20,8 +40,24 @@ test.describe('Login — UI Ağ Hata (Network & Server Failure) Senaryoları', {
       /failed/i
     ];
     test.setTimeout(180000); // 3 dakika bekleme süresi tanıyarak manuel captcha çözümüne izin veriyoruz
+    
+    // Cloudflare Turnstile ve Google reCAPTCHA'yı mock'la (Arayüzün kilitlenmesini önlemek için)
+    await page.addInitScript(() => {
+      (window as any).grecaptcha = {
+        ready: (cb: any) => cb(),
+        execute: () => Promise.resolve('mock-recaptcha-token'),
+        getResponse: () => 'mock-recaptcha-token'
+      };
+      (window as any).turnstile = {
+        render: () => 'mock-turnstile-token',
+        reset: () => {},
+        getResponse: () => 'mock-turnstile-token'
+      };
+    });
+
     await loginPage.goto();
-    await loginPage.handleCaptchaIfVisible();
+    // Bu dosya Captcha'yı değil, API hata yanıtlarına karşı UI davranışını test eder.
+    await loginPage.handleCaptchaIfVisible(1000, 1000, false);
   });
 
   test('Giriş isteği ağ seviyesinde başarısız olursa (Network Request Failed) UI hata bildirmeli', async ({ page, loginPage }) => {
@@ -37,13 +73,18 @@ test.describe('Login — UI Ağ Hata (Network & Server Failure) Senaryoları', {
 
     // 2. Form alanlarını doldur ve tıkla
     await loginPage.fillForm('e2e-failure-test@gitsec.io', 'WrongPassword123!');
-    await loginPage.submit();
+    await forceSubmit(page, loginPage);
     console.log('👆 [Failure Test] "Sign in" butonuna tıklandı, ağ hatasına tepki bekleniyor...');
 
     // 3. Arayüzün çökmediğini ve hata uyarısı gösterdiğini doğrula
     const toastOrAlert = page.locator('[class*="toast"], [id*="toast"], [role="alert"], div[role="status"]').first();
     const errorAlert = toastOrAlert.getByText(/failed|error|hata|fetch/i);
     await expect(errorAlert).toBeVisible({ timeout: 15000 });
+
+    const submitBtn = page.getByRole('button', { name: /Sign in|Giriş Yap/i }).first();
+    // HTML disabled'ı JS ile kaldırdığımız için, formun hata durumunda butonun tekrar normal akışına dönüp tıklanabilir (enabled) olduğunu doğrula
+    await expect(submitBtn).toBeEnabled({ timeout: 5000 });
+    console.log('✅ Ağ hatası sonrasında giriş butonu tekrar aktifleşti (UI Kurtarma başarılı).');
     console.log('✅ Giriş esnasında ağ bağlantısı koptuğunda UI\'ın hata mesajı gösterdiği başarıyla doğrulandı.');
   });
 
@@ -67,41 +108,32 @@ test.describe('Login — UI Ağ Hata (Network & Server Failure) Senaryoları', {
 
     // 2. Form alanlarını doldur ve tıkla
     await loginPage.fillForm('e2e-server-error@gitsec.io', 'SomePassword123!');
-    await loginPage.submit();
+    await forceSubmit(page, loginPage);
     console.log('👆 [Failure Test] "Sign in" butonuna tıklandı, 500 hatasına tepki bekleniyor...');
 
     // 3. Hata mesajını doğrula
     const toastOrAlert = page.locator('[class*="toast"], [id*="toast"], [role="alert"], div[role="status"]').first();
     const errorAlert = toastOrAlert.getByText(/internal|failed|error|hata/i);
     await expect(errorAlert).toBeVisible({ timeout: 15000 });
+
+    const submitBtn = page.getByRole('button', { name: /Sign in|Giriş Yap/i }).first();
+    await expect(submitBtn).toBeEnabled({ timeout: 5000 });
+    console.log('✅ API 500 hatası sonrasında giriş butonu tekrar aktifleşti (UI Kurtarma başarılı).');
     console.log('✅ Giriş esnasında sunucu çöktüğünde (500) UI\'ın hata mesajı gösterdiği başarıyla doğrulandı.');
   });
 
   test('Boş e-posta ve şifre alanları gönderildiğinde ön yüz doğrulama uyarısı görünmeli', async ({ page, loginPage }) => {
-    // Butona doğrudan tıkla (alanlar boş)
-    await loginPage.submit();
-    console.log('Form boşken Sign in butonuna tıklandı.');
-
-    // HTML5 validation ya da custom validation doğrula
-    const isHtml5Invalid = await loginPage.emailInput.evaluate((el: HTMLInputElement) => !el.validity.valid);
-    const validationMessage = page.locator(':invalid, [class*="error"], p:has-text("required"), span:has-text("required"), span:has-text("boş")').first();
-    const hasCustomError = await validationMessage.isVisible().catch(() => false);
-    
-    expect(isHtml5Invalid || hasCustomError).toBeTruthy();
-    console.log('✅ Boş form gönderildiğinde doğrulama mekanizmasının çalıştığı başarıyla doğrulandı.');
+    // Arayüz boş e-posta ve şifre durumunda butonu disabled tutarak gönderimi engeller (Frontend Validation)
+    await expect(loginPage.signInButton).toBeDisabled({ timeout: 5000 });
+    console.log('✅ Boş form durumunda giriş butonunun pasif (disabled) olduğu başarıyla doğrulandı.');
   });
 
   test('Geçersiz e-posta formatı girildiğinde form hata vermeli ve gönderilmemeli', async ({ page, loginPage }) => {
     await loginPage.fillForm('invalid-email-format', 'ValidPassword123!');
-    await loginPage.submit();
-
-    // HTML5 e-posta format denetimi ya da custom error kontrolü
-    const isHtml5Invalid = await loginPage.emailInput.evaluate((el: HTMLInputElement) => !el.validity.valid);
-    const errorAlert = page.locator(':invalid, [class*="error"], span:has-text("format"), p:has-text("email"), p:has-text("posta")').first();
-    const hasCustomError = await errorAlert.isVisible().catch(() => false);
-
-    expect(isHtml5Invalid || hasCustomError).toBeTruthy();
-    console.log('✅ Geçersiz e-posta formatı girildiğinde formun gönderilmediği başarıyla doğrulandı.');
+    
+    // Geçersiz e-posta girdisinde giriş butonunun pasif (disabled) kalması gerekir
+    await expect(loginPage.signInButton).toBeDisabled({ timeout: 5000 });
+    console.log('✅ Geçersiz e-posta formatı girildiğinde butonun pasif (disabled) kaldığı başarıyla doğrulandı.');
   });
 
   test('API 429 Too Many Requests (Rate Limit) döndüğünde UI kullanıcıya engel uyarısı göstermeli', async ({ page, loginPage }) => {
@@ -124,12 +156,16 @@ test.describe('Login — UI Ağ Hata (Network & Server Failure) Senaryoları', {
 
     // 2. Form alanlarını doldur ve tıkla
     await loginPage.fillForm('rate-limit-test@gitsec.io', 'SomePassword123!');
-    await loginPage.submit();
+    await forceSubmit(page, loginPage);
 
     // 3. Hata mesajını doğrula
     const toastOrAlert = page.locator('[class*="toast"], [id*="toast"], [role="alert"], div[role="status"]').first();
     const errorAlert = toastOrAlert.getByText(/too many|çok fazla|attempts|deneme|limit/i);
     await expect(errorAlert).toBeVisible({ timeout: 15000 });
+
+    const submitBtn = page.getByRole('button', { name: /Sign in|Giriş Yap/i }).first();
+    await expect(submitBtn).toBeEnabled({ timeout: 5000 });
+    console.log('✅ API 429 Rate Limit sonrasında giriş butonu tekrar aktifleşti (UI Kurtarma başarılı).');
     console.log('✅ API 429 (Rate Limit) döndüğünde kullanıcıya engel uyarısı gösterildiği başarıyla doğrulandı.');
   });
 
@@ -137,17 +173,9 @@ test.describe('Login — UI Ağ Hata (Network & Server Failure) Senaryoları', {
     // Sınır Değeri 1: 256 karakterden uzun e-posta ve çok kısa şifre
     const longEmail = 'a'.repeat(250) + '@example.com';
     await loginPage.fillForm(longEmail, '123');
-    await loginPage.submit();
-
-    // HTML5 invalid durumu ya da arayüzdeki hata mesajının tetiklenmesini kontrol edelim
-    const isEmailValid = await loginPage.emailInput.evaluate((el: HTMLInputElement) => el.validity.valid);
-    const isPasswordValid = await loginPage.passwordInput.evaluate((el: HTMLInputElement) => el.validity.valid);
     
-    const errorAlert = page.locator(':invalid, [class*="error"], span:has-text("karakter"), p:has-text("karakter"), span:has-text("şifre"), p:has-text("password")').first();
-    const hasCustomError = await errorAlert.isVisible().catch(() => false);
-
-    expect(!isEmailValid || !isPasswordValid || hasCustomError).toBeTruthy();
-    console.log('✅ Giriş formunda e-posta ve şifre sınır değer doğrulamasının çalıştığı başarıyla doğrulandı.');
+    // Geçersiz şifre/email uzunluğunda giriş butonunun pasif kalması beklenir
+    await expect(loginPage.signInButton).toBeDisabled({ timeout: 5000 });
+    console.log('✅ Giriş formunda e-posta ve şifre sınır değer ihlalinde butonun pasif kaldığı başarıyla doğrulandı.');
   });
 });
-

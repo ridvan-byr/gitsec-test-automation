@@ -13,14 +13,14 @@ import {
 
 setup('authenticate and connect provider', async ({ request, page }) => {
   setup.setTimeout(180000);
+
+  const fullCmd = process.argv.join(' ').toLowerCase();
   
   const skipGlobalSetupEnv = process.env.SKIP_GLOBAL_SETUP === 'true';
-  const hasSkipArgs = process.argv.some(arg => 
-    arg.includes('register') || 
-    arg.includes('login') || 
-    arg.includes('auth/') || 
-    arg.includes('--skip-gs')
-  );
+  const hasSkipArgs = fullCmd.includes('register') ||
+                     fullCmd.includes('login') ||
+                     fullCmd.includes('auth/') ||
+                     fullCmd.includes('--skip-gs');
 
   if (skipGlobalSetupEnv || hasSkipArgs) {
     console.log(`[auth-setup] ⚠️ [DİKKAT] Kurulum adımı atlanıyor. (SKIP_GLOBAL_SETUP: ${skipGlobalSetupEnv}, CLI Argümanı Eşleşmesi: ${hasSkipArgs})`);
@@ -31,53 +31,40 @@ setup('authenticate and connect provider', async ({ request, page }) => {
   const withProviderFile = path.join(process.cwd(), 'playwright/.auth/user-with-provider.json');
   fs.mkdirSync(path.dirname(authFile), { recursive: true });
 
-  // Akıllı Oturum Kontrolü (Session Cache Check)
-  if (fs.existsSync(authFile)) {
+  const dashboardBaseUrl = requireEnv('DASHBOARD_BASE_URL');
+  const apiBaseUrl = requireEnv('API_BASE_URL');
+  const appEmail = requireEnv('E2E_USER_EMAIL');
+  const appPassword = requireEnv('E2E_USER_PASSWORD');
+
+  // Akıllı Oturum Kontrolü (Session Cache Check - .env E-posta Değişikliği Algılama)
+  // Chromium projesinin gerçekten yüklediği dosyayı doğrula.
+  if (fs.existsSync(withProviderFile)) {
     try {
-      const authData = JSON.parse(fs.readFileSync(authFile, 'utf8'));
+      const authData = JSON.parse(fs.readFileSync(withProviderFile, 'utf8'));
       const gsTokenCookie = authData.cookies?.find((c: any) => c.name === 'gs_token');
       if (gsTokenCookie && gsTokenCookie.value) {
         const token = gsTokenCookie.value;
         const payloadBase64 = token.split('.')[1];
         if (payloadBase64) {
           const payload = JSON.parse(Buffer.from(payloadBase64, 'base64').toString('utf8'));
-          const exp = payload.exp * 1000; // milisaniye cinsinden exp
-          // Eğer token'ın bitmesine 5 dakikadan fazla varsa, login adımlarını atla
-          if (exp - Date.now() > 5 * 60 * 1000) {
-            console.log('[auth-setup] ✅ [GEÇERLİ OTURUM] Mevcut oturum çerezi (user.json) geçerli olduğu için login adımları atlanıyor.');
+          const exp = payload.exp * 1000; // milisaniye
+          const tokenEmail = payload.email || payload.sub || payload.user_email;
+
+          const isTokenNotExpired = exp - Date.now() > 5 * 60 * 1000;
+          const isSameUserEmail = !tokenEmail || tokenEmail.toLowerCase() === appEmail.toLowerCase();
+
+          // Eğer token süresi dolmamışsa VE .env içerisindeki e-posta ile uyuşuyorsa oturumu yeniden kullan
+          if (isTokenNotExpired && isSameUserEmail) {
+            console.log(`[auth-setup] ✅ [GEÇERLİ OTURUM] Mevcut oturum çerezi (${appEmail}) geçerli olduğu için login adımları atlanıyor.`);
             return;
+          } else if (!isSameUserEmail) {
+            console.log(`[auth-setup] 🔄 [.ENV DEĞİŞİKLİĞİ DETECTED] Ortam değişkenlerindeki e-posta değişti (${tokenEmail} -> ${appEmail}). Oturum yeniden oluşturuluyor...`);
           }
         }
       }
     } catch (err) {
       console.warn('[auth-setup] ⚠️ Mevcut user.json dosyası okunurken hata oluştu, yeniden giriş yapılacak:', err);
     }
-  }
-
-  const workspaceId = requireEnv('WORKSPACE_ID');
-  const dashboardBaseUrl = requireEnv('DASHBOARD_BASE_URL');
-  const apiBaseUrl = requireEnv('API_BASE_URL');
-  const appEmail = requireEnv('E2E_USER_EMAIL');
-  const appPassword = requireEnv('E2E_USER_PASSWORD');
-
-  const codeProviderEnv = process.env.E2E_CODE_PROVIDER;
-  let isBitbucketRun = codeProviderEnv === 'bitbucket';
-
-  const hasBitbucketArg = process.argv.some(arg => arg.includes('bitbucket'));
-  const hasGithubArg = process.argv.some(arg => arg.includes('github'));
-
-  if (codeProviderEnv) {
-    console.log(`[auth-setup] ℹ️ E2E_CODE_PROVIDER env değeri kullanılıyor: "${codeProviderEnv}"`);
-  } else if (hasBitbucketArg || hasGithubArg) {
-    isBitbucketRun = hasBitbucketArg && !hasGithubArg;
-    console.warn(`[auth-setup] ⚠️ Ortam değişkeni (E2E_CODE_PROVIDER) tanımlanmamış. CLI argümanlarından tahmin ediliyor: Bitbucket=${hasBitbucketArg}, GitHub=${hasGithubArg}. Seçilen sağlayıcı: ${isBitbucketRun ? 'Bitbucket' : 'GitHub'}`);
-  } else {
-    isBitbucketRun = false;
-    console.log('[auth-setup] ℹ️ Varsayılan kod sağlayıcı olarak GitHub seçildi.');
-  }
-
-  if (!isBitbucketRun) {
-    logGithubAuthPlan();
   }
 
   console.log(`🚀 [GİRİŞ] GitSec Staging API'sine giriş isteği gönderiliyor... (Email: ${appEmail}, Endpoint: ${apiBaseUrl}/auth/signin)`);
@@ -96,6 +83,29 @@ setup('authenticate and connect provider', async ({ request, page }) => {
   const token = body?.data?.token;
   if (!token) {
     throw new Error('Auth setup login failed: token not found in response');
+  }
+
+  // Workspace ID bilgisini .env olmadan API üzerinden OTOMATİK TESPİT ET
+  let workspaceId = process.env.WORKSPACE_ID?.trim();
+  if (!workspaceId) {
+    try {
+      const wsRes = await request.get(`${apiBaseUrl}/api/workspaces`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (wsRes.ok()) {
+        const wsBody = await wsRes.json();
+        const firstWs = wsBody?.data?.list?.[0] || wsBody?.data?.[0];
+        if (firstWs?.id) {
+          workspaceId = String(firstWs.id);
+          console.log(`[auth-setup] 🔍 Workspace ID API'den otomatik tespit edildi: ${workspaceId}`);
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }
+  if (!workspaceId) {
+    workspaceId = '16';
   }
 
   const gsAuthValue = JSON.stringify({
@@ -140,13 +150,11 @@ setup('authenticate and connect provider', async ({ request, page }) => {
     }
   ];
 
-  if (!isBitbucketRun) {
-    const { cookies: githubCookies } = githubCookiesForStorageState();
-    cookiesToInject.push(...githubCookies.map((c: any) => ({
-      ...c,
-      sameSite: c.sameSite as any,
-    })));
-  }
+  const { cookies: githubCookies } = githubCookiesForStorageState();
+  cookiesToInject.push(...githubCookies.map((c: any) => ({
+    ...c,
+    sameSite: c.sameSite as any,
+  })));
 
   await page.context().addCookies(cookiesToInject);
 
@@ -160,49 +168,28 @@ setup('authenticate and connect provider', async ({ request, page }) => {
     }
   `);
 
-  console.log(`[auth-setup] Dashboard açılıyor... (URL: ${dashboardBaseUrl}/${workspaceId}/dashboard)`);
-  // Yönlendirme ve yükleme işlemlerinin stabil tamamlanması için networkidle bekleyelim.
-  await page.goto(`${dashboardBaseUrl}/${workspaceId}/dashboard`, { waitUntil: 'load', timeout: 30000 });
+  console.log(`[auth-setup] Dashboard açılıyor ve oturum/localStorage saklanıyor... (URL: ${dashboardBaseUrl}/${workspaceId}/dashboard)`);
+  await page.goto(`${dashboardBaseUrl}/${workspaceId}/dashboard`, { waitUntil: 'domcontentloaded', timeout: 20000 }).catch(() => {});
 
-  if (isBitbucketRun) {
-    console.log('[auth-setup] ℹ️ Bitbucket testi algılandı. GitHub otomatik bağlantı adımı atlanıyor, sadece GitSec oturumu hazırlanıyor.');
-    await page.context().storageState({ path: withProviderFile });
-    await page.context().storageState({ path: authFile });
+  // user-with-provider.json ve user.json kaydet (origins & localStorage dahil)
+  await page.context().storageState({ path: withProviderFile });
+  await page.context().storageState({ path: authFile });
 
-    const googleSessionPath = path.join(process.cwd(), 'playwright/.auth/google-session.json');
-    if (fs.existsSync(googleSessionPath)) {
-      console.log('[auth-setup] 🔑 [GOOGLE] Kayıtlı Google oturumu (google-session.json) tespit edildi. Oturum çerezleri enjekte ediliyor...');
-      try {
-        const googleSession = JSON.parse(fs.readFileSync(googleSessionPath, 'utf8'));
-        const targetData = JSON.parse(fs.readFileSync(withProviderFile, 'utf8'));
-        
-        const cookieMap = new Map();
-        (targetData.cookies || []).forEach((c: any) => {
-          cookieMap.set(`${c.domain}:${c.name}`, c);
-        });
-        (googleSession.cookies || []).forEach((c: any) => {
-          cookieMap.set(`${c.domain}:${c.name}`, c);
-        });
+  // ─── GITHUB / BITBUCKET OAUTH BAĞLANTI ADIMI KONTROLÜ ───
+  // OAuth bağlantısı yalnızca doğrudan 'github-connect' veya 'full-flow-auditor' testleri çalıştırıldığında gereklidir.
+  // Lisans (billing), depolama, zamanlayıcı, arayüz vb. tüm diğer testlerde GitHub OAuth adımları tamamen atlanır.
+  const isGithubConnectTestRequired = fullCmd.includes('github-connect') || fullCmd.includes('full-flow-auditor');
 
-        targetData.cookies = Array.from(cookieMap.values());
-        fs.writeFileSync(withProviderFile, JSON.stringify(targetData, null, 2), 'utf8');
-        console.log('[auth-setup] ✅ [GOOGLE] Google çerezleri başarıyla birleştirildi.');
-      } catch (e) {
-        console.error('[auth-setup] Google çerezleri birleştirilirken hata:', e);
-      }
-    }
+  if (!isGithubConnectTestRequired) {
+    console.log('[auth-setup] ℹ️ GitSec API oturumu açıldı, çerezler ve localStorage saklandı. GitHub/Bitbucket OAuth adımları atlandı.');
     return;
   }
+
+  console.log(`[auth-setup] Dashboard açılıyor... (URL: ${dashboardBaseUrl}/${workspaceId}/dashboard)`);
+  await page.goto(`${dashboardBaseUrl}/${workspaceId}/dashboard`, { waitUntil: 'load', timeout: 30000 });
 
   const githubUser = process.env.GITHUB_TEST_USER ?? appEmail;
   const githubPass = process.env.GITHUB_TEST_PASSWORD ?? appPassword;
-
-  // EĞER KULLANICI ÖZELLİKLE BAĞLANTI TESTLERİNİ ÇALIŞTIRIYORSA:
-  if (process.argv.some(arg => arg.includes('github-connect.spec.ts') || arg.includes('bitbucket-connect.spec.ts'))) {
-    console.log('[auth-setup] ⚠️ [DİKKAT] Bağlantı testi algılandı. Otomatik sağlayıcı bağlantı adımı atlanıyor, süreç doğrudan test akışına bırakılıyor.');
-    await page.context().storageState({ path: withProviderFile });
-    return;
-  }
 
   console.log('[auth-setup] 📍 [NAVİGASYON] Sağlayıcı Ekleme sayfasına yönlendiriliyor... (Path: /repositories/add)');
   try {

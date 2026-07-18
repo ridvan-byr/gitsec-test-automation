@@ -17,8 +17,8 @@ test.describe('Login — UI Giriş Formu E2E Akışı', () => {
   test.use({ storageState: { cookies: [], origins: [] } });
 
   test('Giriş ekranında mail/şifre yazılmalı, manuel captcha sonrası başarıyla giriş yapılmalı', { tag: ['@manual-interactive'] }, async ({ page, loginPage }) => {
-    // Captcha çözmeniz için geniş bekleme süresi (180 saniye / 3 dakika)
-    test.setTimeout(180000); 
+    // Captcha çözmeniz için geniş bekleme süresi (600 saniye / 10 dakika)
+    test.setTimeout(600000); 
 
     const workspaceId = requireEnv('WORKSPACE_ID');
     const email = requireEnv('E2E_USER_EMAIL');
@@ -27,17 +27,34 @@ test.describe('Login — UI Giriş Formu E2E Akışı', () => {
     // ─── ADIM 1: Giriş sayfasına git ───
     await loginPage.goto();
 
-    // ─── ADIM 2: Captcha kontrolü yap (YAZMADAN ÖNCE) ───
-    await loginPage.handleCaptchaIfVisible();
+    // ─── ADIM 2: İlk Captcha kontrolü (YAZMADAN ÖNCE) ───
+    await loginPage.handleCaptchaIfVisible(600000, 3000);
 
-    // ─── ADIM 3: Form alanlarını doldur ve yazım doğruluğunu teyit et ───
+    // ─── ADIM 3: Form alanlarını doldur ───
     await loginPage.fillForm(email, password);
 
-    // ─── ADIM 4: Sign in butonuna tıkla ───
+    // ─── ADIM 4: İkinci Captcha kontrolü (YAZDIKTAN SONRA) ───
+    await loginPage.handleCaptchaIfVisible(600000, 3000);
+
+    // ─── ADIM 5: Sign in butonuna tıkla ───
     await loginPage.submit();
 
-    // ─── ADIM 5: Dashboard yönlendirmesini doğrula ───
-    console.log('⏳ [E2E] Dashboard sayfasına yönlendirme bekleniyor...');
+    // ─── ADIM 6: Yönlendirme ve Sonrası Olası Captcha Akışı ───
+    console.log('⏳ [E2E] Yönlendirme durumu kontrol ediliyor...');
+    const isRedirected = await page.waitForURL(new RegExp(`/${workspaceId}/`), { timeout: 7000 }).then(() => true).catch(() => false);
+    
+    if (!isRedirected) {
+      console.log('ℹ️ [E2E] Hemen yönlendirme gerçekleşmedi. Ek Captcha veya doğrulama çıkmış olabilir. Kontrol ediliyor...');
+      await loginPage.handleCaptchaIfVisible(600000, 5000);
+      
+      if (page.url().includes('sign-in')) {
+        console.log('👆 [E2E] Captcha çözümü sonrası form tekrar submit ediliyor...');
+        await loginPage.submit();
+      }
+    }
+
+    // ─── ADIM 7: Dashboard yönlendirmesini doğrula ───
+    console.log('⏳ [E2E] Son yönlendirme bekleniyor...');
     await expect(page).toHaveURL(new RegExp(`/${workspaceId}/`), { timeout: 35000 });
     await expect(page).not.toHaveURL(/sign-in/);
     await expect(page.locator('main').first()).toBeVisible({ timeout: 25000 });

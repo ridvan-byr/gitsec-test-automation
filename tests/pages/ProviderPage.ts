@@ -20,7 +20,7 @@ export class ProviderPage {
 
   async navigateToDashboard(): Promise<void> {
     const dashboardUrl = `${this.dashboardBaseUrl}/${this.workspaceId}/dashboard`;
-    await this.page.goto(dashboardUrl, { waitUntil: 'load' });
+    await this.page.goto(dashboardUrl, { waitUntil: 'domcontentloaded' });
     await expect(this.page).toHaveURL(new RegExp(`/${this.workspaceId}/dashboard`));
   }
 
@@ -43,8 +43,11 @@ export class ProviderPage {
   }
 
   async goToAddProviderPage(): Promise<void> {
-    await this.page.goto(`${this.dashboardBaseUrl}/${this.workspaceId}/repositories/add`, { waitUntil: 'load' });
+    await this.page.goto(`${this.dashboardBaseUrl}/${this.workspaceId}/repositories/add`, { waitUntil: 'domcontentloaded' });
     await expect(this.page).toHaveURL(/\/repositories\/add/);
+    // Hydration ve sayfa yüklemesinin tamamlanmasını bekle
+    await this.page.waitForLoadState('load').catch(() => {});
+    await this.page.waitForTimeout(2500);
   }
 
   async isGithubAlreadyConnectedOnAddProvider(): Promise<boolean> {
@@ -57,7 +60,7 @@ export class ProviderPage {
     const githubActionButton = this.page
       .getByRole('button')
       .filter({
-        hasText: /Install the GitSec app and grant repository permissions|Configure App/i,
+        hasText: /Install the GitSec(?:\.io)? app and grant repository permissions|Configure App/i,
       })
       .first();
 
@@ -68,14 +71,14 @@ export class ProviderPage {
 
   async goToRepositoriesGithub(): Promise<void> {
     // Metin/çeviriye bağlı kalmamak için doğrudan rota (workspace zaten sabit).
-    await this.page.goto(`${this.dashboardBaseUrl}/${this.workspaceId}/repositories/github`, { waitUntil: 'load' });
+    await this.page.goto(`${this.dashboardBaseUrl}/${this.workspaceId}/repositories/github`, { waitUntil: 'domcontentloaded' });
     await expect(this.page).toHaveURL(/\/repositories\/github\b/);
     await expect(this.page.locator('table').first()).toBeVisible({ timeout: 30000 });
   }
 
   /** Direct navigation to Bitbucket repositories. */
   async goToRepositoriesBitbucket(): Promise<void> {
-    await this.page.goto(`${this.dashboardBaseUrl}/${this.workspaceId}/repositories/bitbucket`, { waitUntil: 'load' });
+    await this.page.goto(`${this.dashboardBaseUrl}/${this.workspaceId}/repositories/bitbucket`, { waitUntil: 'domcontentloaded' });
     await expect(this.page).toHaveURL(/\/repositories\/bitbucket\b/);
     await expect(this.page.locator('table').first()).toBeVisible({ timeout: 30000 });
   }
@@ -118,6 +121,7 @@ export class ProviderPage {
   /** Restore / provider seçimindeki GitHub kartı (dialog şart değil — sayfada veya sheet içinde olabilir). */
   githubProviderCardLocator(): Locator {
     return this.page.locator([
+      'button:has-text("Install the GitSec.io app and grant repository permissions")',
       'button:has-text("Install the GitSec app and grant repository permissions")',
       'button:has-text("Configure App")',
       '[role="button"]:has-text("Configure App")',
