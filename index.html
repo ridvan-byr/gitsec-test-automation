@@ -6879,6 +6879,21 @@
         document.getElementById('backupProviderSelect').value = provider;
         updateCardUI('card-github-backup', 'backupProviderSelect', 'backup-desc');
       }
+
+      // Bitbucket için Issues seçeneği bulunmaz (Sadece Code & PR var)
+      const backupIssuesCard = document.getElementById('card-backupIncludeIssues');
+      if (backupIssuesCard) {
+        if (provider === 'bitbucket') {
+          backupIssuesCard.style.display = 'none';
+          const issuesCb = document.getElementById('backupIncludeIssues');
+          if (issuesCb) {
+            issuesCb.checked = false;
+            toggleIncludedItemClass(issuesCb);
+          }
+        } else {
+          backupIssuesCard.style.display = '';
+        }
+      }
       
       // Update Card Tags
       const includeCard = document.getElementById('card-github-include');
