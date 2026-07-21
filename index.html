@@ -3510,7 +3510,8 @@
 
               <div class="card-select-group" style="margin-top: 0.75rem;">
                 <label for="excludeProviderSelect"
-                  style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Kod Provider</label>
+                  style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Kod
+                  Sağlayıcı (Provider)</label>
                 <div class="gitsec-select-wrapper no-left-icon">
                   <select id="excludeProviderSelect" class="gitsec-select" style="padding-left: 0.875rem;"
                     onchange="onCardProviderChange('excludeProviderSelect'); if(typeof renderConsoleTabs === 'function') renderConsoleTabs()">
@@ -3558,7 +3559,7 @@
           <div id="card-github-backup" class="test-card">
             <div class="card-header">
               <div class="card-title-group">
-                <span class="card-tag">GitHub</span>
+                <span class="card-tag">GitHub / Bitbucket</span>
                 <h3 class="card-title">Depo Yedekleme (Backup)</h3>
               </div>
               <div class="card-status-dot"></div>
@@ -3576,7 +3577,7 @@
                   Sağlayıcı (Provider)</label>
                 <div class="gitsec-select-wrapper no-left-icon">
                   <select id="backupProviderSelect" class="gitsec-select" style="padding-left: 0.875rem;"
-                    onchange="onBackupProviderChange()">
+                    onchange="onCardProviderChange('backupProviderSelect'); if(typeof renderConsoleTabs === 'function') renderConsoleTabs()">
                     <option value="github">GitHub</option>
                     <option value="bitbucket">Bitbucket</option>
                   </select>
@@ -6874,6 +6875,10 @@
         document.getElementById('excludeProviderSelect').value = provider;
         updateCardUI('card-github-exclude', 'excludeProviderSelect', 'exclude-desc');
       }
+      if (document.getElementById('backupProviderSelect')) {
+        document.getElementById('backupProviderSelect').value = provider;
+        updateCardUI('card-github-backup', 'backupProviderSelect', 'backup-desc');
+      }
       
       // Update Card Tags
       const includeCard = document.getElementById('card-github-include');
@@ -7225,10 +7230,13 @@
 
     function normalizeProviderLabels() {
       const includeProviderLabel = document.querySelector('label[for="includeProviderSelect"]');
-      if (includeProviderLabel) includeProviderLabel.textContent = 'Kod Provider';
+      if (includeProviderLabel) includeProviderLabel.textContent = 'Kod Sağlayıcı (Provider)';
 
       const excludeProviderLabel = document.querySelector('label[for="excludeProviderSelect"]');
-      if (excludeProviderLabel) excludeProviderLabel.textContent = 'Kod Provider';
+      if (excludeProviderLabel) excludeProviderLabel.textContent = 'Kod Sağlayıcı (Provider)';
+
+      const backupProviderLabel = document.querySelector('label[for="backupProviderSelect"]');
+      if (backupProviderLabel) backupProviderLabel.textContent = 'Kod Sağlayıcı (Provider)';
     }
 
     // === Theme Switcher & Dropdown Logic ===
