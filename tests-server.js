@@ -609,8 +609,8 @@ const server = http.createServer((req, res) => {
         if (eqIdx > 0) {
           const key = trimmed.slice(0, eqIdx).trim();
           const val = trimmed.slice(eqIdx + 1).trim();
-          // ─── Güvenlik: Hassas değerleri maskele ─────────────────────────
-          envVars[key] = isSensitiveKey(key) ? maskValue(val) : val;
+          // ─── env değerlerini tam olarak aktar (HTML type="password" şifreler göz butonunda tam açılır) ───
+          envVars[key] = val;
         }
       }
 

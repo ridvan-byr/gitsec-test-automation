@@ -160,7 +160,8 @@ export const test = base.extend<GitSecFixtures>({
     });
 
     // Test onboarding skip script'ini kur (Shadcn ve localStorage onboarding bypass) ve toast pointer-events engellemesini yap
-    await page.addInitScript(() => {
+    const currentAppEmail = process.env.E2E_USER_EMAIL || 'gitsectest+1@gmail.com';
+    await page.addInitScript((appEmail) => {
       try {
         window.localStorage.setItem(
           'gs-tour',
@@ -174,7 +175,7 @@ export const test = base.extend<GitSecFixtures>({
                 tenantId: 720,
                 name: "Gitsec",
                 surName: "Test",
-                email: "gitsec_test_ly03zv@web-library.net",
+                email: appEmail,
                 token: "",
                 refreshToken: "",
                 uniqueKey: null,
@@ -186,109 +187,9 @@ export const test = base.extend<GitSecFixtures>({
         });
         window.localStorage.setItem('gs-auth', gsAuthValue);
       } catch {
-        // ignore
-      }
-
-      try {
-        const style = document.createElement('style');
-        style.textContent = `
-          [class*="toast"], [id*="toast"], div[role="status"], .toast {
-            pointer-events: none !important;
-          }
-        `;
-        document.documentElement.appendChild(style);
-
-        const observer = new MutationObserver(() => {
-          if (!document.head.contains(style) && document.documentElement) {
-            document.documentElement.appendChild(style);
-          }
-        });
-        observer.observe(document.documentElement, { childList: true, subtree: true });
-      } catch {
-        // ignore
-      }
-
-      try {
-        const auditWindow = window as typeof window & {
-          __recordAuditToast?: CallableFunction;
-        };
-        const toastSelector = [
-          '[data-sonner-toast]',
-          '[data-radix-toast-viewport] [role="status"]',
-          '[role="status"]',
-          '[role="alert"]',
-          '[aria-live="polite"]',
-          '[aria-live="assertive"]',
-          '[class*="toast"]',
-          '[id*="toast"]'
-        ].join(', ');
-        const errorToastSelector = [
-          '[data-type="error"]',
-          '[role="alert"]',
-          '[aria-live="assertive"]',
-          '[class*="toast"][class*="error"]',
-          '[class*="toast"][class*="destructive"]'
-        ].join(', ');
-
-        const recordErrorToasts = (root: Element | typeof document) => {
-          const candidates = root instanceof Element && root.matches(toastSelector)
-            ? [root]
-            : Array.from(root.querySelectorAll(toastSelector));
-
-          for (const candidate of candidates) {
-            requestAnimationFrame(() => {
-              const message = candidate.textContent?.replace(/\s+/g, ' ').trim();
-              if (message && candidate.isConnected) {
-                const errorText = /error|failed|failure|invalid|unable|not verified|something went wrong|hata|başarısız|geçersiz|doğrulanmadı/i;
-                const isError = candidate.matches(errorToastSelector) || errorText.test(message);
-                void auditWindow.__recordAuditToast?.(message, isError);
-              }
-            });
-          }
-        };
-
-        const installToastObserver = () => {
-          if (!document.documentElement) return;
-
-          const toastObserver = new MutationObserver(mutations => {
-            for (const mutation of mutations) {
-              const target = mutation.target;
-              const changedElement = target instanceof Element
-                ? target
-                : (target && 'parentElement' in target && target.parentElement instanceof Element ? target.parentElement : null);
-              const changedToast = changedElement ? changedElement.closest(toastSelector) : null;
-              if (changedToast) recordErrorToasts(changedToast);
-
-              for (const node of Array.from(mutation.addedNodes)) {
-                if (node instanceof Element) {
-                  recordErrorToasts(node);
-                } else if (node && 'parentElement' in node && node.parentElement instanceof Element) {
-                  const parentToast = node.parentElement.closest(toastSelector);
-                  if (parentToast) recordErrorToasts(parentToast);
-                }
-              }
-            }
-          });
-
-          recordErrorToasts(document);
-          toastObserver.observe(document.documentElement, {
-            childList: true,
-            subtree: true,
-            characterData: true,
-            attributes: true,
-            attributeFilter: ['data-type', 'class', 'role', 'aria-live']
-          });
-        };
-
-        if (document.documentElement) {
-          installToastObserver();
-        } else {
-          document.addEventListener('DOMContentLoaded', installToastObserver, { once: true });
-        }
-      } catch {
         // Audit gözlemcisi uygulama davranışını etkilememeli.
       }
-    }).catch(() => { });
+    }, currentAppEmail).catch(() => { });
 
     try {
       // Testi koştur

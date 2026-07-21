@@ -42,18 +42,58 @@ export class ProviderPage {
     }
   }
 
+  async getActiveWorkspaceId(): Promise<string> {
+    const currentUrl = this.page.url();
+    const match = currentUrl.match(/\/(\d+)\//);
+    if (match) {
+      return match[1];
+    }
+    return this.workspaceId;
+  }
+
   async goToAddProviderPage(): Promise<void> {
-    await this.page.goto(`${this.dashboardBaseUrl}/${this.workspaceId}/repositories/add`, { waitUntil: 'domcontentloaded' });
-    await expect(this.page).toHaveURL(/\/repositories\/add/);
-    // Hydration ve sayfa yüklemesinin tamamlanmasını bekle
+    // 1. Önce tarayıcıdaki aktif Workspace ID'yi tespit et
+    let wsId = await this.getActiveWorkspaceId();
+    let addUrl = `${this.dashboardBaseUrl}/${wsId}/repositories/add`;
+
+    await this.page.goto(addUrl, { waitUntil: 'domcontentloaded' }).catch(() => {});
+
+    // Sayfa doğrudan yüklendi mi kontrol et
+    let isNavigated = await this.page.waitForURL(/\/repositories\/add/, { timeout: 5000 }).then(() => true).catch(() => false);
+
+    if (!isNavigated) {
+      // 2. Yönlendirme gerçekleştiyse güncel URL'den gerçek Workspace ID'yi al
+      wsId = await this.getActiveWorkspaceId();
+      addUrl = `${this.dashboardBaseUrl}/${wsId}/repositories/add`;
+
+      console.log(`🔄 [POM] Aktif Workspace ID (${wsId}) ile /repositories/add sayfasına yönlendiriliyor...`);
+      await this.page.goto(addUrl, { waitUntil: 'load' });
+      isNavigated = await this.page.waitForURL(/\/repositories\/add/, { timeout: 10000 }).then(() => true).catch(() => false);
+    }
+
+    if (!isNavigated) {
+      // 3. Arayüzdeki menü veya "Add" butonuna tıklayarak istemci yönlendirmesi tetikle
+      const addRepoBtn = this.page.locator('a[href*="/repositories/add"], button:has-text("Add Provider"), button:has-text("Add Repository")').first();
+      if (await addRepoBtn.isVisible().catch(() => false)) {
+        await addRepoBtn.click({ force: true }).catch(() => {});
+      }
+      await expect(this.page).toHaveURL(/\/repositories\/add/, { timeout: 15000 });
+    }
+
     await this.page.waitForLoadState('load').catch(() => {});
-    await this.page.waitForTimeout(2500);
+    await this.page.waitForTimeout(2000);
   }
 
   async isGithubAlreadyConnectedOnAddProvider(): Promise<boolean> {
     const githubRow = this.page.getByRole('row', { name: /GitHub/i }).first();
     await githubRow.waitFor({ state: 'attached', timeout: 15000 }).catch(() => { });
     return githubRow.getByText(/\bActive\b/i).first().isVisible().catch(() => false);
+  }
+
+  async isBitbucketAlreadyConnectedOnAddProvider(): Promise<boolean> {
+    const bitbucketRow = this.page.getByRole('row', { name: /Bitbucket/i }).first();
+    await bitbucketRow.waitFor({ state: 'attached', timeout: 15000 }).catch(() => { });
+    return bitbucketRow.getByText(/\bActive\b|\bConnected\b/i).first().isVisible().catch(() => false);
   }
 
   async selectGithub(): Promise<void> {
@@ -69,6 +109,13 @@ export class ProviderPage {
     await githubActionButton.click();
   }
 
+  async selectBitbucket(): Promise<void> {
+    const bitbucketCard = this.page.getByRole('button', { name: /Bitbucket/i }).first();
+    await bitbucketCard.waitFor({ state: 'visible', timeout: 20000 });
+    await bitbucketCard.scrollIntoViewIfNeeded().catch(() => {});
+    await bitbucketCard.click();
+  }
+
   async goToRepositoriesGithub(): Promise<void> {
     // Metin/çeviriye bağlı kalmamak için doğrudan rota (workspace zaten sabit).
     await this.page.goto(`${this.dashboardBaseUrl}/${this.workspaceId}/repositories/github`, { waitUntil: 'domcontentloaded' });
@@ -78,6 +125,10 @@ export class ProviderPage {
 
   /** Direct navigation to Bitbucket repositories. */
   async goToRepositoriesBitbucket(): Promise<void> {
+    if (this.page.isClosed()) {
+      console.warn('[ProviderPage] Main page is already closed. Skipping direct navigation to Bitbucket repositories.');
+      return;
+    }
     await this.page.goto(`${this.dashboardBaseUrl}/${this.workspaceId}/repositories/bitbucket`, { waitUntil: 'domcontentloaded' });
     await expect(this.page).toHaveURL(/\/repositories\/bitbucket\b/);
     await expect(this.page.locator('table').first()).toBeVisible({ timeout: 30000 });

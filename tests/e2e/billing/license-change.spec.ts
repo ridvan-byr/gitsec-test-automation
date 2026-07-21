@@ -703,7 +703,7 @@ test.describe('License — Lisans Değiştirme (Upgrade / Downgrade) Akışı', 
       const billingAddress: BillingAddressData = {
         firstName: 'Gitsec',
         lastName: 'Test',
-        email: process.env.E2E_USER_EMAIL || 'gitsec_test_ly03zv@web-library.net',
+        email: process.env.E2E_USER_EMAIL || 'gitsectest+1@gmail.com',
         phone: process.env.E2E_USER_PHONE || '5551234567',
         country: 'Türkiye',
         city: 'Istanbul',

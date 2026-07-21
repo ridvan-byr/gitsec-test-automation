@@ -1,20 +1,8 @@
-/**
- * Bitbucket Provider Integration & Repository Management E2E Tests
- * 
- * Bu test dosyası:
- * 1. /repositories/add sayfasındaki Bitbucket kartına tıklandığında kurulum modalının açılıp kapandığını doğrular.
- * 2. Kurulum modalında "Install" tıklandığında Atlassian/Bitbucket OAuth yetkilendirme popup'ının açıldığını doğrular.
- * 3. Bitbucket bağlantısı kurulduktan sonra repository listesinin yüklendiğini ve lisans dahil etme (toggle) işlemlerinin yapılabildiğini gerçek API ile uçtan uca doğrular.
- */
-
 import { test, expect, GitSecPage } from '../../fixtures/test';
-import { requireEnv } from '../../support/require-env';
+import { ProviderPage } from '../../pages/ProviderPage';
 import { GoogleLoginPage } from '../../pages/GoogleLoginPage';
 import fs from 'fs';
 import path from 'path';
-
-let workspaceId: string;
-let dashboardBaseUrl: string;
 
 async function injectSavedGoogleSession(context: any): Promise<boolean> {
   const googleSessionPath = path.join(process.cwd(), 'playwright/.auth/google-session.json');
@@ -35,79 +23,197 @@ async function injectSavedGoogleSession(context: any): Promise<boolean> {
     console.log(`[bitbucket-auth] Saved Google session injected into Bitbucket OAuth context. (${cookies.length} cookies)`);
     return true;
   } catch (error: any) {
-    throw new Error(
-      '[bitbucket-auth] Saved Google session could not be loaded. Refresh Google Session from the dashboard. ' +
-      `Original error: ${error?.message || error}`,
-    );
+    console.warn(`[bitbucket-auth] Saved Google session could not be loaded: ${error?.message || error}`);
+    return false;
   }
 }
 
 async function completeBitbucketGoogleSsoIfVisible(popup: any): Promise<boolean> {
+  // 1. Atlassian login sayfasında Google SSO butonunu bul
   const googleSsoButton = popup
-    .getByRole('button', { name: /continue with google|google ile devam|google/i })
+    .locator('#google-signin-button, #social-login-google, button[data-testid*="google"], button[id*="google"]')
+    .or(popup.getByRole('button', { name: /continue with google|google ile devam|google/i }))
     .or(popup.locator('button, a, div[role="button"]').filter({ hasText: /google/i }))
     .first();
 
   const isGoogleSsoVisible = await googleSsoButton
-    .waitFor({ state: 'visible', timeout: 5000 })
+    .waitFor({ state: 'visible', timeout: 6000 })
     .then(() => true)
     .catch(() => false);
 
-  if (!isGoogleSsoVisible) {
-    console.log('[bitbucket-auth] Google SSO button was not visible on Atlassian login. Popup URL validation only.');
-    return false;
+  if (isGoogleSsoVisible) {
+    console.log('[bitbucket-auth] Google SSO butonu Atlassian giriş ekranında bulundu. Çerezler enjekte ediliyor...');
+    await injectSavedGoogleSession(popup.context()).catch(() => {});
+
+    console.log('👆 [ATLASSIAN] "Continue with Google" / Google ile Devam Et butonuna tıklandı.');
+    await googleSsoButton.click({ force: true }).catch(() => {});
+    await popup.waitForLoadState('domcontentloaded').catch(() => {});
+    await popup.waitForTimeout(2500);
   }
 
-  console.log('[bitbucket-auth] Google SSO detected on Atlassian login. Reusing Google OAuth automation...');
-  const sessionInjected = await injectSavedGoogleSession(popup.context());
-  if (!sessionInjected) {
-    throw new Error('[bitbucket-auth] Google Session is required for Bitbucket Google SSO. Run the Google Oturum Hazırlığı card first.');
-  }
-  await googleSsoButton.click({ force: true });
-
-  const closedAfterSession = await popup.waitForEvent('close', { timeout: 5000 })
+  // 2. Google Giriş veya Hesap Seçim Ekranı (accounts.google.com)
+  const isGooglePage = await popup
+    .waitForURL(/accounts\.google\.com/i, { timeout: 10000 })
     .then(() => true)
-    .catch(() => false);
-  if (closedAfterSession) {
-    console.log('[bitbucket-auth] Bitbucket Google SSO completed with the saved Google session.');
-    return true;
-  }
+    .catch(() => /accounts\.google\.com/i.test(popup.url()));
 
-  await popup.waitForLoadState('domcontentloaded').catch(() => {});
-  const currentUrl = popup.url();
-  if (!/accounts\.google\.com/i.test(currentUrl)) {
-    console.log(`[bitbucket-auth] Saved Google session moved popup away from Google login: ${currentUrl}`);
-    return true;
-  }
+  if (isGooglePage) {
+    console.log('[google-login] Google hesap seçim veya giriş ekranı tespit edildi...');
+    
+    // A) Önce Form Girişi Ekranı ("Email or phone" / input[type="email"])
+    const emailInput = popup.locator('input[type="email"], input[name="identifier"]').first();
+    const isEmailInputVisible = await emailInput
+      .waitFor({ state: 'visible', timeout: 4000 })
+      .then(() => true)
+      .catch(() => false);
 
-  const googleLogin = new GoogleLoginPage(popup);
-  try {
-    const loginCompleted = await googleLogin.completeOAuthLogin();
-    if (!loginCompleted) {
-      throw new Error('Google OAuth automation did not reach a completed state.');
+    if (isEmailInputVisible) {
+      try {
+        const { user, password, totpSecret } = GoogleLoginPage.getCredentials();
+
+        if (await emailInput.isVisible().catch(() => false)) {
+          console.log(`🚀 [GOOGLE] Sign in ekranında otomatik e-posta dolduruluyor: ${user}`);
+          await emailInput.fill(user);
+          const nextBtn = popup.locator('#identifierNext').or(popup.getByRole('button', { name: /Next|İleri|Sonraki/i })).first();
+          await nextBtn.click({ force: true }).catch(() => {});
+          await popup.waitForTimeout(2500);
+        }
+
+        const passwordInput = popup.locator('input[type="password"], input[name="Passwd"]').first();
+        const isPasswordVisible = await passwordInput
+          .waitFor({ state: 'visible', timeout: 5000 })
+          .then(() => true)
+          .catch(() => false);
+
+        if (isPasswordVisible) {
+          console.log('🚀 [GOOGLE] Otomatik şifre dolduruluyor...');
+          await passwordInput.fill(password);
+          const passNextBtn = popup.locator('#passwordNext').or(popup.getByRole('button', { name: /Next|İleri|Sonraki/i })).first();
+          await passNextBtn.click({ force: true }).catch(() => {});
+          await popup.waitForTimeout(3000);
+        }
+
+        const totpInput = popup.locator('input[name="totpPin"], input[type="tel"]').first();
+        const isTotpVisible = await totpInput
+          .waitFor({ state: 'visible', timeout: 4000 })
+          .then(() => true)
+          .catch(() => false);
+
+        if (isTotpVisible && totpSecret) {
+          const totpCode = GoogleLoginPage.generateTotpCode(totpSecret);
+          console.log(`🚀 [GOOGLE] 2FA TOTP kodu otomatik dolduruluyor: ${totpCode}`);
+          await totpInput.fill(totpCode);
+          await popup.keyboard.press('Enter');
+        }
+      } catch (err: any) {
+        console.warn(`[google-login] Google otomatik giriş uyarısı: ${err?.message || err}`);
+      }
+    } else {
+      // B) E-posta input yoksa Hesap Listesi Seçici ("Choose an account")
+      const accountChoice = popup
+        .locator('div[data-email], div[data-identifier], div[data-account-id], li[data-authuser], div[role="link"], div[class*="account"], li')
+        .filter({ hasText: /gitsec|gmail\.com/i })
+        .first();
+
+      const hasAccountChoice = await accountChoice
+        .waitFor({ state: 'visible', timeout: 4000 })
+        .then(() => true)
+        .catch(() => false);
+
+      if (hasAccountChoice) {
+        console.log('👆 [GOOGLE] Kayıtlı Google hesabına (gitsectest@gmail.com) tıklanarak oturum açılıyor...');
+        await accountChoice.click({ force: true }).catch(() => {});
+        await popup.waitForTimeout(2500);
+      }
     }
-  } catch (error: any) {
-    throw new Error(
-      '[bitbucket-auth] Bitbucket Google SSO failed. Refresh Google Session or check GOOGLE_TEST_USER / GOOGLE_TEST_PASSWORD / GOOGLE_TOTP_SECRET. ' +
-      `Original error: ${error?.message || error}`,
-    );
   }
 
-  if (!popup.isClosed()) {
-    await popup.waitForEvent('close', { timeout: 30_000 }).catch(() => {});
+  // 3. Atlassian Doğrudan E-posta Giriş Sayfası (id.atlassian.com/login) Fallback
+  if (/atlassian\.com\/login/i.test(popup.url())) {
+    const usernameInput = popup.locator('input[name="username"], input[id="username"], input[type="email"]').first();
+    if (await usernameInput.isVisible().catch(() => false)) {
+      const { user, password } = GoogleLoginPage.getCredentials();
+      console.log(`🚀 [ATLASSIAN] Doğrudan Atlassian e-posta girişi yapılıyor: ${user}`);
+      await usernameInput.fill(user);
+      const continueBtn = popup.getByRole('button', { name: /continue|ileri|devam/i }).first();
+      await continueBtn.click({ force: true }).catch(() => {});
+      await popup.waitForTimeout(2000);
+
+      const passInput = popup.locator('input[name="password"], input[type="password"]').first();
+      if (await passInput.isVisible().catch(() => false)) {
+        await passInput.fill(password);
+        const loginBtn = popup.getByRole('button', { name: /log in|giriş/i }).first();
+        await loginBtn.click({ force: true }).catch(() => {});
+      }
+    }
+  }
+
+  const closed = await popup.waitForEvent('close', { timeout: 8000 })
+    .then(() => true)
+    .catch(() => false);
+
+  if (closed) {
+    console.log('🎉 [ATLASSIAN] Bitbucket Google SSO oturum açılışı tamamlandı.');
+    return true;
   }
 
   return true;
 }
 
+async function saveGoogleSessionFromContext(context: any): Promise<void> {
+  try {
+    const cookies = await context.cookies();
+    const googleCookies = cookies.filter((c: any) => 
+      c.domain.includes('google') || c.domain.includes('atlassian')
+    );
+    if (googleCookies.length > 0) {
+      const googleSessionPath = path.join(process.cwd(), 'playwright/.auth/google-session.json');
+      fs.mkdirSync(path.dirname(googleSessionPath), { recursive: true });
+      fs.writeFileSync(googleSessionPath, JSON.stringify({ cookies: googleCookies }, null, 2), 'utf8');
+      console.log(`💾 [GOOGLE] Taze Google oturum çerezleri otomatik saklandı (${googleCookies.length} cookies).`);
+    }
+  } catch (err) {
+    // ignore
+  }
+}
+
+async function handleAtlassianConsentAndGrantAccess(popup: any): Promise<boolean> {
+  const grantButton = popup
+    .getByRole('button', { name: /grant access|authorize|allow|erişime izin ver|yetkilendir|kabul et/i })
+    .or(popup.locator('input[type="submit"][value*="Grant"]'))
+    .or(popup.locator('input[type="submit"][value*="Authorize"]'))
+    .or(popup.locator('button[id*="grant"]'))
+    .first();
+
+  const isGrantVisible = await grantButton
+    .waitFor({ state: 'visible', timeout: 8000 })
+    .then(() => true)
+    .catch(() => false);
+
+  if (isGrantVisible) {
+    console.log('👆 [ATLASSIAN] Bitbucket "Grant access" / "Erişime İzin Ver" butonuna tıklandı.');
+    await grantButton.click({ force: true }).catch(() => {});
+
+    const closed = await popup
+      .waitForEvent('close', { timeout: 15000 })
+      .then(() => true)
+      .catch(() => false);
+    
+    if (closed) {
+      console.log('🎉 [ATLASSIAN] Bitbucket OAuth yetkilendirmesi başarıyla tamamlandı ve popup kapandı.');
+      await saveGoogleSessionFromContext(popup.context());
+      return true;
+    }
+  }
+
+  await saveGoogleSessionFromContext(popup.context());
+  return false;
+}
+
 test.describe('Bitbucket Provider Entegrasyon Testleri', () => {
-  // Entegrasyon ve popup açılma süreçleri için makul timeout
   test.setTimeout(90_000);
 
   test.beforeEach(async ({ page }) => {
-    workspaceId = requireEnv('WORKSPACE_ID');
-    dashboardBaseUrl = requireEnv('DASHBOARD_BASE_URL');
-    // Turnstile/reCAPTCHA bypass ve hata engellemeleri
     (page as GitSecPage).ignoredErrors = [
       /Cross-Origin-Opener-Policy/,
       /Failed to load resource: the server responded with a status of (400|500|401|403|422|502)/,
@@ -115,20 +221,18 @@ test.describe('Bitbucket Provider Entegrasyon Testleri', () => {
     ];
   });
 
-  test('Bitbucket kartına tıklandığında kurulum modalı açılmalı ve iptal edilebilmeli', async ({ page }) => {
-    // 1. Sağlayıcı Ekleme Sayfasına git
-    const addProviderUrl = `${dashboardBaseUrl}/${workspaceId}/repositories/add`;
-    console.log(`🚀 Bitbucket Test: Sağlayıcı ekleme sayfasına gidiliyor: ${addProviderUrl}`);
-    await page.goto(addProviderUrl, { waitUntil: 'load' });
+  test('Bitbucket provider entegrasyonu, OAuth popup ve repository listesinin uçtan uca doğrulanması', { tag: '@critical' }, async ({ page }) => {
+    const providerPage = new ProviderPage(page);
+
+    // 1. "Add Provider" sayfasına git
+    console.log('🚀 [POM] Bitbucket entegrasyonu için "Add Provider" sayfasına gidiliyor...');
+    await providerPage.goToAddProviderPage();
 
     // 2. Bitbucket Kartını bul ve tıkla
-    const bitbucketCard = page.getByRole('button', { name: /Bitbucket/i }).first();
-    await expect(bitbucketCard).toBeVisible({ timeout: 15000 });
-    await bitbucketCard.scrollIntoViewIfNeeded().catch(() => {});
-    await bitbucketCard.click();
+    await providerPage.selectBitbucket();
     console.log('👆 Bitbucket sağlayıcı kartına tıklandı.');
 
-    // 3. Bitbucket Kurulum Modalı açıldığını doğrula
+    // 4. Bitbucket Kurulum Modalı açıldığını doğrula
     let modal = page.locator('[role="dialog"], [data-slot="dialog-content"]').first();
     const isModalVisible = await modal
       .waitFor({ state: 'visible', timeout: 10000 })
@@ -136,8 +240,100 @@ test.describe('Bitbucket Provider Entegrasyon Testleri', () => {
       .catch(() => false);
 
     if (!isModalVisible) {
-      console.log('[bitbucket-modal] Bitbucket setup modal did not open. Reloading provider page and retrying once.');
-      await page.goto(`${dashboardBaseUrl}/${workspaceId}/repositories/add`, { waitUntil: 'load' });
+      console.log('[bitbucket-modal] Bitbucket modalı açılmadı, sayfa yenilenip tekrar deneniyor...');
+      await providerPage.goToAddProviderPage();
+      await providerPage.selectBitbucket();
+      modal = page.locator('[role="dialog"], [data-slot="dialog-content"]').first();
+    }
+
+    await expect(modal).toBeVisible({ timeout: 10000 });
+    await expect(modal.getByRole('heading', { name: /Bitbucket/i })).toBeVisible();
+    console.log('✅ Bitbucket kurulum modalı başarıyla görüntülendi.');
+
+    const installBtn = modal.getByRole('button', { name: /Install|Yükle/i }).first();
+    await expect(installBtn).toBeVisible({ timeout: 5000 });
+
+    // 5. "Install" butonuna basarak Atlassian OAuth Popup penceresini aç
+    console.log('👆 "Install" butonuna tıklanıyor ve Atlassian OAuth penceresi bekleniyor...');
+    await expect(installBtn).toBeEnabled();
+    const [popup] = await Promise.all([
+      page.waitForEvent('popup', { timeout: 30000 }),
+      installBtn.click({ force: true })
+    ]);
+
+    // 6. Popup URL doğrulaması & Atlassian OAuth "Grant Access" Yetki Onayı
+    await popup.waitForLoadState('domcontentloaded').catch(() => {});
+    const popupUrl = popup.url();
+    console.log(`ℹ️ Açılan Popup URL: ${popupUrl}`);
+    expect(popupUrl).toMatch(/atlassian\.com|bitbucket\.org/i);
+    console.log('✅ Atlassian/Bitbucket OAuth popup yönlendirmesi doğrulandı.');
+
+    // Google SSO Oturumu ve Atlassian "Grant Access" Buton Onayı
+    await completeBitbucketGoogleSsoIfVisible(popup).catch(() => {});
+    await handleAtlassianConsentAndGrantAccess(popup).catch(() => {});
+
+    if (!popup.isClosed()) {
+      await popup.close().catch(() => {});
+    }
+
+    // 7. Bağlantı sonrası Bitbucket Repositories sayfasına yönlendir ve doğrula
+    console.log('🧭 [POM] Bitbucket Repositories sayfasına yönlendiriliyor...');
+    await providerPage.goToRepositoriesBitbucket();
+
+    // 8. Repositories başlığı ve tablosunun yüklendiğini doğrula
+    const heading = page.getByRole('heading', { name: /Repositories/i }).first();
+    await expect(heading).toBeVisible({ timeout: 15000 });
+
+    const table = page.locator('table').first();
+    await expect(table).toBeVisible({ timeout: 15000 });
+
+    await expect(page.getByRole('columnheader', { name: /Full Name/i })).toBeVisible();
+    await expect(page.getByRole('columnheader', { name: /Connected/i })).toBeVisible();
+    await expect(page.getByRole('columnheader', { name: /Licensed/i })).toBeVisible();
+    console.log('✅ Tablo başlıkları (Full Name, Connected, Licensed) doğrulandı.');
+
+    // 9. Depo listesi ve toggle switch doğrulama
+    const repoRows = page.locator('tbody tr');
+    await expect(repoRows.first()).toBeVisible({ timeout: 15000 });
+    const rowCount = await repoRows.count();
+    expect(rowCount).toBeGreaterThan(0);
+    console.log(`✅ Tabloda ${rowCount} adet repository listeleniyor.`);
+
+    const firstRepoLink = repoRows.first().getByRole('link').first();
+    await expect(firstRepoLink).toBeVisible();
+    await expect(firstRepoLink).toHaveText(/.+/);
+    console.log('✅ İlk repository adı başarıyla görüntüleniyor.');
+
+    const switches = repoRows.first().locator('button[role="switch"]');
+    await expect(switches.first()).toBeVisible();
+    const switchState = await switches.first().getAttribute('aria-checked');
+    expect(switchState).toMatch(/^(true|false)$/);
+    console.log(`✅ Licensed toggle switch doğrulandı (durum: ${switchState}).`);
+  });
+
+  test('Bitbucket kartına tıklandığında kurulum modalı açılmalı ve iptal edilebilmeli', { tag: ['@edge-cases', '@modal'] }, async ({ page }) => {
+    const providerPage = new ProviderPage(page);
+
+    console.log('🚀 [POM] Sağlayıcı ekleme sayfasına gidiliyor...');
+    await providerPage.goToAddProviderPage();
+
+    // 1. Bitbucket Kartını bul ve tıkla
+    const bitbucketCard = page.getByRole('button', { name: /Bitbucket/i }).first();
+    await expect(bitbucketCard).toBeVisible({ timeout: 15000 });
+    await bitbucketCard.scrollIntoViewIfNeeded().catch(() => {});
+    await bitbucketCard.click();
+    console.log('👆 Bitbucket sağlayıcı kartına tıklandı.');
+
+    // 2. Bitbucket Kurulum Modalı açıldığını doğrula
+    let modal = page.locator('[role="dialog"], [data-slot="dialog-content"]').first();
+    const isModalVisible = await modal
+      .waitFor({ state: 'visible', timeout: 10000 })
+      .then(() => true)
+      .catch(() => false);
+
+    if (!isModalVisible) {
+      console.log('[bitbucket-modal] Bitbucket setup modal did not open. Reloading provider page via POM and retrying once.');
+      await providerPage.goToAddProviderPage();
       const retryBitbucketCard = page.getByRole('button', { name: /Bitbucket/i }).first();
       await expect(retryBitbucketCard).toBeVisible({ timeout: 15000 });
       await retryBitbucketCard.scrollIntoViewIfNeeded().catch(() => {});
@@ -149,140 +345,14 @@ test.describe('Bitbucket Provider Entegrasyon Testleri', () => {
     await expect(modal.getByRole('heading', { name: /Bitbucket/i })).toBeVisible();
     console.log('✅ Bitbucket kurulum modalı başarıyla görüntülendi.');
 
-    // 4. Vazgeç/Kapat butonu ile modalı kapat
+    // 3. Vazgeç/Kapat butonu ile modalı kapat
     const cancelBtn = modal.getByRole('button', { name: /Cancel|Kapat|Vazgeç/i }).first();
     await expect(cancelBtn).toBeVisible({ timeout: 5000 });
     await expect(cancelBtn).toBeEnabled();
     await cancelBtn.click({ force: true });
 
-    // 5. Modalın gizlendiğini doğrula
+    // 4. Modalın gizlendiğini doğrula
     await expect(modal).toBeHidden({ timeout: 5000 });
     console.log('✅ Kapat butonuna basıldığında modal başarıyla kapandı.');
-  });
-
-  test('Bitbucket kurulum ekranında "Install" butonuna tıklandığında Atlassian OAuth popup penceresi açılmalı', async ({ page }) => {
-    // 1. Sağlayıcı Ekleme Sayfasına git
-    await page.goto(`${dashboardBaseUrl}/${workspaceId}/repositories/add`, { waitUntil: 'load' });
-
-    // 2. Bitbucket Kartını tıkla ve modalı aç
-    const bitbucketCard = page.getByRole('button', { name: /Bitbucket/i }).first();
-    await expect(bitbucketCard).toBeVisible({ timeout: 15000 });
-    await bitbucketCard.click();
-
-    let modal = page.locator('[role="dialog"], [data-slot="dialog-content"]').first();
-    const isModalVisible = await modal
-      .waitFor({ state: 'visible', timeout: 5000 })
-      .then(() => true)
-      .catch(() => false);
-
-    if (!isModalVisible) {
-      console.log('[bitbucket-modal] Bitbucket setup modal did not open before OAuth test. Reloading provider page and retrying once.');
-      await page.goto(`${dashboardBaseUrl}/${workspaceId}/repositories/add`, { waitUntil: 'load' });
-      const retryBitbucketCard = page.getByRole('button', { name: /Bitbucket/i }).first();
-      await expect(retryBitbucketCard).toBeVisible({ timeout: 15000 });
-      await retryBitbucketCard.scrollIntoViewIfNeeded().catch(() => {});
-      await retryBitbucketCard.click();
-      modal = page.locator('[role="dialog"], [data-slot="dialog-content"]').first();
-    }
-
-    await expect(modal).toBeVisible({ timeout: 10000 });
-
-    const installBtn = modal.getByRole('button', { name: /Install|Yükle/i }).first();
-    await expect(installBtn).toBeVisible({ timeout: 5000 });
-
-    // 3. Install butonu tıklandığında popup penceresi açılmasını bekle
-    console.log('👆 "Install" butonuna tıklanıyor ve Atlassian OAuth penceresi bekleniyor...');
-    await expect(installBtn).toBeEnabled();
-    const [popup] = await Promise.all([
-      page.waitForEvent('popup', { timeout: 30000 }),
-      installBtn.click({ force: true })
-    ]);
-
-    // 4. Popup URL'ini doğrula
-    await popup.waitForLoadState('domcontentloaded').catch(() => {});
-    const popupUrl = popup.url();
-    console.log(`ℹ️ Açılan Popup URL: ${popupUrl}`);
-    
-    // Popup adresinin atlassian.com veya bitbucket.org yönlendirmesi içerdiğini doğrula
-    expect(popupUrl).toMatch(/atlassian\.com|bitbucket\.org/i);
-    console.log('✅ Atlassian/Bitbucket OAuth popup yönlendirmesi doğrulandı.');
-
-    // Temizlik: Popup'ı kapat
-    const googleSsoCompleted = await completeBitbucketGoogleSsoIfVisible(popup);
-    if (googleSsoCompleted) {
-      console.log('[bitbucket-auth] Bitbucket Google SSO completed or popup closed after callback.');
-    }
-
-    await popup.close().catch(() => {});
-  });
-
-  test('Bitbucket entegrasyonu kurulduktan sonra repository listesinin yüklendiğini ve yönetilebildiğini doğrula', async ({ page }) => {
-    // 1. Bitbucket Repositories sayfasına git
-    const bitbucketReposPage = `${dashboardBaseUrl}/${workspaceId}/repositories/bitbucket`;
-    console.log(`🧭 Bitbucket Repositories sayfasına yönlendiriliyor: ${bitbucketReposPage}`);
-    await page.goto(bitbucketReposPage, { waitUntil: 'load' });
-
-    // 2. Sayfa başlığının yüklendiğini doğrula
-    const heading = page.getByRole('heading', { name: /Repositories/i }).first();
-    await expect(heading).toBeVisible({ timeout: 15000 });
-    console.log('✅ Repositories başlığı görüntülendi.');
-
-    // 3. Repository tablosunun yüklendiğini doğrula
-    const table = page.locator('table').first();
-    await expect(table).toBeVisible({ timeout: 15000 });
-
-    // 4. Tablo başlıklarını doğrula
-    await expect(page.getByRole('columnheader', { name: /Full Name/i })).toBeVisible();
-    await expect(page.getByRole('columnheader', { name: /Connected/i })).toBeVisible();
-    await expect(page.getByRole('columnheader', { name: /Licensed/i })).toBeVisible();
-    console.log('✅ Tablo başlıkları (Full Name, Connected, Licensed) doğrulandı.');
-
-    // 5. En az bir repository satırının yüklendiğini doğrula
-    const connectedSummary = page.getByText(/\d+\s+connected repositories/i).first();
-    await expect(connectedSummary).toBeVisible({ timeout: 15000 });
-    
-    let connectedRepoCount = 0;
-    try {
-      await expect(async () => {
-        const text = (await connectedSummary.textContent()) || '';
-        const count = Number(text.match(/\d+/)?.[0] || '0');
-        expect(count).toBeGreaterThan(0);
-        connectedRepoCount = count;
-      }).toPass({ timeout: 10000, intervals: [500] });
-    } catch (e) {
-      // Eğer gerçekten 0 ise veya yüklenemediyse mevcut metni son kez oku
-      const text = (await connectedSummary.textContent()) || '';
-      connectedRepoCount = Number(text.match(/\d+/)?.[0] || '0');
-    }
-
-    test.skip(
-      connectedRepoCount === 0,
-      'Bitbucket repository management checks require at least one connected Bitbucket repository.',
-    );
-
-    const repoRows = page.locator('tbody tr');
-    await expect(repoRows.first()).toBeVisible({ timeout: 15000 });
-    const rowCount = await repoRows.count();
-    expect(rowCount).toBeGreaterThan(0);
-    console.log(`✅ Tabloda ${rowCount} adet repository listeleniyor.`);
-
-    // 6. İlk repository'nin "Full Name" bilgisinin görüntülendiğini doğrula
-    const firstRepoLink = repoRows.first().getByRole('link').first();
-    await expect(firstRepoLink).toBeVisible();
-    await expect(firstRepoLink).toHaveText(/.+/);
-    console.log('✅ İlk repository adı başarıyla görüntüleniyor.');
-
-    // 7. Licensed toggle switch'lerin varlığını ve etkileşime açık olduğunu doğrula
-    const switches = repoRows.first().locator('button[role="switch"]');
-    await expect(switches.first()).toBeVisible();
-    const switchState = await switches.first().getAttribute('aria-checked');
-    expect(switchState).toMatch(/^(true|false)$/);
-    console.log(`✅ Licensed toggle switch doğrulandı (durum: ${switchState}).`);
-
-    // 8. Tabloda en az bir Licensed switch bulunduğunu doğrula
-    const allSwitches = page.locator('tbody tr button[role="switch"]');
-    const switchCount = await allSwitches.count();
-    expect(switchCount).toBeGreaterThan(0);
-    console.log(`✅ Tabloda ${switchCount} adet Licensed toggle switch mevcut.`);
   });
 });

@@ -3348,10 +3348,30 @@
               <div class="card-status-dot"></div>
             </div>
             <div class="card-content">
-              <p style="color: var(--text-muted); font-size: 0.8125rem; line-height: 1.5;">
+              <p id="github-connect-desc"
+                style="color: var(--text-muted); font-size: 0.8125rem; line-height: 1.5; min-height: 3.25rem;">
                 GitHub kullanıcı hesabının GitSec platformuna güvenli bir şekilde entegre edilmesi adımlarını ve
                 yetkilendirme süreçlerini test eder.
               </p>
+
+              <div class="card-select-group" style="margin-top: 0.75rem;">
+                <label for="githubConnectModeSelect"
+                  style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">GitHub Bağlantısı Kapsamı (Scope)</label>
+                <div class="gitsec-select-wrapper no-left-icon">
+                  <select id="githubConnectModeSelect" class="gitsec-select" style="padding-left: 0.875rem;"
+                    onchange="updateCardUI('card-github-connect', 'githubConnectModeSelect', 'github-connect-desc'); saveSettings()">
+                    <option value="happy_path">Ana Bağlantı & OAuth Akışı (Happy Path)</option>
+                    <option value="edge_cases">Çoklu Spam Tıklama & Hata Durumları (Edge Cases)</option>
+                    <option value="all">Tüm GitHub Bağlantı Testleri (Hepsi)</option>
+                  </select>
+                  <span class="select-chevron-right">
+                    <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                  </span>
+                </div>
+              </div>
             </div>
             <div class="card-footer">
               <span class="card-meta">github-connect.spec.ts</span>
@@ -3372,10 +3392,30 @@
               <div class="card-status-dot"></div>
             </div>
             <div class="card-content">
-              <p style="color: var(--text-muted); font-size: 0.8125rem; line-height: 1.5;">
+              <p id="bitbucket-connect-desc"
+                style="color: var(--text-muted); font-size: 0.8125rem; line-height: 1.5; min-height: 3.25rem;">
                 Bitbucket sağlayıcısının GitSec platformuna eklenmesini, Atlassian OAuth penceresinin açılmasını ve
                 bağlantı sonrası repository listesinin yönetilebilir olduğunu doğrular.
               </p>
+
+              <div class="card-select-group" style="margin-top: 0.75rem;">
+                <label for="bitbucketConnectModeSelect"
+                  style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Bitbucket Bağlantısı Kapsamı (Scope)</label>
+                <div class="gitsec-select-wrapper no-left-icon">
+                  <select id="bitbucketConnectModeSelect" class="gitsec-select" style="padding-left: 0.875rem;"
+                    onchange="updateCardUI('card-bitbucket-connect', 'bitbucketConnectModeSelect', 'bitbucket-connect-desc'); saveSettings()">
+                    <option value="happy_path">Ana Entegrasyon & Depo Yönetimi (Happy Path)</option>
+                    <option value="edge_cases">Atlassian OAuth & Google SSO (Edge Cases)</option>
+                    <option value="all">Tüm Bitbucket Bağlantı Testleri (Hepsi)</option>
+                  </select>
+                  <span class="select-chevron-right">
+                    <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                  </span>
+                </div>
+              </div>
             </div>
             <div class="card-footer">
               <span class="card-meta">bitbucket-connect.spec.ts</span>
@@ -3386,55 +3426,7 @@
             </div>
           </div>
 
-          <!-- Google Session for Code Providers -->
-          <div id="card-code-google-session" class="test-card">
-            <div class="card-header">
-              <div class="card-title-group">
-                <span class="card-tag">Google Kimlik Doğrulama</span>
-                <h3 class="card-title">Google Oturum Hazırlığı</h3>
-              </div>
-              <div class="card-status-dot google-session-dot"
-                style="width: 0.55rem; height: 0.55rem; border-radius: 50%; transition: var(--transition-smooth);">
-              </div>
-            </div>
 
-            <div class="card-content">
-              <p style="color: var(--text-muted); font-size: 0.8125rem; line-height: 1.5; margin-bottom: 0.5rem;">
-                Bitbucket Google SSO sırasında "Couldn't sign you in" hatasını azaltmak için gerçek Chrome ile Google
-                oturumu açar ve kayıtlı session cookie'lerini Bitbucket testlerinde kullanır.
-              </p>
-
-              <div
-                style="background: rgba(30, 41, 59, 0.25); border: 1px solid var(--panel-border); padding: 0.75rem 1rem; border-radius: 0.5rem; display: flex; flex-direction: column; gap: 0.35rem; margin-top: 0.5rem;">
-                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem;">
-                  <span style="color: var(--text-muted); font-weight: 500;">Durum:</span>
-                  <span class="google-session-badge coming-soon-badge"
-                    style="background: rgba(245, 158, 11, 0.12); color: var(--gitsec-yellow); border-color: rgba(245, 158, 11, 0.25); text-transform: none; font-size: 0.75rem; padding: 0.15rem 0.55rem; font-weight: 600;">Kontrol
-                    ediliyor...</span>
-                </div>
-                <div
-                  style="display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; border-top: 1px solid rgba(255,255,255,0.04); padding-top: 0.35rem;">
-                  <span style="color: var(--text-muted); font-weight: 500;">Son Güncelleme:</span>
-                  <span class="google-session-date"
-                    style="font-family: var(--font-mono); color: var(--text-muted); font-weight: 600;">-</span>
-                </div>
-              </div>
-            </div>
-
-            <div class="card-footer">
-              <span class="card-meta">login-google-manually.ts</span>
-              <button class="btn-run" onclick="runGoogleLogin('card-code-google-session')"
-                style="background: linear-gradient(135deg, #ea4335 0%, #c5221f 100%); box-shadow: 0 4px 10px rgba(234, 67, 53, 0.25); border: none; color: #ffffff; padding: 0.55rem 1.25rem; border-radius: 0.5rem; font-family: var(--font-sans); font-size: 0.825rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 0.45rem; transition: var(--transition-smooth);">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                  stroke-linecap="round" stroke-linejoin="round" style="min-width: 14px;">
-                  <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
-                  <polyline points="10 17 15 12 10 7" />
-                  <line x1="15" y1="12" x2="3" y2="12" />
-                </svg>
-                <span>Google Bağla</span>
-              </button>
-            </div>
-          </div>
 
           <!-- Repositories Include -->
           <div id="card-github-include" class="test-card">
@@ -3956,55 +3948,7 @@
             </div>
           </div>
 
-          <!-- Google Session Card -->
-          <div id="card-google-session" class="test-card">
-            <div class="card-header">
-              <div class="card-title-group">
-                <span class="card-tag">Google Kimlik Doğrulama</span>
-                <h3 class="card-title">Google Oturum Hazırlığı</h3>
-              </div>
-              <div class="card-status-dot google-session-dot" id="google-session-dot"
-                style="width: 0.55rem; height: 0.55rem; border-radius: 50%; transition: var(--transition-smooth);">
-              </div>
-            </div>
 
-            <div class="card-content">
-              <p style="color: var(--text-muted); font-size: 0.8125rem; line-height: 1.5; margin-bottom: 0.5rem;">
-                Google'ın bot engelleme (2FA, şüpheli giriş vb.) mekanizmalarını aşmak amacıyla tarayıcıda bir defaya
-                mahsus manuel oturum açarak oturum çerezlerini (session cookies) kaydeder.
-              </p>
-
-              <div
-                style="background: rgba(30, 41, 59, 0.25); border: 1px solid var(--panel-border); padding: 0.75rem 1rem; border-radius: 0.5rem; display: flex; flex-direction: column; gap: 0.35rem; margin-top: 0.5rem;">
-                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem;">
-                  <span style="color: var(--text-muted); font-weight: 500;">Durum:</span>
-                  <span id="google-session-badge" class="google-session-badge coming-soon-badge"
-                    style="background: rgba(245, 158, 11, 0.12); color: var(--gitsec-yellow); border-color: rgba(245, 158, 11, 0.25); text-transform: none; font-size: 0.75rem; padding: 0.15rem 0.55rem; font-weight: 600;">Kontrol
-                    ediliyor...</span>
-                </div>
-                <div
-                  style="display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; border-top: 1px solid rgba(255,255,255,0.04); padding-top: 0.35rem;">
-                  <span style="color: var(--text-muted); font-weight: 500;">Son Güncelleme:</span>
-                  <span id="google-session-date" class="google-session-date"
-                    style="font-family: var(--font-mono); color: var(--text-muted); font-weight: 600;">-</span>
-                </div>
-              </div>
-            </div>
-
-            <div class="card-footer">
-              <span class="card-meta">login-google-manually.ts</span>
-              <button class="btn-run" onclick="runGoogleLogin('card-google-session')"
-                style="background: linear-gradient(135deg, #ea4335 0%, #c5221f 100%); box-shadow: 0 4px 10px rgba(234, 67, 53, 0.25); border: none; color: #ffffff; padding: 0.55rem 1.25rem; border-radius: 0.5rem; font-family: var(--font-sans); font-size: 0.825rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 0.45rem; transition: var(--transition-smooth);">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                  stroke-linecap="round" stroke-linejoin="round" style="min-width: 14px;">
-                  <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
-                  <polyline points="10 17 15 12 10 7" />
-                  <line x1="15" y1="12" x2="3" y2="12" />
-                </svg>
-                <span>Google Bağla</span>
-              </button>
-            </div>
-          </div>
 
           <!-- Storage UI Verification Card -->
           <div id="card-storage-ui" class="test-card">
@@ -4224,7 +4168,21 @@
                       placeholder="Boşsa GITHUB_MAIL_PASSWORD kullanılır">
                     <button type="button" class="password-toggle-btn"
                       onclick="togglePasswordVisibility('env_FORGOT_PASSWORD_MAIL_PASSWORD', this)"
-                      title="Şifreyi Göster/Gizle">Göster</button>
+                      title="Şifreyi Göster/Gizle">
+                      <svg class="eye-icon w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                        <circle cx="12" cy="12" r="3"></circle>
+                      </svg>
+                      <svg class="eye-off-icon w-4 h-4" style="display: none;" xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path
+                          d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24">
+                        </path>
+                        <line x1="1" y1="1" x2="23" y2="23"></line>
+                      </svg>
+                    </button>
                   </div>
                 </div>
                 <div class="form-group">
@@ -5596,7 +5554,31 @@
         ? document.getElementById('iyzicoSmsCodeInput').value : null;
 
       let finalTestFile = testFile;
-      if (cardId === 'card-restore') {
+      if (cardId === 'card-github-connect') {
+        const githubConnectMode = document.getElementById('githubConnectModeSelect') ? document.getElementById('githubConnectModeSelect').value : 'happy_path';
+        if (githubConnectMode === 'happy_path') {
+          tag = '@critical';
+          finalTestFile = 'tests/e2e/providers/github-connect.spec.ts';
+        } else if (githubConnectMode === 'edge_cases') {
+          tag = '@edge-cases';
+          finalTestFile = 'tests/e2e/providers/github-connect.spec.ts';
+        } else if (githubConnectMode === 'all') {
+          tag = '';
+          finalTestFile = 'tests/e2e/providers/github-connect.spec.ts';
+        }
+      } else if (cardId === 'card-bitbucket-connect') {
+        const bitbucketConnectMode = document.getElementById('bitbucketConnectModeSelect') ? document.getElementById('bitbucketConnectModeSelect').value : 'happy_path';
+        if (bitbucketConnectMode === 'happy_path') {
+          tag = '@critical';
+          finalTestFile = 'tests/e2e/providers/bitbucket-connect.spec.ts';
+        } else if (bitbucketConnectMode === 'edge_cases') {
+          tag = '@edge-cases';
+          finalTestFile = 'tests/e2e/providers/bitbucket-connect.spec.ts';
+        } else if (bitbucketConnectMode === 'all') {
+          tag = '';
+          finalTestFile = 'tests/e2e/providers/bitbucket-connect.spec.ts';
+        }
+      } else if (cardId === 'card-restore') {
         const restoreMode = document.getElementById('restoreModeSelect') ? document.getElementById('restoreModeSelect').value : 'happy_path';
         if (restoreMode === 'validation') {
           finalTestFile = 'tests/e2e/backups/restore-validation.spec.ts';
@@ -6956,6 +6938,8 @@
         schedulerMode: document.getElementById('schedulerModeSelect') ? document.getElementById('schedulerModeSelect').value : 'happy_path',
         schedulerCleanup: document.getElementById('schedulerCleanupSelect') ? document.getElementById('schedulerCleanupSelect').value : 'delete',
         restoreMode: document.getElementById('restoreModeSelect') ? document.getElementById('restoreModeSelect').value : 'happy_path',
+        githubConnectMode: document.getElementById('githubConnectModeSelect') ? document.getElementById('githubConnectModeSelect').value : 'happy_path',
+        bitbucketConnectMode: document.getElementById('bitbucketConnectModeSelect') ? document.getElementById('bitbucketConnectModeSelect').value : 'happy_path',
         loginMode: document.getElementById('loginModeSelect') ? document.getElementById('loginModeSelect').value : 'happy_path',
         registerMode: document.getElementById('registerModeSelect') ? document.getElementById('registerModeSelect').value : 'happy_path',
         storageMode: document.getElementById('storageModeSelect') ? document.getElementById('storageModeSelect').value : 'happy_path',
@@ -7102,6 +7086,12 @@
         }
         if (settings.restoreMode !== undefined && document.getElementById('restoreModeSelect')) {
           document.getElementById('restoreModeSelect').value = settings.restoreMode;
+        }
+        if (settings.githubConnectMode !== undefined && document.getElementById('githubConnectModeSelect')) {
+          document.getElementById('githubConnectModeSelect').value = settings.githubConnectMode;
+        }
+        if (settings.bitbucketConnectMode !== undefined && document.getElementById('bitbucketConnectModeSelect')) {
+          document.getElementById('bitbucketConnectModeSelect').value = settings.bitbucketConnectMode;
         }
         if (settings.loginMode !== undefined && document.getElementById('loginModeSelect')) {
           document.getElementById('loginModeSelect').value = settings.loginMode;

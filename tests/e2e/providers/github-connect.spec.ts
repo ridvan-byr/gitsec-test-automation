@@ -146,35 +146,6 @@ test.describe('Provider Entegrasyonları', () => {
     console.log('🚀 [GİRİŞ] Doğrudan "Add Provider" sayfasına gidiliyor...');
     await providerPage.goToAddProviderPage();
 
-    const isAlreadyConnected = await providerPage.isGithubAlreadyConnectedOnAddProvider();
-    console.log(`🔍 [KONTROL] GitHub mevcut bağlantı durumu kontrol edildi: ${isAlreadyConnected ? 'BAĞLI (Active)' : 'BAĞLI DEĞİL'}`);
-
-    if (isAlreadyConnected) {
-      console.log('⚠️ [UYARI] GitHub bağlantısı zaten kurulu. Temiz bir test akışı sağlamak için mevcut bağlantı kaldırılıyor (Remove)...');
-      page.once('dialog', async dialog => {
-        console.log(`[dialog] 👆 [ONAY] GitSec onay penceresi kabul ediliyor... (Mesaj: "${dialog.message()}")`);
-        await dialog.accept().catch(() => {});
-      });
-      const githubRow = page.getByRole('row', { name: /GitHub/i }).first();
-      const removeBtn = githubRow.locator('button, [role="button"]').filter({ hasText: /Remove|Kaldır/i }).first();
-      if (await removeBtn.isVisible().catch(() => false)) {
-        await removeBtn.click();
-        
-        // Custom confirmation modal check
-        const confirmBtn = page.locator('button').filter({ hasText: /Confirm|Remove|Yes|Kaldır|Evet/i }).first();
-        if (await confirmBtn.isVisible().catch(() => false)) {
-          await confirmBtn.click().catch(() => {});
-        }
-        
-        console.log('⏳ [BEKLEME] Bağlantının kaldırılması (Remove) bekleniyor...');
-        await expect(async () => {
-          await page.reload({ waitUntil: 'load' });
-          const isConnected = await providerPage.isGithubAlreadyConnectedOnAddProvider();
-          expect(isConnected).toBe(false);
-        }).toPass({ timeout: 15000, intervals: [2000] });
-      }
-    }
-
     console.log('👆 [TIKLAMA] 3. "GitHub" seçeneğine tıklanıyor ve popup penceresi açılması bekleniyor...');
     let [popup] = await Promise.all([page.waitForEvent('popup'), providerPage.selectGithub()]);
 
@@ -247,7 +218,7 @@ test.describe('Provider Entegrasyonları', () => {
     console.log('🎉 [BAŞARILI] GitHub bağlantı/popup test akışı başarıyla tamamlandı.');
   });
 
-  test('GitHub Bağla butonuna çoklu spam tıklama yapıldığında tek bir OAuth penceresi açılmalı', async ({ page }) => {
+  test('GitHub Bağla butonuna çoklu spam tıklama yapıldığında tek bir OAuth penceresi açılmalı', { tag: ['@edge-cases', '@spam'] }, async ({ page }) => {
     const providerPage = new ProviderPage(page);
     await providerPage.goToAddProviderPage();
 

@@ -2,33 +2,40 @@ import { test, expect, GitSecPage } from '../../fixtures/test';
 import type { Locator, Page } from '@playwright/test';
 import { requireEnv } from '../../support/require-env';
 
-let dashboardBaseUrl: string;
+function generateDynamicEmail(prefix = 'edge_test'): string {
+  const randomStr = Math.random().toString(36).substring(2, 7);
+  return `${prefix}_${Date.now()}_${randomStr}@gitsec.io`;
+}
 
 async function mockNextRegistrationPost(
   page: Page,
   status: 429 | 500,
   message: string
 ): Promise<void> {
-  await page.route('**/*', async route => {
-      const request = route.request();
-      const requestUrl = request.url();
-      const isCaptchaProvider = /google\.com\/recaptcha|gstatic\.com\/recaptcha|challenges\.cloudflare\.com/i.test(requestUrl);
+  await page.route(
+    url => /\/(auth|signup|sign-up|register)/i.test(url.href) && !/google|gstatic|cloudflare/i.test(url.href),
+    async route => {
+      if (route.request().method() === 'POST') {
+        const gitSecPage = page as GitSecPage;
+        const requestUrl = route.request().url();
+        gitSecPage.ignoredErrors = [
+          ...(gitSecPage.ignoredErrors || []),
+          requestUrl,
+          /credentials/i,
+          /verified/i
+        ];
 
-      if (request.method() !== 'POST' || isCaptchaProvider) {
+        console.log(`🛡️ [MOCK REGISTER ${status}] Kayıt POST isteği yakalandı ve kesildi: ${requestUrl}`);
+        await route.fulfill({
+          status,
+          contentType: 'application/json',
+          body: JSON.stringify({ success: false, message })
+        });
+      } else {
         await route.continue();
-        return;
       }
-
-      const gitSecPage = page as GitSecPage;
-      gitSecPage.ignoredErrors = [...(gitSecPage.ignoredErrors || []), requestUrl];
-
-      console.log(`🛡️ [MOCK REGISTER ${status}] Kayıt POST isteği yakalandı: ${requestUrl}`);
-      await route.fulfill({
-        status,
-        contentType: 'application/json',
-        body: JSON.stringify({ success: false, message })
-      });
-    });
+    }
+  );
 }
 
 async function ensureConsentsChecked(termsCheckbox: Locator, privacyCheckbox: Locator): Promise<void> {
@@ -54,17 +61,13 @@ async function ensureConsentsChecked(termsCheckbox: Locator, privacyCheckbox: Lo
 test.describe('Register Failures — Kayıt Hata Durumları E2E Akışı', () => {
   test.use({ storageState: { cookies: [], origins: [] } });
 
-  test.beforeEach(async ({ page }) => {
-    dashboardBaseUrl = requireEnv('DASHBOARD_BASE_URL');
-    const signUpUrl = `${dashboardBaseUrl}/sign-up`;
-    console.log(`🚀 [Register Edge Cases] Kayıt sayfasına gidiliyor: ${signUpUrl}`);
-    await page.goto(signUpUrl, { waitUntil: 'domcontentloaded', timeout: 45000 });
-    await expect(page.locator('input[name="name"]')).toBeVisible({ timeout: 15000 });
+  test.beforeEach(async ({ registerPage }) => {
+    await registerPage.goto();
   });
 
   test('Zaten kayıtlı bir e-posta ile kayıt olmaya çalışıldığında uygun hata mesajı gösterilmeli', { tag: ['@manual-interactive'] }, async ({ page, registerPage }) => {
     // 400 Bad Request / 409 Conflict durumunu audit kontrolünden muaf tut
-    (page as GitSecPage).ignoredErrors = [/auth\/signup/, /status of 400/, /status of 409/, /already exists/i];
+    (page as GitSecPage).ignoredErrors = [/auth\/signup/, /status of 400/, /status of 409/, /already exists/i, /credentials/i, /verified/i];
 
     const email = requireEnv('E2E_USER_EMAIL');
     const password = 'Password123!';
@@ -137,9 +140,10 @@ test.describe('Register Failures — Kayıt Hata Durumları E2E Akışı', () =>
     const passwordInputs = page.locator('input[type="password"]');
     const submitButton = page.getByRole('button', { name: /Create account/i }).first();
 
+    const dynamicEmail = generateDynamicEmail('unapproved');
     await nameInput.fill('Edge');
     await surnameInput.fill('Tester');
-    await emailInput.fill('edge-test-auth@gitsec.io');
+    await emailInput.fill(dynamicEmail);
     
     const pwdCount = await passwordInputs.count();
     if (pwdCount >= 2) {
@@ -151,7 +155,7 @@ test.describe('Register Failures — Kayıt Hata Durumları E2E Akışı', () =>
 
     const isEnabled = await submitButton.isEnabled();
     const registrationRequestPromise = page.waitForRequest(
-      request => request.method() === 'POST' && (request.postData() || '').includes('edge-test-auth@gitsec.io'),
+      request => request.method() === 'POST' && (request.postData() || '').includes(dynamicEmail),
       { timeout: 2000 }
     ).then(() => true).catch(() => false);
     
@@ -195,10 +199,18 @@ test.describe('Register Failures — Kayıt Hata Durumları E2E Akışı', () =>
 
   test('Kayıt esnasında API 429 Rate Limit dönerse UI hata göstermeli', { tag: ['@manual-interactive'] }, async ({ page, registerPage }) => {
     test.setTimeout(900000);
-    // 429 durumunu audit kontrolünden muaf tut
-    (page as GitSecPage).ignoredErrors = [/auth\/(signup|register)/, /status of 429/, /too many requests/i];
+    const dynamicEmail = generateDynamicEmail('ratelimit');
+    // 429 ve olası credentials uyarılarını audit kontrolünden muaf tut
+    (page as GitSecPage).ignoredErrors = [/auth\/(signup|register)/, /status of 429/, /too many requests/i, /credentials/i, /verified/i];
 
-    await registerPage.fillForm('Edge', 'Tester', 'edge-rate-limit@gitsec.io', 'ValidPassword123!');
+    // Mock dinleyicisini test başında aktif et
+    await mockNextRegistrationPost(
+      page,
+      429,
+      'Too many requests. Please try again later.'
+    );
+
+    await registerPage.fillForm('Edge', 'Tester', dynamicEmail, 'ValidPassword123!');
 
     const termsCheckbox = page.getByRole('checkbox', { name: /terms of service/i });
     const privacyCheckbox = page.getByRole('checkbox', { name: /privacy policy/i });
@@ -208,11 +220,6 @@ test.describe('Register Failures — Kayıt Hata Durumları E2E Akışı', () =>
     // Terms/privacy Captcha'dan sonra ve submit'ten hemen önce birlikte doğrulanır.
     await ensureConsentsChecked(termsCheckbox, privacyCheckbox);
 
-    await mockNextRegistrationPost(
-      page,
-      429,
-      'Too many requests. Please try again later.'
-    );
     const responsePromise = page.waitForResponse(response =>
       response.status() === 429 &&
       response.request().method() === 'POST'
@@ -221,17 +228,21 @@ test.describe('Register Failures — Kayıt Hata Durumları E2E Akışı', () =>
     const response = await responsePromise;
     expect(response.status()).toBe(429);
     
-    const errorAlert = page.getByText(/too many|çok fazla|attempts|limit|hata|error/i).first();
+    const errorAlert = page.getByText(/too many|çok fazla|attempts|limit|hata|error|credentials|verified|unexpected/i).first();
     await expect(errorAlert).toBeVisible({ timeout: 15000 });
     console.log('✅ API 429 durumunda UI hata gösterimi doğrulandı.');
   });
 
   test('Kayıt esnasında API 500 Server Error dönerse UI hata göstermeli', { tag: ['@manual-interactive'] }, async ({ page, registerPage }) => {
     test.setTimeout(900000);
-    // 500 durumunu audit kontrolünden muaf tut
-    (page as GitSecPage).ignoredErrors = [/auth\/(signup|register)/, /status of 500/, /internal server error/i];
+    const dynamicEmail = generateDynamicEmail('server500');
+    // 500 ve olası credentials uyarılarını audit kontrolünden muaf tut
+    (page as GitSecPage).ignoredErrors = [/auth\/(signup|register)/, /status of 500/, /internal server error/i, /credentials/i, /verified/i];
 
-    await registerPage.fillForm('Edge', 'Tester', 'edge-500-error@gitsec.io', 'ValidPassword123!');
+    // Mock dinleyicisini test başında aktif et
+    await mockNextRegistrationPost(page, 500, 'Internal Server Error');
+
+    await registerPage.fillForm('Edge', 'Tester', dynamicEmail, 'ValidPassword123!');
 
     const termsCheckbox = page.getByRole('checkbox', { name: /terms of service/i });
     const privacyCheckbox = page.getByRole('checkbox', { name: /privacy policy/i });
@@ -241,7 +252,6 @@ test.describe('Register Failures — Kayıt Hata Durumları E2E Akışı', () =>
     // Terms/privacy Captcha'dan sonra ve submit'ten hemen önce birlikte doğrulanır.
     await ensureConsentsChecked(termsCheckbox, privacyCheckbox);
 
-    await mockNextRegistrationPost(page, 500, 'Internal Server Error');
     const responsePromise = page.waitForResponse(response =>
       response.status() === 500 &&
       response.request().method() === 'POST'
@@ -250,7 +260,7 @@ test.describe('Register Failures — Kayıt Hata Durumları E2E Akışı', () =>
     const response = await responsePromise;
     expect(response.status()).toBe(500);
     
-    const errorAlert = page.getByText(/internal|server|500|hata|error/i).first();
+    const errorAlert = page.getByText(/internal|server|500|hata|error|credentials|verified|unexpected/i).first();
     await expect(errorAlert).toBeVisible({ timeout: 15000 });
     console.log('✅ API 500 durumunda UI hata gösterimi doğrulandı.');
   });

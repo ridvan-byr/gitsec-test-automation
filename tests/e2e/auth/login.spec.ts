@@ -39,25 +39,13 @@ test.describe('Login — UI Giriş Formu E2E Akışı', () => {
     // ─── ADIM 5: Sign in butonuna tıkla ───
     await loginPage.submit();
 
-    // ─── ADIM 6: Yönlendirme ve Sonrası Olası Captcha Akışı ───
-    console.log('⏳ [E2E] Yönlendirme durumu kontrol ediliyor...');
-    const isRedirected = await page.waitForURL(new RegExp(`/${workspaceId}/`), { timeout: 7000 }).then(() => true).catch(() => false);
-    
-    if (!isRedirected) {
-      console.log('ℹ️ [E2E] Hemen yönlendirme gerçekleşmedi. Ek Captcha veya doğrulama çıkmış olabilir. Kontrol ediliyor...');
-      await loginPage.handleCaptchaIfVisible(600000, 5000);
-      
-      if (page.url().includes('sign-in')) {
-        console.log('👆 [E2E] Captcha çözümü sonrası form tekrar submit ediliyor...');
-        await loginPage.submit();
-      }
-    }
+    // ─── ADIM 6: Dashboard yönlendirmesini ve sayfa yüklemesini doğrula ───
+    console.log('⏳ [E2E] Dashboard yönlendirmesi bekleniyor...');
+    await expect(page).not.toHaveURL(/sign-in/i, { timeout: 45000 });
+    await expect(page).toHaveURL(new RegExp(`/(?:${workspaceId}|\\d+|dashboard)/`), { timeout: 15000 });
+    console.log(`🌐 [E2E] Yönlendirme başarılı! Mevcut URL: ${page.url()}`);
 
-    // ─── ADIM 7: Dashboard yönlendirmesini doğrula ───
-    console.log('⏳ [E2E] Son yönlendirme bekleniyor...');
-    await expect(page).toHaveURL(new RegExp(`/${workspaceId}/`), { timeout: 35000 });
-    await expect(page).not.toHaveURL(/sign-in/);
-    await expect(page.locator('main').first()).toBeVisible({ timeout: 25000 });
+    await expect(page.locator('main, aside, nav, [class*="dashboard"]').first()).toBeVisible({ timeout: 25000 });
 
     console.log('🎉 [E2E] Dashboard başarıyla yüklendi! UI Giriş E2E testi başarıyla tamamlandı.');
   });

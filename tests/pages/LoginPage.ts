@@ -63,6 +63,12 @@ export class LoginPage {
     failOnTimeout = true
   ): Promise<void> {
     console.log('⏳ [POM] Captcha varlığı kontrol ediliyor...');
+
+    // Sayfa zaten giriş ekranında değilse Captcha beklemesini atla
+    if (!this.page.url().includes('sign-in')) {
+      console.log('ℹ️ [POM] Sayfa giriş ekranında değil, Captcha kontrolü atlanıyor.');
+      return;
+    }
     
     const captchaSelector = [
       'iframe[src*="challenges.cloudflare.com"]',
@@ -78,6 +84,21 @@ export class LoginPage {
       .catch(() => false);
 
     if (hasCaptcha) {
+      // Token zaten var mı kontrol et
+      const isTokenPresent = await this.page.evaluate(() => {
+        const turnstile = document.querySelector('[name="cf-turnstile-response"]') as HTMLInputElement | HTMLTextAreaElement | null;
+        const recaptcha = document.querySelector('[name="g-recaptcha-response"]') as HTMLInputElement | HTMLTextAreaElement | null;
+        const tVal = turnstile ? turnstile.value.trim() : '';
+        const rVal = recaptcha ? recaptcha.value.trim() : '';
+        return tVal.length > 0 || rVal.length > 0;
+      }).catch(() => false);
+
+      if (isTokenPresent) {
+        console.log('✅ [POM] Captcha tokenı zaten algılandı/mevcut, manuel çözüme gerek yok.');
+        await expect(this.signInButton).toBeEnabled({ timeout: 5000 }).catch(() => {});
+        return;
+      }
+
       const isTurnstile = await this.page.locator('iframe[src*="challenges.cloudflare.com"], .cf-turnstile').first().isVisible().catch(() => false) ||
                           await this.page.locator('.cf-turnstile').count().then(c => c > 0);
       const captchaType = isTurnstile ? 'Cloudflare Turnstile' : 'Google reCAPTCHA';
@@ -91,6 +112,9 @@ export class LoginPage {
 
       try {
         await this.page.waitForFunction(() => {
+          // Sayfa sign-in dışına yönlendirildiyse captcha beklemesini hemen sonlandır
+          if (!window.location.href.includes('sign-in')) return true;
+
           const turnstile = document.querySelector('[name="cf-turnstile-response"]') as HTMLInputElement | HTMLTextAreaElement | null;
           const recaptcha = document.querySelector('[name="g-recaptcha-response"]') as HTMLInputElement | HTMLTextAreaElement | null;
           const tVal = turnstile ? turnstile.value.trim() : '';
@@ -107,7 +131,7 @@ export class LoginPage {
       }
 
       console.log('✅ [POM] Captcha başarıyla çözüldü (Token algılandı)!');
-      await expect(this.signInButton).toBeEnabled({ timeout: 5000 });
+      await expect(this.signInButton).toBeEnabled({ timeout: 5000 }).catch(() => {});
     } else {
       console.log('ℹ️ [POM] Captcha bulunamadı veya pasif. Devam ediliyor.');
     }

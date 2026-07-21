@@ -24,8 +24,11 @@ type PollPasswordResetEmailOptions = PollPasswordResetLinkOptions & {
 async function fetchLatestPasswordResetEmail(
   options: PollPasswordResetEmailOptions
 ): Promise<PasswordResetEmailReceipt | null> {
+  const hostCandidate = options.host?.trim();
+  const host = (!hostCandidate || /^[•*\s]+$/.test(hostCandidate)) ? 'imap.gmail.com' : hostCandidate;
+
   const client = new ImapFlow({
-    host: options.host?.trim() || 'imap.gmail.com',
+    host,
     port: options.port ?? 993,
     secure: true,
     auth: { user: options.email, pass: options.password.replace(/\s/g, '') },
@@ -161,8 +164,11 @@ function collectTextPartIds(node?: MessageStructureObject, isRoot = true): strin
 async function fetchLatestPasswordResetLink(
   options: PollPasswordResetLinkOptions
 ): Promise<string | null> {
+  const hostCandidate = options.host?.trim();
+  const host = (!hostCandidate || /^[•*\s]+$/.test(hostCandidate)) ? 'imap.gmail.com' : hostCandidate;
+
   const client = new ImapFlow({
-    host: options.host?.trim() || 'imap.gmail.com',
+    host,
     port: options.port ?? 993,
     secure: true,
     auth: { user: options.email, pass: options.password.replace(/\s/g, '') },

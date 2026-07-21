@@ -60,9 +60,12 @@ test.describe('Forgot Password — Gerçek Backend ve Gmail Teslimat Akışı', 
       const mailUser = useSharedMailAccount
         ? sharedMailUser || configuredMailUser || email
         : configuredMailUser;
-      const mailPassword = useSharedMailAccount && sharedMailUser
-        ? requireEnv('GITHUB_MAIL_PASSWORD')
-        : process.env.FORGOT_PASSWORD_MAIL_PASSWORD?.trim() || requireEnv('GITHUB_MAIL_PASSWORD');
+
+      let rawMailPassword = process.env.FORGOT_PASSWORD_MAIL_PASSWORD?.trim();
+      if (!rawMailPassword || /^[•*\s]+$/.test(rawMailPassword)) {
+        rawMailPassword = requireEnv('GITHUB_MAIL_PASSWORD');
+      }
+      const mailPassword = rawMailPassword;
       const apiBaseUrl = requireEnv('API_BASE_URL');
       const dashboardBaseUrl = requireEnv('DASHBOARD_BASE_URL');
       const ownedOrigins = new Set([
@@ -134,9 +137,10 @@ test.describe('Forgot Password — Gerçek Backend ve Gmail Teslimat Akışı', 
 
       expect(receivedEmail.subject).toMatch(/reset password|password reset|şifre sıfırlama/i);
       expect(receivedEmail.receivedAt.getTime()).toBeGreaterThanOrEqual(requestedAt.getTime() - 10_000);
+      const formattedDate = receivedEmail.receivedAt.toLocaleString('tr-TR', { timeZone: 'Europe/Istanbul' });
       console.log(
         `✅ [FORGOT PASSWORD] Gmail bağlantısı başarılı; reset e-postası görüldü ` +
-        `(Konu: ${receivedEmail.subject}, Gönderen: ${receivedEmail.from}).`
+        `(Tarih/Saat: ${formattedDate}, Konu: ${receivedEmail.subject}, Gönderen: ${receivedEmail.from}).`
       );
     }
   );

@@ -37,6 +37,9 @@ export class RegisterPage {
     console.log(`🚀 [POM] Kayıt sayfasına gidiliyor: ${signUpUrl}`);
     await this.page.goto(signUpUrl, { waitUntil: 'domcontentloaded' });
     await expect(this.nameInput).toBeVisible({ timeout: 15000 });
+    // Next.js hydration ve sayfa kararlılığı için bekle
+    await this.page.waitForFunction(() => typeof (window as any).next !== 'undefined', { timeout: 10000 }).catch(() => {});
+    await this.page.waitForTimeout(1500);
   }
 
   async fillForm(name: string, surname: string, email: string, password: string): Promise<void> {
@@ -63,15 +66,18 @@ export class RegisterPage {
   }
 
   /**
-   * Şifre alanını güvenilir şekilde doldurur.
-   * React controlled component state sıfırlama sorununu önlemek için
-   * click → clear → pressSequentially zinciri kullanır.
+   * Şifre alanını güvenilir ve atomik şekilde doldurur.
+   * Önce fill() ile anında yazar. Eğer React state sıfırlarsa
+   * fallback olarak pressSequentially ile tamamlar.
    */
   private async fillPasswordField(field: Locator, value: string): Promise<void> {
     await field.click();
-    await field.fill(''); // Önce temizle
-    await field.pressSequentially(value, { delay: 30 });
-    // React state sync beklemesi
+    await field.fill(value);
+    const actual = await field.inputValue().catch(() => '');
+    if (actual !== value) {
+      await field.fill('');
+      await field.pressSequentially(value, { delay: 10 });
+    }
     await this.page.waitForTimeout(100);
   }
 
@@ -165,10 +171,11 @@ export class RegisterPage {
 
     // 1. Text alanlarını kontrol et ve gerekirse düzelt
     for (const [field, expectedValue] of textFields) {
-      if (await field.inputValue() !== expectedValue) {
+      const val = await field.inputValue().catch(() => '');
+      if (val !== expectedValue) {
         await field.fill(expectedValue);
       }
-      await expect(field).toHaveValue(expectedValue);
+      await expect(field).toHaveValue(expectedValue, { timeout: 5000 });
     }
 
     // 2. Şifre alanlarını kontrol et — boşsa pressSequentially ile tekrar doldur
