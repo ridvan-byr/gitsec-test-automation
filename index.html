@@ -3995,6 +3995,16 @@
                 <span style="color: var(--text-muted);">Oturum Durumu:</span>
                 <span id="google-session-badge" class="google-session-badge" style="font-weight: 600; padding: 2px 8px; border-radius: 4px; border: 1px solid #475569;">Kontrol Ediliyor...</span>
               </div>
+              <div style="margin-top: 0.35rem; display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.72rem; background: rgba(0,0,0,0.25); padding: 0.5rem 0.75rem; border-radius: 6px; border: 1px solid var(--panel-border);">
+                <div style="display: flex; align-items: center; justify-content: space-between;">
+                  <span style="color: var(--text-muted);">🔑 Güvenlik Çerezi (SIDRTS):</span>
+                  <span id="google-session-rts-expiry" style="font-weight: 600; color: #f59e0b;">-</span>
+                </div>
+                <div style="display: flex; align-items: center; justify-content: space-between;">
+                  <span style="color: var(--text-muted);">🌐 Oturum Çerezi (SID):</span>
+                  <span id="google-session-sid-expiry" style="font-weight: 600; color: #94a3b8;">-</span>
+                </div>
+              </div>
               <div style="margin-top: 0.35rem; font-size: 0.7rem; color: var(--text-muted); text-align: right;">
                 Son Güncelleme: <span id="google-session-date" class="google-session-date">-</span>
               </div>
@@ -5993,11 +6003,62 @@
     }
 
     // 6. Yardımcı Buton Fonksiyonları
+    let googleCountdownInterval = null;
+
+    function startGoogleLiveCountdown(expiresMs, rtsTimeStr) {
+      if (expiresMs) {
+        localStorage.setItem('gitsec_g_expires_ms', String(expiresMs));
+        localStorage.setItem('gitsec_g_rts_time', rtsTimeStr || '');
+      }
+
+      function tick() {
+        const storedMs = parseInt(localStorage.getItem('gitsec_g_expires_ms') || '0', 10);
+        const storedTimeStr = localStorage.getItem('gitsec_g_rts_time') || '';
+        const rtsEl = document.getElementById('google-session-rts-expiry');
+
+        if (!rtsEl) return;
+        if (!storedMs) {
+          rtsEl.textContent = '-';
+          return;
+        }
+
+        const remainingSec = Math.floor((storedMs - Date.now()) / 1000);
+        if (remainingSec > 0) {
+          const mins = Math.floor(remainingSec / 60);
+          const secs = remainingSec % 60;
+          const secsStr = secs < 10 ? '0' + secs : secs;
+          const timeSuffix = storedTimeStr ? ` (${storedTimeStr})` : '';
+          rtsEl.textContent = `${mins} Dk ${secsStr} Sn Kaldı${timeSuffix}`;
+          rtsEl.style.color = '#f59e0b';
+        } else {
+          const timeSuffix = storedTimeStr ? ` (${storedTimeStr})` : '';
+          rtsEl.textContent = `Süresi Doldu${timeSuffix}`;
+          rtsEl.style.color = '#ef4444';
+        }
+      }
+
+      tick();
+      if (!googleCountdownInterval) {
+        googleCountdownInterval = setInterval(tick, 1000);
+      }
+    }
+
     async function updateGoogleSessionStatus() {
       try {
         const response = await fetch('/api/google-session-status');
         if (!response.ok) throw new Error('Oturum durumu alınamadı.');
         const data = await response.json();
+
+        const sidEl = document.getElementById('google-session-sid-expiry');
+        if (sidEl && data.sidExpiryStr) {
+          sidEl.textContent = data.sidExpiryStr;
+        }
+
+        if (data.rtsExpiresMs) {
+          startGoogleLiveCountdown(data.rtsExpiresMs, data.rtsTimeStr);
+        } else {
+          startGoogleLiveCountdown();
+        }
 
         const badges = document.querySelectorAll('.google-session-badge');
         const dots = document.querySelectorAll('.google-session-dot');
@@ -6039,9 +6100,6 @@
             dot.style.background = 'var(--gitsec-yellow)';
             dot.style.boxShadow = '0 0 10px var(--gitsec-yellow)';
           });
-          dateSpans.forEach((dateSpan) => {
-            dateSpan.innerText = data.expiredReason || 'Oturum zaman aşımına uğramış olabilir';
-          });
           cards.forEach((card) => {
             if (card.className !== 'test-card running') card.className = 'test-card fail';
           });
@@ -6056,11 +6114,20 @@
             dot.style.background = 'var(--gitsec-red)';
             dot.style.boxShadow = '0 0 10px var(--gitsec-red)';
           });
-          dateSpans.forEach((dateSpan) => {
-            dateSpan.innerText = 'Oturum bilgisi yok';
-          });
           cards.forEach((card) => {
             if (card.className !== 'test-card running') card.className = 'test-card';
+          });
+        }
+
+        if (data.mtime) {
+          const date = new Date(data.mtime);
+          const formatted = date.toLocaleDateString('tr-TR') + ' ' + date.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+          dateSpans.forEach((dateSpan) => {
+            dateSpan.innerText = formatted;
+          });
+        } else {
+          dateSpans.forEach((dateSpan) => {
+            dateSpan.innerText = '-';
           });
         }
       } catch (err) {

@@ -37,45 +37,42 @@ async function loginGoogle() {
 
   const page = await context.newPage();
   
-  console.log('🔗 Google Drive sayfasına gidiliyor...');
-  await page.goto('https://drive.google.com', { waitUntil: 'domcontentloaded' }).catch(() => {});
+  console.log('🔗 Google Oturum Açma sayfasına (Google Drive yönlendirmeli) gidiliyor...');
+  await page.goto('https://accounts.google.com/ServiceLogin?continue=https://drive.google.com', { waitUntil: 'domcontentloaded' }).catch(() => {});
 
-  // .env bilgilerini kontrol et ve otomatik oturum açmayı dene
-  const googleTestUser = process.env.GOOGLE_TEST_USER;
-  const googleTestPass = process.env.GOOGLE_TEST_PASSWORD;
-  const googleTotpSecret = process.env.GOOGLE_TOTP_SECRET;
-
-  if (googleTestUser && googleTestPass && googleTotpSecret) {
-    console.log(`🚀 [OTOMATİK GİRİŞ] .env kimlik bilgileri tespit edildi (${googleTestUser}). Otomatik giriş başlatılıyor...`);
-    try {
-      const googleLogin = new GoogleLoginPage(page);
-      await googleLogin.completeOAuthLogin().catch(err => {
-        console.log(`⚠️ Otomatik giriş denemesi uyarısı: ${err.message}`);
-      });
-    } catch (e: any) {
-      console.log(`⚠️ Otomatik giriş hatası: ${e.message}`);
-    }
-  } else {
-    console.log('\n👉 Lütfen açılan tarayıcı penceresinde:');
-    console.log('   1. gitsectest@gmail.com (veya kendi test hesabınızla) giriş yapın.');
-    console.log('   2. 2FA / Telefon onayını tamamlayın.');
-    console.log('   3. Google Drive arayüzünün başarıyla açıldığından emin olun.');
-  }
-
-  console.log('\n⏳ Oturumun tamamlanması ve çerezlerin kaydedilmesi bekleniyor...');
+  console.log('\n👉 Lütfen açılan Chrome penceresinde:');
+  console.log('   1. Google test hesabınızla (gitsectest@gmail.com) giriş yapın.');
+  console.log('   2. 2FA (SMS / Authenticator) doğrulamasını tamamlayın.');
+  console.log('   3. Google Drive / Hesabım ekranı yüklendiğinde oturumunuz otomatik kaydedilecektir.');
+  console.log('\n⏳ Oturumun açılması bekleniyor (Pencereyi kapatabilirsiniz ya da giriş yapılınca otomatik kaydedilecektir)...');
 
   // ----------------------------------------------------
   // Oturumun tamamlanmasını veya tarayıcının kapatılmasını bekleyen akış
   // ----------------------------------------------------
   let isDone = false;
 
-  const waitForLoginRedirect = page.waitForURL(/drive\.google\.com\/drive\/(u\/|my-drive)/i, { timeout: 60_000 })
-    .then(() => {
-      if (!isDone) {
-        console.log('\n🎉 Google Drive ana sayfası yüklendi! Giriş başarılı kabul ediliyor.');
+  const waitForLoginRedirect = new Promise<void>((resolve) => {
+    const pollInterval = setInterval(async () => {
+      if (isDone || page.isClosed()) {
+        clearInterval(pollInterval);
+        return;
       }
-    })
-    .catch(() => {});
+      try {
+        const cookies = await context.cookies();
+        const criticalCookieNames = ['SID', 'HSID', 'SSID', 'SAPISID', 'APISID'];
+        const hasAuth = cookies.some((c: any) => criticalCookieNames.includes(c.name) && c.domain?.includes('google.com'));
+
+        const currentUrl = page.url();
+        const isLoggedUrl = /drive\.google\.com|docs\.google\.com|myaccount\.google\.com|google\.com\/(u|b|drive|docs)\//i.test(currentUrl);
+
+        if (hasAuth && isLoggedUrl) {
+          console.log('\n🎉 Google hesabı girişi (çerezler ve yönlendirme) başarıyla tespit edildi! Oturum kaydediliyor...');
+          clearInterval(pollInterval);
+          resolve();
+        }
+      } catch {}
+    }, 1500);
+  });
 
   const waitForWindowClose = new Promise<void>((resolve) => {
     page.on('close', () => {
@@ -143,6 +140,35 @@ async function loginGoogle() {
 
   if (fs.existsSync(googleSessionPath)) {
     const googleSession = JSON.parse(fs.readFileSync(googleSessionPath, 'utf8'));
+    const cookies = googleSession.cookies || [];
+    const criticalCookieNames = ['SID', 'HSID', 'SSID', 'SAPISID', 'APISID'];
+    const hasValidGoogleLogin = cookies.some((c: any) => criticalCookieNames.includes(c.name) && c.domain?.includes('google.com'));
+
+    if (!hasValidGoogleLogin) {
+      console.log('\n⚠️ [GİRİŞ YAPILMADI] Google oturum açma çerezleri (SID/HSID) bulunamadı!');
+      console.log('💡 Lütfen kart üzerindeki "Oturumu Yenile" butonuna tıklayıp açılan Chrome penceresinde hesabınıza giriş yapın.');
+      console.log('💡 Giriş yapılmadan pencere kapatıldığı için mevcut oturum dosyalarınız güncellenmedi.\n');
+      
+      // Geçersiz çerez dosyasını sil ki hatalı durum oluşmasın
+      try { fs.unlinkSync(googleSessionPath); } catch {}
+      process.exit(1);
+    }
+
+    // Çerez Expiry Date Bilgilerini Logla
+    console.log('\n📋 [ÇEREZ DURUMU] Kaydedilen Google Çerezlerinin Son Kullanma Tarihleri:');
+    const sidCookie = cookies.find((c: any) => ['SID', 'HSID', 'SSID'].includes(c.name) && c.domain?.includes('google.com'));
+    if (sidCookie && sidCookie.expires) {
+      const sidDate = new Date(sidCookie.expires * 1000);
+      console.log(`   • Ana Oturum Çerezi (${sidCookie.name}): ${sidDate.toLocaleDateString('tr-TR')} ${sidDate.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}`);
+    }
+
+    const rtsCookie = cookies.find((c: any) => ['__Secure-1PSIDRTS', '__Secure-3PSIDRTS', 'SIDTS'].includes(c.name));
+    if (rtsCookie && rtsCookie.expires) {
+      const rtsDate = new Date(rtsCookie.expires * 1000);
+      const diffMins = Math.floor((rtsCookie.expires - Date.now() / 1000) / 60);
+      console.log(`   • Güvenlik Çerezi (${rtsCookie.name}): ${rtsDate.toLocaleDateString('tr-TR')} ${rtsDate.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })} (Kalan Süre: ~${Math.floor(diffMins / 60)}s ${diffMins % 60}dk)`);
+    }
+    console.log('');
 
     const mergeAuthFile = (targetPath: string) => {
       if (fs.existsSync(targetPath)) {

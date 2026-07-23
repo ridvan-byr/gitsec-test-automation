@@ -83,7 +83,7 @@ const server = http.createServer((req, res) => {
   }
 
   // ─── Güvenlik: Token Doğrulama — /api/* endpoint'leri koruması ──────────
-  if (req.url.startsWith('/api/') && req.url !== '/api/logs' && req.url !== '/api/token') {
+  if (req.url.startsWith('/api/') && req.url !== '/api/logs' && req.url !== '/api/token' && !req.url.startsWith('/api/google-session-status')) {
     const clientToken = req.headers['x-dashboard-token'];
     if (clientToken !== DASHBOARD_TOKEN) {
       console.warn(`[GÜVENLİK] Yetkisiz API erişim denemesi engellendi — URL: ${req.url}, Origin: ${requestOrigin || 'none'}`);
@@ -405,13 +405,16 @@ const server = http.createServer((req, res) => {
   }
 
   // 3b. Google Oturum Durumu (API)
-  if (req.url === '/api/google-session-status' && req.method === 'GET') {
+  if (req.url.startsWith('/api/google-session-status') && req.method === 'GET') {
     try {
       const googleSessionPath = path.join(__dirname, 'playwright', '.auth', 'google-session.json');
       const exists = fs.existsSync(googleSessionPath);
       let mtime = null;
       let expired = false;
       let expiredReason = '';
+      let rtsExpiresMs = 0;
+      let rtsTimeStr = '';
+      let sidExpiryStr = '-';
 
       if (exists) {
         mtime = fs.statSync(googleSessionPath).mtime;
@@ -420,6 +423,27 @@ const server = http.createServer((req, res) => {
           const cookies = sessionData.cookies || [];
           const now = Date.now() / 1000; // current time in seconds
           
+          // 1. Ana Oturum Çerezi (SID/HSID)
+          const sidCookie = cookies.find(c => ['SID', 'HSID', 'SSID'].includes(c.name) && c.domain?.includes('google.com'));
+          if (sidCookie && sidCookie.expires) {
+            const d = new Date(sidCookie.expires * 1000);
+            sidExpiryStr = d.toLocaleDateString('tr-TR') + ' ' + d.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+          } else if (sidCookie) {
+            sidExpiryStr = 'Süresiz / Active';
+          }
+
+          // 2. Güvenlik Çerezi (__Secure-1PSIDRTS)
+          const rtsCookie = cookies.find(c => ['__Secure-1PSIDRTS', '__Secure-3PSIDRTS', 'SIDTS'].includes(c.name));
+          if (rtsCookie && rtsCookie.expires) {
+            rtsExpiresMs = Math.floor(rtsCookie.expires * 1000);
+            const d = new Date(rtsCookie.expires * 1000);
+            rtsTimeStr = d.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+            if (rtsCookie.expires <= now) {
+              expired = true;
+              expiredReason = `Google güvenlik çerezi (${rtsCookie.name}) süresi dolmuş.`;
+            }
+          }
+
           // Google'ın kritik oturum çerezleri
           const criticalCookieNames = ['SID', 'HSID', 'SSID', 'SAPISID', 'APISID'];
           const googleCookies = cookies.filter(c => criticalCookieNames.includes(c.name) && c.domain.includes('google.com'));
@@ -427,20 +451,6 @@ const server = http.createServer((req, res) => {
           if (googleCookies.length === 0) {
             expired = true;
             expiredReason = 'Kritik Google oturum çerezleri bulunamadı.';
-          } else {
-            // Süresi dolmuş çerez var mı?
-            const expiredCookie = googleCookies.find(c => c.expires && c.expires < now);
-            if (expiredCookie) {
-              expired = true;
-              expiredReason = `Oturum çerezi (${expiredCookie.name}) süresi dolmuş.`;
-            }
-          }
-          
-          // Dosya yaşını kontrol et (14 günden eskiyse expired/warning say)
-          const fileAgeDays = (Date.now() - mtime.getTime()) / (1000 * 60 * 60 * 24);
-          if (fileAgeDays > 14 && !expired) {
-            expired = true;
-            expiredReason = 'Oturum dosyası 14 günden eski olduğu için zaman aşımına uğramış olabilir.';
           }
         } catch (e) {
           expired = true;
@@ -449,7 +459,7 @@ const server = http.createServer((req, res) => {
       }
 
       res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ exists, mtime, expired, expiredReason }));
+      res.end(JSON.stringify({ exists, mtime, expired, expiredReason, rtsExpiresMs, rtsTimeStr, sidExpiryStr }));
     } catch (err) {
       res.writeHead(500, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: err.message }));

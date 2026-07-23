@@ -29,6 +29,8 @@ import { StoragePage } from '../../pages/StoragePage';
 import { GoogleLoginPage } from '../../pages/GoogleLoginPage';
 import { OneDriveLoginPage } from '../../pages/OneDriveLoginPage';
 import { requireEnv } from '../../support/require-env';
+import fs from 'fs';
+import path from 'path';
 
 // Environment variables are handled inside POM classes
 
@@ -67,6 +69,52 @@ test.describe('Storage Provider Entegrasyonları', () => {
       // 🧭 DINAMIK NAVIGASYON VE ÖN TEMİZLİK (POM)
       // ─────────────────────────────────────────────────────────────
       await storagePage.navigateToStoragePage();
+      if (storageProvider === 'gdrive') {
+        const googleSessionPath = path.join(process.cwd(), 'playwright/.auth/google-session.json');
+        let hasValidSession = false;
+        if (fs.existsSync(googleSessionPath)) {
+          try {
+            const data = JSON.parse(fs.readFileSync(googleSessionPath, 'utf8'));
+            const cookies: any[] = data.cookies || [];
+            const nowSeconds = Date.now() / 1000;
+
+            const hasLongLivedSid = cookies.some((c: any) => 
+              ['SID', 'HSID', 'SSID'].includes(c.name) && 
+              c.domain?.includes('google.com') &&
+              (!c.expires || c.expires > nowSeconds + 10)
+            );
+
+            // Google'ın kısa ömürlü güvenlik çerezi (__Secure-1PSIDRTS veya __Secure-3PSIDRTS)
+            const rtsCookie = cookies.find((c: any) => ['__Secure-1PSIDRTS', '__Secure-3PSIDRTS', 'SIDTS'].includes(c.name));
+            let rtsRemainingSec = 99999;
+            if (rtsCookie && rtsCookie.expires) {
+              rtsRemainingSec = Math.floor(rtsCookie.expires - nowSeconds);
+            }
+
+            // Testin yarıda kesilmemesi için en az 30 saniye süre kalmış olmalı
+            const isRtsValid = !rtsCookie || (!rtsCookie.expires || rtsCookie.expires > nowSeconds + 30);
+            hasValidSession = hasLongLivedSid && isRtsValid;
+
+            if (!hasValidSession) {
+              console.log('\n❌ [HATA: GOOGLE OTURUMU KRİTİK SÜREYE GİRDİ / DOLDU]');
+              if (rtsRemainingSec <= 30 && rtsRemainingSec > 0) {
+                console.log(`🛑 Test anında durduruldu! Google güvenlik çerezinin dolmasına sadece ${rtsRemainingSec} saniye kaldı.`);
+                console.log('👉 Test esnasında Google doğrulama pop-up\'ına takılmamak için en az 30 saniye süre gereklidir.');
+              } else {
+                console.log('🛑 Test anında durduruldu! Google güvenlik çerezleri (__Secure-1PSIDRTS / SID) süresi dolmuş veya bulunamadı.');
+              }
+              console.log('👉 Lütfen "Google Oturum Hazırlığı" kartından "Oturumu Yenile" butonuna basarak 1 kez giriş yapın.\n');
+              throw new Error(`Google oturum çerezi dolmak üzere (Kalan süre: ${rtsRemainingSec > 0 ? rtsRemainingSec + 'sn' : 'Dolmuş'}). Lütfen Oturumu Yenile butonuna tıklayın.`);
+            } else {
+              console.log(`✅ [GOOGLE OTURUMU GEÇERLİ] Kayıtlı "google-session.json" taze çerezleri aktif (Kalan süre: ~${Math.floor(rtsRemainingSec / 60)}dk ${rtsRemainingSec % 60}sn). Test başlatılıyor...`);
+            }
+          } catch (err: any) {
+            if (err.message.includes('Google oturum çerezi')) throw err;
+            hasValidSession = false;
+          }
+        }
+      }
+
       await storagePage.cleanupExistingTestProviders(storageProvider);
       await storagePage.clickAddStorageProvider();
 
@@ -77,7 +125,7 @@ test.describe('Storage Provider Entegrasyonları', () => {
       if (storageProvider === 'azure') {
         providerText = 'Azure Blob Storage';
         providerDesc = 'Microsoft Azure Blob Storage';
-      } else if (storageProvider === 'gdrive') {
+        } else if (storageProvider === 'gdrive') {
         providerText = 'Google Drive';
         providerDesc = 'Google Drive Service';
       } else if (storageProvider === 'huawei') {
