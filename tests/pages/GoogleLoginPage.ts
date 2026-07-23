@@ -182,37 +182,64 @@ export class GoogleLoginPage {
     await this.assertNotBlocked();
     if (this.isGone()) return 'none';
 
-    // TOTP input var mı?
-    const totpVisible = await this.totpInput.isVisible().catch(() => false);
-    if (totpVisible) {
+    // 1. Doğrudan TOTP input alanı var mı? (Görünür olması için 3sn kadar esneklik verelim)
+    const totpDirect = await this.totpInput
+      .waitFor({ state: 'visible', timeout: 3000 })
+      .then(() => true)
+      .catch(() => false);
+
+    if (totpDirect) {
       console.log('[google-login] TOTP (Authenticator) kodu girişi tespit edildi.');
       return 'totp';
     }
 
-    // "Google Authenticator" veya "Enter the code" seçeneğine geçmek gerekebilir
-    // Google bazen "Try another way" linki gösterir
-    const tryAnotherWay = this.page.getByRole('button', { name: /Try another way|Başka bir yöntem dene/i })
-      .or(this.page.locator('button, a').filter({ hasText: /Try another way|Başka bir yöntem/i }))
+    // 2. Google varsayılan olarak SMS veya Prompt gösterdiyse "Try another way / Başka bir yöntem dene" ile Authenticator'a geç
+    const tryAnotherWay = this.page.getByRole('button', { name: /Try another way|Başka bir yöntem|Farklı bir yöntem/i })
+      .or(this.page.locator('button, a, [role="button"]').filter({ hasText: /Try another way|Başka bir yöntem|Farklı bir yöntem/i }))
       .first();
 
-    if (await tryAnotherWay.isVisible().catch(() => false)) {
-      console.log('[google-login] "Try another way" bulundu, tıklanıyor...');
-      await tryAnotherWay.click();
+    const hasTryAnotherWay = await tryAnotherWay
+      .waitFor({ state: 'visible', timeout: 5000 })
+      .then(() => true)
+      .catch(() => false);
+
+    if (hasTryAnotherWay) {
+      console.log('[google-login] "Try another way" (Başka bir yöntem) bulundu, tıklanıyor...');
+      await tryAnotherWay.click().catch(() => {});
       await this.safePause(2000);
 
       // Authenticator seçeneğini bul ve tıkla
-      const authenticatorOption = this.page.getByText(/Google Authenticator|Authenticator app|Doğrulayıcı uygulama/i)
-        .or(this.page.locator('li, div[role="link"], button').filter({ 
+      const authenticatorOption = this.page.getByText(/Google Authenticator|Authenticator app|Doğrulayıcı uygulama|verification code|doğrulama kodu/i)
+        .or(this.page.locator('li, div[role="link"], div[role="button"], button').filter({ 
           hasText: /authenticator|doğrulayıcı|verification code|doğrulama kodu/i 
         }))
         .first();
 
-      if (await authenticatorOption.isVisible().catch(() => false)) {
-        console.log('[google-login] Authenticator seçeneğine tıklanıyor...');
-        await authenticatorOption.click();
+      const hasAuthOption = await authenticatorOption
+        .waitFor({ state: 'visible', timeout: 5000 })
+        .then(() => true)
+        .catch(() => false);
+
+      if (hasAuthOption) {
+        console.log('[google-login] "Google Authenticator" seçeneğine tıklanıyor...');
+        await authenticatorOption.click().catch(() => {});
         await this.safePause(2000);
-        return 'totp';
+
+        const totpNow = await this.totpInput
+          .waitFor({ state: 'visible', timeout: 5000 })
+          .then(() => true)
+          .catch(() => false);
+
+        if (totpNow) {
+          console.log('[google-login] Authenticator seçildikten sonra TOTP girişi aktif oldu.');
+          return 'totp';
+        }
       }
+    }
+
+    // 3. İkincil kontrol: Sonradan TOTP input belirdi mi?
+    if (await this.totpInput.isVisible().catch(() => false)) {
+      return 'totp';
     }
 
     // SMS/telefon doğrulaması mı?
@@ -522,48 +549,56 @@ export class GoogleLoginPage {
     try {
       const { user, password, totpSecret } = GoogleLoginPage.getCredentials();
 
-      // 0. Google bot algılamasını atlatmak için otomasyon izlerini gizle
+      // 0. Otomasyon izlerini bağlam seviyesinde (addInitScript) gizle
       await this.page.context().addInitScript(() => {
-        // navigator.webdriver'ı gizle
-        Object.defineProperty(navigator, 'webdriver', { get: () => false });
-        // Chrome runtime ekle (Google bunu kontrol ediyor)
-        (window as any).chrome = { runtime: {} };
-        // Permissions API'yi düzelt
-        const originalQuery = window.navigator.permissions?.query?.bind(window.navigator.permissions);
-        if (originalQuery) {
-          (window.navigator.permissions as any).query = (parameters: any) =>
-            parameters.name === 'notifications'
-              ? Promise.resolve({ state: Notification.permission } as PermissionStatus)
-              : originalQuery(parameters);
-        }
+        try {
+          Object.defineProperty(navigator, 'webdriver', { get: () => false });
+          (window as any).chrome = { runtime: {} };
+          const originalQuery = window.navigator.permissions?.query?.bind(window.navigator.permissions);
+          if (originalQuery) {
+            (window.navigator.permissions as any).query = (parameters: any) =>
+              parameters.name === 'notifications'
+                ? Promise.resolve({ state: Notification.permission } as PermissionStatus)
+                : originalQuery(parameters);
+          }
+        } catch {}
       }).catch(() => {});
-      // Mevcut sayfada da çalıştır
-      await this.page.evaluate(() => {
-        Object.defineProperty(navigator, 'webdriver', { get: () => false });
-        (window as any).chrome = { runtime: {} };
-      }).catch(() => {});
-      console.log('[google-login] Otomasyon tespiti gizleme uygulandı.');
 
-      // 1. Google giriş sayfasının yüklenmesini bekle
-      const loginReady = await this.waitForLoginPage();
-      if (!loginReady) return false;
+      // 1. Google OAuth sayfasının yüklenmesini ve about:blank'ten yönlenmesini bekle
+      console.log('[google-login] Google OAuth yönlendirmesi bekleniyor...');
+      const loginReady = await this.waitForLoginPage(25_000);
+      if (!loginReady) {
+        console.error(`[google-login] ❌ Google OAuth yönlendirmesi gerçekleşmedi. Son URL: ${this.page.url()}`);
+        return false;
+      }
+
+      // Sayfa Google domain'ine ulaştıktan sonra yerel evaluate çalıştır
+      await this.page.evaluate(() => {
+        try {
+          Object.defineProperty(navigator, 'webdriver', { get: () => false });
+          (window as any).chrome = { runtime: {} };
+        } catch {}
+      }).catch(() => {});
+      console.log('[google-login] Google OAuth sayfası yüklendi ve otomasyon gizleme doğrulandı.');
 
       // 2. Hesap seçme ekranı varsa handle et
       const accountSelected = await this.handleAccountChooser(user);
       if (this.isGone()) return true;
 
       // 3. E-posta girişi (hesap seçme yoksa veya "başka hesap" seçildiyse)
-      const emailVisible = await this.emailInput.isVisible().catch(() => false);
+      const emailVisible = await this.emailInput
+        .waitFor({ state: 'visible', timeout: 8000 })
+        .then(() => true)
+        .catch(() => false);
+
       if (emailVisible) {
         await this.enterEmail(user);
         if (this.isGone()) return true;
       }
 
-      // 4. Şifre girişi
-      // Not: Eğer önceden cookie'ler yüklenmişse doğrudan Consent ekranına geçebiliriz,
-      // bu yüzden şifre alanını çok uzun süre bekleyip testi yavaşlatmayalım (3000ms yeterlidir).
+      // 4. Şifre girişi (E-posta gönderildikten sonra DOM geçişini 15 saniye bekle)
       const passwordVisible = await this.passwordInput
-        .waitFor({ state: 'visible', timeout: 3000 })
+        .waitFor({ state: 'visible', timeout: 15_000 })
         .then(() => true)
         .catch(() => false);
 

@@ -117,8 +117,8 @@ export class ProviderPage {
   }
 
   async goToRepositoriesGithub(): Promise<void> {
-    // Metin/çeviriye bağlı kalmamak için doğrudan rota (workspace zaten sabit).
-    await this.page.goto(`${this.dashboardBaseUrl}/${this.workspaceId}/repositories/github`, { waitUntil: 'domcontentloaded' });
+    const wsId = await this.getActiveWorkspaceId();
+    await this.page.goto(`${this.dashboardBaseUrl}/${wsId}/repositories/github`, { waitUntil: 'domcontentloaded' });
     await expect(this.page).toHaveURL(/\/repositories\/github\b/);
     await expect(this.page.locator('table').first()).toBeVisible({ timeout: 30000 });
   }
@@ -129,7 +129,8 @@ export class ProviderPage {
       console.warn('[ProviderPage] Main page is already closed. Skipping direct navigation to Bitbucket repositories.');
       return;
     }
-    await this.page.goto(`${this.dashboardBaseUrl}/${this.workspaceId}/repositories/bitbucket`, { waitUntil: 'domcontentloaded' });
+    const wsId = await this.getActiveWorkspaceId();
+    await this.page.goto(`${this.dashboardBaseUrl}/${wsId}/repositories/bitbucket`, { waitUntil: 'domcontentloaded' });
     await expect(this.page).toHaveURL(/\/repositories\/bitbucket\b/);
     await expect(this.page.locator('table').first()).toBeVisible({ timeout: 30000 });
   }

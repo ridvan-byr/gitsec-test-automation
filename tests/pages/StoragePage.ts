@@ -97,39 +97,64 @@ export class StoragePage {
     this.alertDialogOverlay = page.locator('[data-slot="alert-dialog-overlay"], [role="dialog"]').first();
   }
 
+  async getActiveWorkspaceId(): Promise<string> {
+    const currentUrl = this.page.url();
+    const match = currentUrl.match(/\/(\d+)\//);
+    if (match) {
+      return match[1];
+    }
+    return requireEnv('WORKSPACE_ID');
+  }
+
   async navigateToStoragePage(): Promise<void> {
     console.log('[POM] Storage listeleme sayfasına gidiliyor...');
+
+    const currentUrl = this.page.url();
+    if (currentUrl.includes('/storage') && !currentUrl.includes('/storage/add')) {
+      console.log('[POM] Zaten Storage listeleme sayfasındayız.');
+      return;
+    }
+
+    // 1. Tarayıcı henüz boş sayfadaysa veya dashboard ortamı dışında ise önce Dashboard'u yükle
+    if (currentUrl === 'about:blank' || !currentUrl.includes(this.dashboardBaseUrl)) {
+      console.log('[POM] Sayfa henüz yüklenmedi. Önce Dashboard yükleniyor...');
+      const defaultWsId = requireEnv('WORKSPACE_ID');
+      await this.page.goto(`${this.dashboardBaseUrl}/${defaultWsId}/dashboard`, { waitUntil: 'domcontentloaded' }).catch(() => {});
+      await expect(this.page.locator('main, nav, aside').first()).toBeVisible({ timeout: 10000 }).catch(() => {});
+    }
+
+    const wsId = await this.getActiveWorkspaceId();
+
+    // 2. Sidebar Storage linkini kontrol et (Tüm workspace ID çeşitleriyle uyumlu)
     const storageLink = this.page.getByRole('link', { name: /Storage|Depolama/i })
-      .or(this.page.locator(`a[href*="/${this.workspaceId}/storage"]`))
+      .or(this.page.locator('a[href*="/storage"]'))
       .first();
+
+    await storageLink.waitFor({ state: 'attached', timeout: 8000 }).catch(() => {});
 
     if (await storageLink.isVisible().catch(() => false)) {
       console.log('[POM] Sidebar Storage linki bulundu, tıklanıyor...');
       await storageLink.click();
     } else {
-      console.log('[POM] Sidebar linki bulunamadı. Doğrudan URL ile gidiliyor...');
-      await this.page.goto(`${this.dashboardBaseUrl}/${this.workspaceId}/storage`, { waitUntil: 'load' }).catch(err => {
+      console.log('[POM] Doğrudan URL ile Storage sayfasına gidiliyor...');
+      await this.page.goto(`${this.dashboardBaseUrl}/${wsId}/storage`, { waitUntil: 'domcontentloaded' }).catch(err => {
         if (!err.message.includes('net::ERR_ABORTED')) throw err;
-        console.log('⚠️ [POM] page.goto aborted for storage, continuing to wait for URL...');
       });
     }
 
-    await this.page.waitForURL(new RegExp(`/${this.workspaceId}/storage`), { timeout: 20000 });
-    await this.page.waitForLoadState('load').catch(() => {});
-    await this.page.waitForLoadState('domcontentloaded').catch(() => {});
-    await this.page.waitForLoadState('networkidle').catch(() => {});
+    await this.page.waitForURL(/\/storage(\?|#|$)/, { timeout: 20000 });
     await expect(this.page.locator('main').first()).toBeVisible({ timeout: 10000 });
   }
 
   async clickAddStorageProvider(): Promise<void> {
     console.log('[POM] Doğrudan URL ile "Add Storage Provider" sayfasına gidiliyor...');
-    await this.page.goto(`${this.dashboardBaseUrl}/${this.workspaceId}/storage/add`, { waitUntil: 'load' }).catch(err => {
+    const wsId = await this.getActiveWorkspaceId();
+    await this.page.goto(`${this.dashboardBaseUrl}/${wsId}/storage/add`, { waitUntil: 'domcontentloaded' }).catch(err => {
       if (!err.message.includes('net::ERR_ABORTED')) throw err;
       console.log('⚠️ [POM] page.goto aborted, but continuing to wait for target URL...');
     });
-    await this.page.waitForURL(new RegExp(`/${this.workspaceId}/storage/add`), { timeout: 30000 });
+    await this.page.waitForURL(/\/storage\/add/, { timeout: 30000 });
     
-    await this.page.waitForLoadState('load').catch(() => {});
     await this.page.waitForLoadState('domcontentloaded').catch(() => {});
     await expect(this.page.locator('main').first()).toBeVisible({ timeout: 10000 });
   }
@@ -266,40 +291,24 @@ export class StoragePage {
 
   async startOAuthFlow(onHandlePopup: (popup: Page) => Promise<void>): Promise<void> {
     console.log(`[POM] OAuth akışı başlatılıyor — "Permission Required" butonu aranıyor...`);
-    const permissionBtn = this.page.getByRole('button', { name: /Permission Required/i }).first();
+    const permissionBtn = this.page.getByRole('button', { name: /Permission Required/i })
+      .or(this.page.getByRole('button', { name: /Connect|Bağla|Authorize/i }))
+      .first();
 
-    await permissionBtn.waitFor({ state: 'visible', timeout: 15000 });
+    await permissionBtn.waitFor({ state: 'visible', timeout: 20000 });
     console.log('[POM] "Permission Required" butonu bulundu.');
-
-    // Hydration check: Bekleme ekle
     await expect(permissionBtn).toBeEnabled({ timeout: 10000 });
+    await this.page.waitForTimeout(1000);
 
-    let popup: Page | null = null;
-    for (let attempt = 1; attempt <= 3; attempt++) {
-      console.log(`[POM] "Permission Required" butonuna tıklanıyor (Popup Denemesi #${attempt})...`);
-      
-      const popupPromise = this.page
-        .waitForEvent('popup', { timeout: 8000 })
-        .catch(() => null);
+    console.log('[POM] "Permission Required" butonuna tıklanıyor ve OAuth popup açılması bekleniyor...');
 
-      await permissionBtn.scrollIntoViewIfNeeded().catch(() => { });
-      await permissionBtn.click({ force: true });
+    const [popup] = await Promise.all([
+      this.page.waitForEvent('popup', { timeout: 35000 }),
+      permissionBtn.click(),
+    ]);
 
-      popup = await popupPromise;
-      if (popup) {
-        console.log(`[POM] OAuth popup başarıyla açıldı! URL: ${popup.url()}`);
-        break;
-      }
-      console.log(`⚠️ [POM] Popup açılmadı, ${attempt}. deneme başarısız. Tekrar deneniyor...`);
-      await expect(permissionBtn).toBeEnabled({ timeout: 10000 }).catch(() => {});
-    }
-
-    if (popup) {
-      await popup.waitForLoadState('domcontentloaded').catch(() => { });
-      await onHandlePopup(popup);
-    } else {
-      throw new Error('OAuth popup could not be opened after multiple attempts.');
-    }
+    console.log(`[POM] OAuth popup başarıyla açıldı! URL: ${popup.url()}`);
+    await onHandlePopup(popup);
   }
 
   async fillOAuthFormAndSave(connName: string, storageProvider: string): Promise<void> {
@@ -438,7 +447,7 @@ export class StoragePage {
   async saveStorageProvider(): Promise<void> {
     console.log('[POM] "Save" butonuna tıklanıyor...');
     await this.saveBtn.click();
-    await this.page.waitForURL(new RegExp(`/${this.workspaceId}/storage(\\?|#|$)`), { timeout: 20000 });
+    await this.page.waitForURL(/\/storage(\?|#|$)/, { timeout: 20000 });
     console.log('[POM] Başarıyla depolama listesi sayfasına yönlenildi!');
   }
 

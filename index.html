@@ -3426,6 +3426,35 @@
             </div>
           </div>
 
+          <!-- Google Oturum Hazırlığı Card (Kod Sağlayıcılar Sekmesi) -->
+          <div id="card-code-google-session" class="test-card">
+            <div class="card-header">
+              <div class="card-title-group">
+                <span class="card-tag">Oturum Hazırlığı</span>
+                <h3 class="card-title">Google Oturum Hazırlığı</h3>
+              </div>
+              <div id="code-google-session-dot" class="card-status-dot google-session-dot"></div>
+            </div>
+            <div class="card-content">
+              <p style="color: var(--text-muted); font-size: 0.8125rem; line-height: 1.5;">
+                Bitbucket / Google SSO ve Google Drive entegrasyonlarının otomasyon engellerine takılmadan çalışması için Google hesabınızla gerçek Chrome tarayıcısında bir kez oturum açmanızı sağlar.
+              </p>
+              <div style="margin-top: 0.75rem; display: flex; align-items: center; justify-content: space-between; font-size: 0.75rem; background: rgba(0,0,0,0.2); padding: 0.5rem 0.75rem; border-radius: 6px; border: 1px solid var(--panel-border);">
+                <span style="color: var(--text-muted);">Oturum Durumu:</span>
+                <span id="code-google-session-badge" class="google-session-badge" style="font-weight: 600; padding: 2px 8px; border-radius: 4px; border: 1px solid #475569;">Kontrol Ediliyor...</span>
+              </div>
+              <div style="margin-top: 0.35rem; font-size: 0.7rem; color: var(--text-muted); text-align: right;">
+                Son Güncelleme: <span id="code-google-session-date" class="google-session-date">-</span>
+              </div>
+            </div>
+            <div class="card-footer">
+              <span class="card-meta">login-google-manually.ts</span>
+              <button class="btn-run" onclick="runGoogleLogin('card-code-google-session')">
+                <span>Oturumu Yenile</span>
+              </button>
+            </div>
+          </div>
+
 
 
           <!-- Repositories Include -->
@@ -3945,6 +3974,35 @@
               <span class="card-meta">storage.spec.ts</span>
               <button class="btn-run" onclick="runStorageTest()">
                 <span>Çalıştır</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Google Oturum Hazırlığı Card -->
+          <div id="card-google-session" class="test-card">
+            <div class="card-header">
+              <div class="card-title-group">
+                <span class="card-tag">Oturum Hazırlığı</span>
+                <h3 class="card-title">Google Oturum Hazırlığı</h3>
+              </div>
+              <div id="google-session-dot" class="card-status-dot google-session-dot"></div>
+            </div>
+            <div class="card-content">
+              <p style="color: var(--text-muted); font-size: 0.8125rem; line-height: 1.5;">
+                Google Drive ve Google tabanlı entegrasyon testlerinin otomasyon engellerine takılmadan çalışması için Google hesabınızla gerçek Chrome tarayıcısında bir kez oturum açmanızı ve oturum çerezlerini (google-session.json) tazelemenizi sağlar.
+              </p>
+              <div style="margin-top: 0.75rem; display: flex; align-items: center; justify-content: space-between; font-size: 0.75rem; background: rgba(0,0,0,0.2); padding: 0.5rem 0.75rem; border-radius: 6px; border: 1px solid var(--panel-border);">
+                <span style="color: var(--text-muted);">Oturum Durumu:</span>
+                <span id="google-session-badge" class="google-session-badge" style="font-weight: 600; padding: 2px 8px; border-radius: 4px; border: 1px solid #475569;">Kontrol Ediliyor...</span>
+              </div>
+              <div style="margin-top: 0.35rem; font-size: 0.7rem; color: var(--text-muted); text-align: right;">
+                Son Güncelleme: <span id="google-session-date" class="google-session-date">-</span>
+              </div>
+            </div>
+            <div class="card-footer">
+              <span class="card-meta">login-google-manually.ts</span>
+              <button class="btn-run" onclick="runGoogleLogin('card-google-session')">
+                <span>Oturumu Yenile</span>
               </button>
             </div>
           </div>

@@ -1,6 +1,10 @@
 import { chromium } from '@playwright/test';
 import fs from 'fs';
 import path from 'path';
+import dotenv from 'dotenv';
+import { GoogleLoginPage } from '../tests/pages/GoogleLoginPage';
+
+dotenv.config();
 
 async function loginGoogle() {
   const authDir = path.join(process.cwd(), 'playwright/.auth');
@@ -8,7 +12,7 @@ async function loginGoogle() {
   const googleSessionPath = path.join(authDir, 'google-session.json');
 
   console.log('🚀 Real Google Chrome başlatılıyor...');
-  console.log('ℹ️ Bu tarayıcıda Google hesabınızla giriş yapacaksınız.\n');
+  console.log('ℹ️ Bu tarayıcıda Google hesabınızla otomatik/manuel giriş yapılacaktır.\n');
 
   // Gerçek Chrome profil dizinini oluştur (Persistent Context için)
   const profileDir = path.join(authDir, 'google-profile');
@@ -25,26 +29,47 @@ async function loginGoogle() {
 
   // navigator.webdriver'ı gizleyen init script'i ekle (Güvenlik için)
   await context.addInitScript(() => {
-    Object.defineProperty(navigator, 'webdriver', { get: () => false });
+    try {
+      Object.defineProperty(navigator, 'webdriver', { get: () => false });
+      (window as any).chrome = { runtime: {} };
+    } catch {}
   });
 
   const page = await context.newPage();
   
   console.log('🔗 Google Drive sayfasına gidiliyor...');
-  await page.goto('https://drive.google.com');
+  await page.goto('https://drive.google.com', { waitUntil: 'domcontentloaded' }).catch(() => {});
 
-  console.log('\n👉 Lütfen açılan tarayıcı penceresinde:');
-  console.log('   1. gitsectest@gmail.com (veya kendi test hesabınızla) giriş yapın.');
-  console.log('   2. 2FA / Telefon onayını tamamlayın.');
-  console.log('   3. Google Drive arayüzünün başarıyla açıldığından emin olun.');
-  console.log('\n⏳ Giriş tamamlandığında veya tarayıcıyı kapattığınızda oturum otomatik kaydedilecektir...');
+  // .env bilgilerini kontrol et ve otomatik oturum açmayı dene
+  const googleTestUser = process.env.GOOGLE_TEST_USER;
+  const googleTestPass = process.env.GOOGLE_TEST_PASSWORD;
+  const googleTotpSecret = process.env.GOOGLE_TOTP_SECRET;
+
+  if (googleTestUser && googleTestPass && googleTotpSecret) {
+    console.log(`🚀 [OTOMATİK GİRİŞ] .env kimlik bilgileri tespit edildi (${googleTestUser}). Otomatik giriş başlatılıyor...`);
+    try {
+      const googleLogin = new GoogleLoginPage(page);
+      await googleLogin.completeOAuthLogin().catch(err => {
+        console.log(`⚠️ Otomatik giriş denemesi uyarısı: ${err.message}`);
+      });
+    } catch (e: any) {
+      console.log(`⚠️ Otomatik giriş hatası: ${e.message}`);
+    }
+  } else {
+    console.log('\n👉 Lütfen açılan tarayıcı penceresinde:');
+    console.log('   1. gitsectest@gmail.com (veya kendi test hesabınızla) giriş yapın.');
+    console.log('   2. 2FA / Telefon onayını tamamlayın.');
+    console.log('   3. Google Drive arayüzünün başarıyla açıldığından emin olun.');
+  }
+
+  console.log('\n⏳ Oturumun tamamlanması ve çerezlerin kaydedilmesi bekleniyor...');
 
   // ----------------------------------------------------
   // Oturumun tamamlanmasını veya tarayıcının kapatılmasını bekleyen akış
   // ----------------------------------------------------
   let isDone = false;
 
-  const waitForLoginRedirect = page.waitForURL('**/drive/**', { timeout: 300_000 })
+  const waitForLoginRedirect = page.waitForURL(/drive\.google\.com\/drive\/(u\/|my-drive)/i, { timeout: 60_000 })
     .then(() => {
       if (!isDone) {
         console.log('\n🎉 Google Drive ana sayfası yüklendi! Giriş başarılı kabul ediliyor.');
