@@ -1,7 +1,7 @@
 const DEFAULT_ENVS: Record<string, string> = {
   DASHBOARD_BASE_URL: 'https://staging.dashboard.gitsec.io',
   API_BASE_URL: 'https://staging.api.gitsec.io',
-  WORKSPACE_ID: '28',
+  WORKSPACE_ID: '291',
   E2E_USER_EMAIL: 'test-user@gitsec.io',
   E2E_USER_PASSWORD: 'PlaceholderPassword123!',
   GOOGLE_TEST_USER: 'test-user@gitsec.io',
