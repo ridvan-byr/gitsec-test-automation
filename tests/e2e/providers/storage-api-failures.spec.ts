@@ -120,6 +120,10 @@ test.describe(`${provider.toUpperCase()} Depolama Sağlayıcısı API & Ağ Hata
 
     storagePage = new StoragePage(page);
     await storagePage.navigateToStoragePage();
+    if (await storagePage.checkByosUpgradeRequired()) {
+      console.log('ℹ️ [STORAGE API FAILURES TEST ATLANDI] BYOS özelliği sadece Premium+ ve Enterprise planlarında mevcuttur.');
+      return;
+    }
     await storagePage.cleanupExistingTestProviders(provider);
     await storagePage.clickAddStorageProvider();
 

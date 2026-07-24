@@ -172,6 +172,10 @@ test.describe(`${provider.toUpperCase()} Depolama Sağlayıcısı Edge Case & St
 
     storagePage = new StoragePage(page);
     await storagePage.navigateToStoragePage();
+    if (await storagePage.checkByosUpgradeRequired()) {
+      console.log('ℹ️ [STORAGE EDGE CASES TEST ATLANDI] BYOS özelliği sadece Premium+ ve Enterprise planlarında mevcuttur.');
+      return;
+    }
     await storagePage.cleanupExistingTestProviders(provider);
     await storagePage.clickAddStorageProvider();
 

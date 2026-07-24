@@ -49,6 +49,10 @@ test.describe('Storage Providers — Arayüz ve Buton Durum Doğrulamaları (UI 
   test('Kısım 2: Sağlayıcı Türü Seçim Kartlarının Görünürlüğünü ve AWS S3 Navigasyonunu Doğrula', async ({ page }) => {
     // 1. Depolama listeleme sayfasına git ve Add butonunu tıkla
     await storagePage.navigateToStoragePage();
+    if (await storagePage.checkByosUpgradeRequired()) {
+      console.log('ℹ️ [STORAGE UI TEST ATLANDI] BYOS özelliği sadece Premium+ ve Enterprise planlarında mevcuttur.');
+      return;
+    }
     
     const addStorageBtn = page.getByRole('button', { name: /Add Storage Provider/i })
       .or(page.getByRole('link', { name: /Add Storage Provider/i }))

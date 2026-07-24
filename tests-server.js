@@ -195,8 +195,26 @@ const server = http.createServer((req, res) => {
           scheduleName, scheduleTime, includeCode, includePr, includeIssues,
           scheduleType, weeklyDay, monthlyDay, cronExpression,
           includeMode, includeProvider, excludeMode, backupMode, workers, cardId,
-          schedulerCleanup, storageCleanup, licenseTargetPlan, licenseBillingCycle, iyzicoSmsCode
+          schedulerCleanup, storageCleanup, licenseTargetPlan, licenseBillingCycle, iyzicoSmsCode, paymentCard, licenseAccountMode, iyzicoInstallment
         } = JSON.parse(body || '{}');
+
+        const validPaymentCards = ['all', 'mastercard_debit', 'visa_credit', 'troy_credit', 'foreign_credit', 'isbank_installment', 'yapikredi_installment', 'garanti_installment', 'error_insufficient_funds', 'error_expired_card', 'error_invalid_cvc', 'error_declined'];
+
+
+        if (paymentCard && !validPaymentCards.includes(paymentCard)) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: `Geçersiz İyzico kart seçimi: ${paymentCard}` }));
+          return;
+        }
+
+
+        if (licenseAccountMode && !['env_user', 'temp_user'].includes(licenseAccountMode)) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: `Geçersiz hesap modu: ${licenseAccountMode}` }));
+          return;
+        }
+
+
 
         // Whitelist validations
         if (testFile) {
@@ -364,6 +382,12 @@ const server = http.createServer((req, res) => {
         if (licenseTargetPlan) runEnv.E2E_LICENSE_TARGET_PLAN = licenseTargetPlan;
         if (licenseBillingCycle) runEnv.E2E_LICENSE_TARGET_INTERVAL = licenseBillingCycle;
         if (iyzicoSmsCode) runEnv.E2E_IYZICO_SMS_CODE = iyzicoSmsCode;
+        if (paymentCard) runEnv.PAYMENT_CARD = paymentCard;
+        if (licenseAccountMode) runEnv.E2E_LICENSE_ACCOUNT_MODE = licenseAccountMode;
+        if (iyzicoInstallment) runEnv.E2E_IYZICO_INSTALLMENT = String(iyzicoInstallment);
+
+
+
 
         let commandToRun = cmd;
         if (process.platform === 'win32' && commandToRun === 'npx') {

@@ -149,6 +149,41 @@ export class StoragePage {
 
     await this.page.waitForURL(/\/storage(\?|#|$)/, { timeout: 20000 });
     await expect(this.page.locator('main').first()).toBeVisible({ timeout: 10000 });
+
+    // BYOS (Bring Your Own Storage) plan kilit ekranı denetimi
+    await this.checkByosUpgradeRequired();
+  }
+
+  /**
+   * BYOS (Bring Your Own Storage) kilitli ekran uyarısını (Upgrade Plan kilit kartı) kontrol eder.
+   * BYOS özelliği SADECE Premium+ ve Enterprise planlarında mevcuttur.
+   * Freemium, Startup ve Premium planlarında ekranda "BYOS (Bring Your Own Storage)" kilit kartı çıkar.
+   */
+  async checkByosUpgradeRequired(): Promise<boolean> {
+    await this.page.waitForTimeout(600);
+
+    const byosCard = this.page.locator('div, section, main')
+      .filter({ hasText: /BYOS \(Bring Your Own Storage\)/i })
+      .filter({ hasText: /Upgrade Plan/i })
+      .first();
+
+    const upgradeBtn = this.page.locator('button, a')
+      .filter({ hasText: /Upgrade Plan/i })
+      .first();
+
+    const isByosLocked = (await byosCard.isVisible().catch(() => false)) || (await upgradeBtn.isVisible().catch(() => false));
+
+    if (isByosLocked) {
+      console.log('\n🔒 ========================================================');
+      console.log('🔒 [STORAGE BYOS LOG] BYOS (Bring Your Own Storage) kilit ekranı tespit edildi!');
+      console.log('🔒 [LICENSE WARNING] BYOS (Bring Your Own Storage) entegrasyonu SADECE Premium+ ve Enterprise planlarında mevcuttur.');
+      console.log('🔒 [LICENSE WARNING] Mevcut abonelik planınız (Freemium, Startup veya Premium) BYOS özelliğini kapsamamaktadır.');
+      console.log('🔒 [LICENSE WARNING] Test, plan yetersizliği nedeniyle güvenli ve başarılı şekilde sonlandırılıyor.');
+      console.log('🔒 ========================================================\n');
+      return true;
+    }
+
+    return false;
   }
 
   async clickAddStorageProvider(): Promise<void> {

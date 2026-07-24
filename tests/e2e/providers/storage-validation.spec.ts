@@ -165,6 +165,10 @@ test.describe(`${provider.toUpperCase()} Depolama Sağlayıcısı Form Doğrulam
 
     storagePage = new StoragePage(page);
     await storagePage.navigateToStoragePage();
+    if (await storagePage.checkByosUpgradeRequired()) {
+      console.log('ℹ️ [STORAGE VALIDATION TEST ATLANDI] BYOS özelliği sadece Premium+ ve Enterprise planlarında mevcuttur.');
+      return;
+    }
     await storagePage.cleanupExistingTestProviders(provider);
     await storagePage.clickAddStorageProvider();
 

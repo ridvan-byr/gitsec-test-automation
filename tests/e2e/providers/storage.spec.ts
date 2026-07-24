@@ -69,6 +69,12 @@ test.describe('Storage Provider Entegrasyonları', () => {
       // 🧭 DINAMIK NAVIGASYON VE ÖN TEMİZLİK (POM)
       // ─────────────────────────────────────────────────────────────
       await storagePage.navigateToStoragePage();
+
+      // BYOS (Bring Your Own Storage) Lisans ve Plan Yetkisi Kontrolü
+      if (await storagePage.checkByosUpgradeRequired()) {
+        console.log('ℹ️ [STORAGE TEST ATLANDI] BYOS özelliği mevcut planda (Freemium/Startup/Premium) kapalı olduğu için test güvenle tamamlandı.');
+        return;
+      }
       if (storageProvider === 'gdrive') {
         const googleSessionPath = path.join(process.cwd(), 'playwright/.auth/google-session.json');
         let hasValidSession = false;

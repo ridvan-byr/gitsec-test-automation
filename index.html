@@ -3106,7 +3106,37 @@
                   pattern="[0-9]{6}" class="gitsec-select" onchange="saveSettings()">
                 <span class="field-hint" style="color: #64748b; font-size: 0.75rem;">Öncelikle Iyzico mesajındaki parantez içi kod kullanılır; bu değer yalnızca kod okunamazsa devreye girer.</span>
               </div>
+              <div style="margin-top: 0.75rem;">
+                <label for="paymentCardSelect" style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted);">💳 İYZİCO TEST KARTI SEÇİMİ</label>
+                <select id="paymentCardSelect" class="gitsec-select" onchange="saveSettings(); toggleInstallmentVisibility();">
+                  <option value="mastercard_debit" selected>💳 Akbank Mastercard Banka Kartı (Debit)</option>
+                  <option value="visa_credit">💳 Denizbank Visa Kredi Kartı (Credit)</option>
+                  <option value="troy_credit">💳 Akbank Troy Kredi Kartı (Credit)</option>
+                  <option value="foreign_credit">🌐 Yabancı Kredi Kartı (Non-Turkish)</option>
+                  <option value="isbank_installment">🟢 İş Bankası Maximum Kredi Kartı (Taksit Destekli 📊)</option>
+                  <option value="yapikredi_installment">🟢 Yapı Kredi Worldcard Mastercard (Taksit Destekli 📊)</option>
+                  <option value="error_insufficient_funds">🔴 Hata - Yetersiz Bakiye (4111...)</option>
+                  <option value="error_expired_card">🔴 Hata - Süresi Dolmuş Kart (4125...)</option>
+                  <option value="error_invalid_cvc">🔴 Hata - Hatalı CVC (4124...)</option>
+                  <option value="error_declined">🔴 Hata - Banka Reddi (4129...)</option>
+                </select>
+                <span class="field-hint" style="color: #64748b; font-size: 0.75rem;">.env üzerindeki aktif kullanıcınızla test edilecek tek İyzico kartını seçin.</span>
+              </div>
+              <div id="iyzicoInstallmentContainer" style="margin-top: 0.75rem; display: none;">
+                <label for="iyzicoInstallmentSelect" style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted);">📊 TAKSİT SEÇİMİ (İşbank & Yapıkredi)</label>
+                <select id="iyzicoInstallmentSelect" class="gitsec-select" onchange="saveSettings()">
+                  <option value="1" selected>1 — Tek Çekim</option>
+                  <option value="2">2 Taksit</option>
+                  <option value="3">3 Taksit</option>
+                  <option value="6">6 Taksit (Tüm Seçenekleri Aç)</option>
+                  <option value="9">9 Taksit (Tüm Seçenekleri Aç)</option>
+                  <option value="12">12 Taksit (Tüm Seçenekleri Aç)</option>
+                </select>
+                <span class="field-hint" style="color: #64748b; font-size: 0.75rem;">Seçilen taksit destekli kartta istenen taksit opsiyonuna otomatik tıklanır.</span>
+              </div>
+
             </div>
+
             <div class="card-footer">
               <span class="card-meta">license-change.spec.ts</span>
               <button class="btn-run" onclick="runTest('', 'card-license-change', 'tests/e2e/billing/license-change.spec.ts')">
@@ -5607,8 +5637,23 @@
       }
     }
 
+    function toggleInstallmentVisibility() {
+      const cardSelect = document.getElementById('paymentCardSelect');
+      const installmentContainer = document.getElementById('iyzicoInstallmentContainer');
+      if (!cardSelect || !installmentContainer) return;
+      const val = cardSelect.value;
+      if (val === 'isbank_installment' || val === 'yapikredi_installment') {
+        installmentContainer.style.display = 'block';
+      } else {
+        installmentContainer.style.display = 'none';
+      }
+    }
+    document.addEventListener('DOMContentLoaded', toggleInstallmentVisibility);
+    setTimeout(toggleInstallmentVisibility, 500);
+
     // Genel Test Çalıştırma (Örn: Restore Navigate için)
     async function runTest(tag, cardId, testFile) {
+
       const headed = document.getElementById('headedToggle').checked;
       const workspaceId = document.getElementById('workspaceId').value;
       const baseUrl = document.getElementById('baseUrl').value;
@@ -5631,8 +5676,13 @@
         ? document.getElementById('licenseBillingCycleSelect').value : null;
       const iyzicoSmsCode = cardId === 'card-license-change'
         ? document.getElementById('iyzicoSmsCodeInput').value : null;
+      const paymentCard = cardId === 'card-license-change'
+        ? document.getElementById('paymentCardSelect')?.value : null;
+      const iyzicoInstallment = cardId === 'card-license-change'
+        ? document.getElementById('iyzicoInstallmentSelect')?.value : null;
 
       let finalTestFile = testFile;
+
       if (cardId === 'card-github-connect') {
         const githubConnectMode = document.getElementById('githubConnectModeSelect') ? document.getElementById('githubConnectModeSelect').value : 'happy_path';
         if (githubConnectMode === 'happy_path') {
@@ -5706,8 +5756,9 @@
             includeCode: cardId === 'card-github-backup' ? document.getElementById('backupIncludeCode').checked : undefined,
             includePr: cardId === 'card-github-backup' ? document.getElementById('backupIncludePr').checked : undefined,
             includeIssues: cardId === 'card-github-backup' ? document.getElementById('backupIncludeIssues').checked : undefined,
-            licenseTargetPlan, licenseBillingCycle, iyzicoSmsCode
+            licenseTargetPlan, licenseBillingCycle, iyzicoSmsCode, paymentCard, iyzicoInstallment
           })
+
         });
 
         const result = await response.json();
