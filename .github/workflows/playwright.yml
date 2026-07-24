@@ -55,10 +55,10 @@ jobs:
           key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
       - name: Install Playwright browsers
         if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: npx playwright install --with-deps chrome
+        run: npx playwright install --with-deps
       - name: Install Playwright OS dependencies
         if: steps.playwright-cache.outputs.cache-hit == 'true'
-        run: npx playwright install-deps chrome
+        run: npx playwright install-deps
       - name: Run tagged smoke and regression suite
         run: npx playwright test --grep "@smoke|@critical|@daily|@weekly|@monthly|@cron|@regression|@mocked"
       - name: Upload artifacts
@@ -115,10 +115,10 @@ jobs:
           key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
       - name: Install Playwright browsers
         if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: npx playwright install --with-deps chrome
+        run: npx playwright install --with-deps
       - name: Install Playwright OS dependencies
         if: steps.playwright-cache.outputs.cache-hit == 'true'
-        run: npx playwright install-deps chrome
+        run: npx playwright install-deps
       - name: Run full suite
         run: npx playwright test --grep-invert "@manual-interactive"
       - name: Upload artifacts
