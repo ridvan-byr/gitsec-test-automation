@@ -7,7 +7,7 @@ import path from 'path';
 async function injectSavedGoogleSession(context: any): Promise<boolean> {
   const googleSessionPath = path.join(process.cwd(), 'playwright/.auth/google-session.json');
   if (!fs.existsSync(googleSessionPath)) {
-    console.log('[bitbucket-auth] Saved Google session was not found. Use the Google Session card before Bitbucket connect.');
+    console.log('[POM] Kayıtlı Google/Atlassian oturum dosyası bulunamadı. Bitbucket bağlantısından önce Oturum Hazırlığı kartını kullanabilirsiniz.');
     return false;
   }
 
@@ -15,15 +15,15 @@ async function injectSavedGoogleSession(context: any): Promise<boolean> {
     const sessionData = JSON.parse(fs.readFileSync(googleSessionPath, 'utf8'));
     const cookies = sessionData.cookies || [];
     if (cookies.length === 0) {
-      console.log('[bitbucket-auth] Saved Google session has no cookies. Refresh Google Session before Bitbucket connect.');
+      console.log('[POM] Kayıtlı oturum dosyasında çerez bulunamadı. Lütfen oturumu tazeleyin.');
       return false;
     }
 
     await context.addCookies(cookies);
-    console.log(`[bitbucket-auth] Saved Google session injected into Bitbucket OAuth context. (${cookies.length} cookies)`);
+    console.log(`[POM] Kayıtlı Google/Atlassian oturum çerezleri Bitbucket pencerelerine aktarıldı (${cookies.length} adet çerez).`);
     return true;
   } catch (error: any) {
-    console.warn(`[bitbucket-auth] Saved Google session could not be loaded: ${error?.message || error}`);
+    console.warn(`[POM] Kayıtlı oturum çerezleri okunamadı: ${error?.message || error}`);
     return false;
   }
 }
@@ -31,8 +31,8 @@ async function injectSavedGoogleSession(context: any): Promise<boolean> {
 async function handleBitbucketAuthPopup(popup: any): Promise<boolean> {
   await popup.waitForLoadState('domcontentloaded').catch(() => {});
 
-  // 1. Enjekte et kaydedilmiş Google / Atlassian çerezlerini
-  await injectSavedGoogleSession(popup.context()).catch(() => {});
+  // 1. Önceden saklanmış Google/Atlassian çerezlerini enjekte et
+  const hasInjectedCookies = await injectSavedGoogleSession(popup.context()).catch(() => false);
 
   let credentials = { user: 'gitsectest@gmail.com', password: '1GitsecTest.', totpSecret: '' };
   try {
@@ -41,20 +41,33 @@ async function handleBitbucketAuthPopup(popup: any): Promise<boolean> {
     // fallback
   }
 
-  const e2eEmail = process.env.E2E_USER_EMAIL?.trim() || credentials.user;
-  const e2ePassword = process.env.E2E_USER_PASSWORD?.trim() || credentials.password;
+  const e2eEmail = process.env.E2E_USER_EMAIL?.trim() || process.env.GOOGLE_TEST_USER?.trim() || credentials.user;
+  const e2ePassword = process.env.E2E_USER_PASSWORD?.trim() || process.env.GOOGLE_TEST_PASSWORD?.trim() || credentials.password;
 
+  let directLoginAttempted = false;
+  let googleSsoTriggered = false;
   const startTime = Date.now();
-  while (Date.now() - startTime < 45000 && !popup.isClosed()) {
+
+  while (Date.now() - startTime < 50000 && !popup.isClosed()) {
     const currentUrl = popup.url();
 
     // A) Atlassian Giriş Ekranı (id.atlassian.com/login)
     if (/atlassian\.com\/login/i.test(currentUrl) || /id\.atlassian\.com/i.test(currentUrl)) {
+      // reCAPTCHA veya Robot denetim uyarısı varsa doğrudan Google SSO'ya geç
+      const captchaMsg = popup.locator('text=/confirm you\'re not a robot|make sure it\'s really you|reCAPTCHA|doğrulamasında sorun|security check|robot/i').first();
+      const hasCaptcha = await captchaMsg.isVisible().catch(() => false);
+
+      if (hasCaptcha) {
+        console.log('⚠️ [ATLASSIAN] Captcha / Robot güvenlik denetimi algılandı ("Please confirm you\'re not a robot") — Otomatik Google SSO Fallback tetikleniyor...');
+        googleSsoTriggered = true;
+      }
+
+      // 1. Birincil Yol (Primary): Atlassian E-posta Girişi
       const emailInput = popup.locator('input[name="username"], input[id="username"], input[type="email"]').first();
       const isEmailVisible = await emailInput.isVisible().catch(() => false);
 
-      if (isEmailVisible) {
-        console.log(`🚀 [ATLASSIAN] Atlassian e-posta girişi yapılıyor: ${e2eEmail}`);
+      if (isEmailVisible && !directLoginAttempted && !googleSsoTriggered) {
+        console.log(`🚀 [ATLASSIAN BİRİNCİL GİRİŞ] E-posta giriliyor: ${e2eEmail}`);
         await emailInput.fill(e2eEmail).catch(() => {});
         const continueBtn = popup
           .locator('#login-submit, button[type="submit"]')
@@ -63,16 +76,24 @@ async function handleBitbucketAuthPopup(popup: any): Promise<boolean> {
 
         if (await continueBtn.isVisible().catch(() => false)) {
           await continueBtn.click({ force: true }).catch(() => {});
-          await popup.waitForTimeout(2000);
+          directLoginAttempted = true;
+          await popup.waitForTimeout(1000);
+
+          // E-posta gönderildikten hemen sonra robot uyarısı çıktı mı?
+          const postCaptcha = await captchaMsg.isVisible().catch(() => false);
+          if (postCaptcha) {
+            console.log('⚠️ [ATLASSIAN] E-posta sonrası Robot uyarısı belirdi — ANINDA "Google ile Devam Et" butonuna geçiliyor!');
+            googleSsoTriggered = true;
+          }
         }
       }
 
-      // Şifre Giriş Alanı Görünür mü?
+      // 2. Birincil Yol: Atlassian Şifre Girişi
       const passInput = popup.locator('input[name="password"], input[id="password"], input[type="password"]').first();
       const isPassVisible = await passInput.isVisible().catch(() => false);
 
-      if (isPassVisible) {
-        console.log('🚀 [ATLASSIAN] Atlassian şifresi dolduruluyor...');
+      if (isPassVisible && !googleSsoTriggered) {
+        console.log('🚀 [ATLASSIAN BİRİNCİL GİRİŞ] Şifre giriliyor ve Oturum Açılıyor...');
         await passInput.fill(e2ePassword).catch(() => {});
         const loginBtn = popup
           .locator('#login-submit, button[type="submit"]')
@@ -81,12 +102,12 @@ async function handleBitbucketAuthPopup(popup: any): Promise<boolean> {
 
         if (await loginBtn.isVisible().catch(() => false)) {
           await loginBtn.click({ force: true }).catch(() => {});
-          await popup.waitForTimeout(2500);
+          await popup.waitForTimeout(2000);
         }
       }
 
-      // Google ile Devam Et / Social Button Var mı?
-      if (!isEmailVisible && !isPassVisible) {
+      // 3. Yedek Yol (Fallback): "Google ile Devam Et" SSO Butonu
+      if ((!isEmailVisible && !isPassVisible && !popup.isClosed()) || googleSsoTriggered) {
         const googleBtn = popup
           .locator('#google-signin-button, #social-login-google, button[data-testid*="google"], button[value="google"]')
           .or(popup.getByRole('button', { name: /^google$/i }))
@@ -94,57 +115,68 @@ async function handleBitbucketAuthPopup(popup: any): Promise<boolean> {
           .first();
 
         if (await googleBtn.isVisible().catch(() => false)) {
-          console.log('👆 [ATLASSIAN] Google SSO butonuna tıklandı.');
+          console.log('👆 [ATLASSIAN YEDEK GİRİŞ] "Google ile Devam Et" SSO butonuna tıklandı.');
           await googleBtn.click({ force: true }).catch(() => {});
-          await popup.waitForTimeout(2500);
+          googleSsoTriggered = true;
+          await popup.waitForTimeout(2000);
         }
       }
     }
 
-    // B) Google Oturum Açma Ekranı (accounts.google.com)
+    // B) Google Oturum Açma Ekranı (accounts.google.com) - Fallback Çalıştığında
     if (/accounts\.google\.com/i.test(currentUrl)) {
-      console.log('[google-login] Google hesap seçim veya giriş ekranı tespit edildi...');
-      const googleEmailInput = popup.locator('input[type="email"], input[name="identifier"]').first();
-      if (await googleEmailInput.isVisible().catch(() => false)) {
-        console.log(`🚀 [GOOGLE] Sign in ekranında otomatik e-posta dolduruluyor: ${credentials.user}`);
-        await googleEmailInput.fill(credentials.user).catch(() => {});
-        const nextBtn = popup.locator('#identifierNext').or(popup.getByRole('button', { name: /Next|İleri|Sonraki/i })).first();
-        await nextBtn.click({ force: true }).catch(() => {});
-        await popup.waitForTimeout(2500);
-      }
+      console.log('[google-login] Google OAuth yönlendirmesi algılandı. Çerezler ve oturum kontrol ediliyor...');
 
-      const googlePassInput = popup.locator('input[type="password"], input[name="Passwd"]').first();
-      if (await googlePassInput.isVisible().catch(() => false)) {
-        console.log('🚀 [GOOGLE] Otomatik şifre dolduruluyor...');
-        await googlePassInput.fill(credentials.password).catch(() => {});
-        const passNextBtn = popup.locator('#passwordNext').or(popup.getByRole('button', { name: /Next|İleri|Sonraki/i })).first();
-        await passNextBtn.click({ force: true }).catch(() => {});
-        await popup.waitForTimeout(3000);
-      }
-
-      const totpInput = popup.locator('input[name="totpPin"], input[type="tel"]').first();
-      if (await totpInput.isVisible().catch(() => false) && credentials.totpSecret) {
-        const totpCode = GoogleLoginPage.generateTotpCode(credentials.totpSecret);
-        console.log(`🚀 [GOOGLE] 2FA TOTP kodu otomatik dolduruluyor: ${totpCode}`);
-        await totpInput.fill(totpCode).catch(() => {});
-        await popup.keyboard.press('Enter').catch(() => {});
-        await popup.waitForTimeout(3000);
-      }
-
-      // Hesap Listesi Seçici ("Choose an account")
+      // 1. Doğrudan Onay / Hesap Seçimi
       const accountChoice = popup
         .locator('div[data-email], div[data-identifier], div[data-account-id], li[data-authuser], div[role="link"], li')
-        .filter({ hasText: /gitsec|gmail\.com/i })
+        .filter({ hasText: new RegExp(credentials.user, 'i') })
+        .or(popup.locator('span.VfPpkd-vQzf8d, [jsname="V67aGc"], button').filter({ hasText: /Devam Et|Allow|Continue/i }))
         .first();
 
       if (await accountChoice.isVisible().catch(() => false)) {
-        console.log('👆 [GOOGLE] Kayıtlı Google hesabına tıklanarak oturum açılıyor...');
+        console.log('⚡ [GOOGLE SSO] Kayıtlı Google oturumu bulundu — Hesap/Devam Et butonuna tıklandı!');
         await accountChoice.click({ force: true }).catch(() => {});
-        await popup.waitForTimeout(2500);
+        await popup.waitForTimeout(2000);
+      } else {
+        // 2. Çerez Süresi Dolmuş mu? (Fail-Fast ve Self-Healing Denetimi)
+        const googleEmailInput = popup.locator('input[type="email"], input[name="identifier"]').first();
+        const isFreshGoogleLoginNeeded = await googleEmailInput.isVisible().catch(() => false);
+
+        if (isFreshGoogleLoginNeeded) {
+          if (credentials.totpSecret) {
+            console.log('🛡️ [SELF-HEALING] Google çerez süresi dolmuş ancak TOTP Secret mevcut — Tam otomatik Google girişi yapılıyor...');
+            await googleEmailInput.fill(credentials.user).catch(() => {});
+            const nextBtn = popup.locator('#identifierNext').or(popup.getByRole('button', { name: /Next|İleri|Sonraki/i })).first();
+            await nextBtn.click({ force: true }).catch(() => {});
+            await popup.waitForTimeout(2000);
+
+            const googlePassInput = popup.locator('input[type="password"], input[name="Passwd"]').first();
+            if (await googlePassInput.isVisible().catch(() => false)) {
+              await googlePassInput.fill(credentials.password).catch(() => {});
+              const passNextBtn = popup.locator('#passwordNext').or(popup.getByRole('button', { name: /Next|İleri|Sonraki/i })).first();
+              await passNextBtn.click({ force: true }).catch(() => {});
+              await popup.waitForTimeout(2500);
+            }
+
+            const totpInput = popup.locator('input[name="totpPin"], input[type="tel"]').first();
+            if (await totpInput.isVisible().catch(() => false)) {
+              const totpCode = GoogleLoginPage.generateTotpCode(credentials.totpSecret);
+              console.log(`🚀 [SELF-HEALING] 2FA TOTP kodu otomatik üretildi ve girildi: ${totpCode}`);
+              await totpInput.fill(totpCode).catch(() => {});
+              await popup.keyboard.press('Enter').catch(() => {});
+              await popup.waitForTimeout(2500);
+            }
+          } else {
+            console.error('\n🚨 [FAIL-FAST UYARISI] Atlassian direkt girişi tamamlanamadı VE Google oturum çerezinin süresi dolmuş!');
+            console.error('👉 Aksiyon: Lütfen Dashboard üzerindeki "Google Oturum Hazırlığı" kartındaki "Oturumu Yenile" butonuna basarak Google çerezlerini tazeleyin.\n');
+            throw new Error('BITBUCKET_AUTH_FAILED: Atlassian girişi geçilemedi ve Google oturum çerezi (google-session.json) süresi dolmuş. Lütfen Dashboard üzerindeki Google Oturum Hazırlığı kartından oturumu tazeleyin.');
+          }
+        }
       }
     }
 
-    // C) Atlassian / Bitbucket "Grant Access" / Authorize Yetki Onay Sayfası
+    // C) Atlassian / Bitbucket "Grant Access" / Authorize Yetki Onayı
     const grantButton = popup
       .getByRole('button', { name: /grant access|authorize|allow|erişime izin ver|yetkilendir|kabul et/i })
       .or(popup.locator('input[type="submit"][value*="Grant"]'))

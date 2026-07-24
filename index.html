@@ -3443,8 +3443,18 @@
                 <span style="color: var(--text-muted);">Oturum Durumu:</span>
                 <span id="code-google-session-badge" class="google-session-badge" style="font-weight: 600; padding: 2px 8px; border-radius: 4px; border: 1px solid #475569;">Kontrol Ediliyor...</span>
               </div>
+              <div style="margin-top: 0.35rem; display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.72rem; background: rgba(0,0,0,0.25); padding: 0.5rem 0.75rem; border-radius: 6px; border: 1px solid var(--panel-border);">
+                <div style="display: flex; align-items: center; justify-content: space-between;">
+                  <span style="color: var(--text-muted);">🔑 Güvenlik Çerezi (SIDRTS):</span>
+                  <span class="google-session-rts-expiry" style="font-weight: 600; color: #f59e0b;">-</span>
+                </div>
+                <div style="display: flex; align-items: center; justify-content: space-between;">
+                  <span style="color: var(--text-muted);">🌐 Oturum Çerezi (SID):</span>
+                  <span class="google-session-sid-expiry" style="font-weight: 600; color: #94a3b8;">-</span>
+                </div>
+              </div>
               <div style="margin-top: 0.35rem; font-size: 0.7rem; color: var(--text-muted); text-align: right;">
-                Son Güncelleme: <span id="code-google-session-date" class="google-session-date">-</span>
+                Son Güncelleme: <span class="google-session-date">-</span>
               </div>
             </div>
             <div class="card-footer">
@@ -3998,11 +4008,11 @@
               <div style="margin-top: 0.35rem; display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.72rem; background: rgba(0,0,0,0.25); padding: 0.5rem 0.75rem; border-radius: 6px; border: 1px solid var(--panel-border);">
                 <div style="display: flex; align-items: center; justify-content: space-between;">
                   <span style="color: var(--text-muted);">🔑 Güvenlik Çerezi (SIDRTS):</span>
-                  <span id="google-session-rts-expiry" style="font-weight: 600; color: #f59e0b;">-</span>
+                  <span id="google-session-rts-expiry" class="google-session-rts-expiry" style="font-weight: 600; color: #f59e0b;">-</span>
                 </div>
                 <div style="display: flex; align-items: center; justify-content: space-between;">
                   <span style="color: var(--text-muted);">🌐 Oturum Çerezi (SID):</span>
-                  <span id="google-session-sid-expiry" style="font-weight: 600; color: #94a3b8;">-</span>
+                  <span id="google-session-sid-expiry" class="google-session-sid-expiry" style="font-weight: 600; color: #94a3b8;">-</span>
                 </div>
               </div>
               <div style="margin-top: 0.35rem; font-size: 0.7rem; color: var(--text-muted); text-align: right;">
@@ -6014,11 +6024,11 @@
       function tick() {
         const storedMs = parseInt(localStorage.getItem('gitsec_g_expires_ms') || '0', 10);
         const storedTimeStr = localStorage.getItem('gitsec_g_rts_time') || '';
-        const rtsEl = document.getElementById('google-session-rts-expiry');
+        const rtsEls = document.querySelectorAll('.google-session-rts-expiry');
 
-        if (!rtsEl) return;
+        if (!rtsEls.length) return;
         if (!storedMs) {
-          rtsEl.textContent = '-';
+          rtsEls.forEach((el) => { el.textContent = '-'; });
           return;
         }
 
@@ -6028,12 +6038,16 @@
           const secs = remainingSec % 60;
           const secsStr = secs < 10 ? '0' + secs : secs;
           const timeSuffix = storedTimeStr ? ` (${storedTimeStr})` : '';
-          rtsEl.textContent = `${mins} Dk ${secsStr} Sn Kaldı${timeSuffix}`;
-          rtsEl.style.color = '#f59e0b';
+          rtsEls.forEach((el) => {
+            el.textContent = `${mins} Dk ${secsStr} Sn Kaldı${timeSuffix}`;
+            el.style.color = '#f59e0b';
+          });
         } else {
           const timeSuffix = storedTimeStr ? ` (${storedTimeStr})` : '';
-          rtsEl.textContent = `Süresi Doldu${timeSuffix}`;
-          rtsEl.style.color = '#ef4444';
+          rtsEls.forEach((el) => {
+            el.textContent = `Süresi Doldu${timeSuffix}`;
+            el.style.color = '#ef4444';
+          });
         }
       }
 
@@ -6049,9 +6063,9 @@
         if (!response.ok) throw new Error('Oturum durumu alınamadı.');
         const data = await response.json();
 
-        const sidEl = document.getElementById('google-session-sid-expiry');
-        if (sidEl && data.sidExpiryStr) {
-          sidEl.textContent = data.sidExpiryStr;
+        const sidEls = document.querySelectorAll('.google-session-sid-expiry');
+        if (sidEls.length && data.sidExpiryStr) {
+          sidEls.forEach((el) => { el.textContent = data.sidExpiryStr; });
         }
 
         if (data.rtsExpiresMs) {
@@ -6132,6 +6146,92 @@
         }
       } catch (err) {
         console.error('Google session status check failed:', err);
+      }
+    }
+
+    async function updateBitbucketSessionStatus() {
+      try {
+        const response = await fetch('/api/bitbucket-session-status?t=' + Date.now(), { cache: 'no-store' });
+        if (!response.ok) return;
+        const data = await response.json();
+
+        const badge = document.getElementById('bitbucket-session-badge');
+        const dot = document.getElementById('bitbucket-session-dot');
+        const dateSpan = document.getElementById('bitbucket-session-date');
+        const card = document.getElementById('card-code-bitbucket-session');
+
+        if (data.exists) {
+          if (badge) {
+            badge.innerText = 'Aktif (Kayıtlı)';
+            badge.style.background = 'rgba(16, 185, 129, 0.12)';
+            badge.style.color = 'var(--gitsec-green)';
+            badge.style.borderColor = 'rgba(16, 185, 129, 0.25)';
+          }
+          if (dot) {
+            dot.style.background = 'var(--gitsec-green)';
+            dot.style.boxShadow = '0 0 10px var(--gitsec-green)';
+          }
+          if (card && card.className !== 'test-card running') card.className = 'test-card success';
+        } else {
+          if (badge) {
+            badge.innerText = 'Giriş Gerekli';
+            badge.style.background = 'rgba(244, 63, 94, 0.12)';
+            badge.style.color = 'var(--gitsec-red)';
+            badge.style.borderColor = 'rgba(244, 63, 94, 0.25)';
+          }
+          if (dot) {
+            dot.style.background = 'var(--gitsec-red)';
+            dot.style.boxShadow = '0 0 10px var(--gitsec-red)';
+          }
+          if (card && card.className !== 'test-card running') card.className = 'test-card';
+        }
+
+        if (dateSpan && data.mtime) {
+          const date = new Date(data.mtime);
+          dateSpan.innerText = date.toLocaleDateString('tr-TR') + ' ' + date.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+        } else if (dateSpan) {
+          dateSpan.innerText = '-';
+        }
+      } catch (err) {
+        console.error('Bitbucket session status check failed:', err);
+      }
+    }
+
+    async function runBitbucketLogin(cardId = 'card-code-bitbucket-session') {
+      if (document.getElementById('globalStatusText').innerText === 'Test Koşuyor...') {
+        showToast('Aktif bir işlem sürerken başka bir işlem başlatılamaz!', true);
+        return;
+      }
+
+      activeCardId = cardId;
+      testStartTime = Date.now();
+      if (lastArtifacts[cardId]) {
+        delete lastArtifacts[cardId];
+      }
+      clearConsole();
+
+      const card = document.getElementById(cardId);
+      if (card) card.className = 'test-card running';
+      updateUIState(true, 'Bitbucket Oturumu Açılıyor...');
+
+      try {
+        const response = await fetch('/api/bitbucket-login-code', {
+          method: 'POST',
+          headers: { 'X-Dashboard-Token': DASHBOARD_TOKEN }
+        });
+        const data = await response.json();
+
+        if (!response.ok) {
+          showToast(data.error || 'Bitbucket oturum açma aracı başlatılamadı!', true);
+          updateUIState(false, 'Hata Oluştu');
+          if (card) card.className = 'test-card fail';
+        } else {
+          showToast('Bitbucket oturum açma penceresi başlatıldı!');
+        }
+      } catch (err) {
+        showToast('Sunucu bağlantı hatası: ' + err.message, true);
+        updateUIState(false, 'Hata Oluştu');
+        if (card) card.className = 'test-card fail';
       }
     }
 
@@ -7648,6 +7748,7 @@
       initSSE();
       loadEnvVars();
       updateGoogleSessionStatus();
+      updateBitbucketSessionStatus();
       updateStatsUI();
       renderConsoleTabs();
       updateWorkerStats();

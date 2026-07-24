@@ -83,7 +83,7 @@ const server = http.createServer((req, res) => {
   }
 
   // ─── Güvenlik: Token Doğrulama — /api/* endpoint'leri koruması ──────────
-  if (req.url.startsWith('/api/') && req.url !== '/api/logs' && req.url !== '/api/token' && !req.url.startsWith('/api/google-session-status')) {
+  if (req.url.startsWith('/api/') && req.url !== '/api/logs' && req.url !== '/api/token' && !req.url.startsWith('/api/google-session-status') && !req.url.startsWith('/api/bitbucket-session-status')) {
     const clientToken = req.headers['x-dashboard-token'];
     if (clientToken !== DASHBOARD_TOKEN) {
       console.warn(`[GÜVENLİK] Yetkisiz API erişim denemesi engellendi — URL: ${req.url}, Origin: ${requestOrigin || 'none'}`);
@@ -464,6 +464,75 @@ const server = http.createServer((req, res) => {
       res.writeHead(500, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: err.message }));
     }
+    return;
+  }
+
+  // 3b-2. Bitbucket Oturum Durumu (API)
+  if (req.url.startsWith('/api/bitbucket-session-status') && req.method === 'GET') {
+    try {
+      const bitbucketSessionPath = path.join(__dirname, 'playwright', '.auth', 'bitbucket-session.json');
+      const exists = fs.existsSync(bitbucketSessionPath);
+      let mtime = null;
+      let expired = false;
+
+      if (exists) {
+        mtime = fs.statSync(bitbucketSessionPath).mtime;
+      }
+
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ exists, mtime, expired }));
+    } catch (err) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: err.message }));
+    }
+    return;
+  }
+
+  // 3c-2. Bitbucket Manuel Giriş Tetikleme (API)
+  if (req.url === '/api/bitbucket-login-code' && req.method === 'POST') {
+    const bitbucketCardIds = ['card-bitbucket-session', 'card-code-bitbucket-session'];
+    const bitbucketProcessRunning = bitbucketCardIds.some(cardId => activeProcesses.has(cardId));
+    if (bitbucketProcessRunning) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Zaten aktif bir Bitbucket oturum açma işlemi çalışıyor!' }));
+      return;
+    }
+
+    const cardId = 'card-code-bitbucket-session';
+    const scriptPath = path.join(__dirname, 'scripts', 'login-bitbucket-manually.ts');
+    console.log(`[Server] Başlatılan Bitbucket Manuel Giriş komutu: npx tsx ${scriptPath}`);
+    broadcast('log', { cardId, text: `[DASHBOARD] Bitbucket Manuel Oturum Açma aracı başlatılıyor...\n` });
+
+    const proc = spawn('npx', ['tsx', 'scripts/login-bitbucket-manually.ts'], {
+      shell: true,
+      cwd: __dirname,
+      env: { ...process.env, FORCE_COLOR: '1' }
+    });
+
+    activeProcesses.set(cardId, proc);
+    broadcast('status', { cardId, status: 'running' });
+
+    proc.stdout.on('data', (data) => {
+      const text = data.toString('utf8');
+      console.log(`[Bitbucket-Login STDOUT] ${text}`);
+      broadcast('log', { cardId, text });
+    });
+
+    proc.stderr.on('data', (data) => {
+      const text = data.toString('utf8');
+      console.error(`[Bitbucket-Login STDERR] ${text}`);
+      broadcast('log', { cardId, text });
+    });
+
+    proc.on('close', (code) => {
+      console.log(`[Server] Bitbucket login aracı tamamlandı, çıkış kodu: ${code}`);
+      activeProcesses.delete(cardId);
+      const isSuccess = code === 0;
+      broadcast('done', { cardId, success: isSuccess, code });
+    });
+
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ success: true, message: 'Bitbucket oturum açma aracı başlatıldı.' }));
     return;
   }
 
