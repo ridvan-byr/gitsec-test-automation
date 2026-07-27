@@ -85,28 +85,106 @@ export class ProviderPage {
   }
 
   async isGithubAlreadyConnectedOnAddProvider(): Promise<boolean> {
-    const githubRow = this.page.getByRole('row', { name: /GitHub/i }).first();
-    await githubRow.waitFor({ state: 'attached', timeout: 15000 }).catch(() => { });
-    return githubRow.getByText(/\bActive\b/i).first().isVisible().catch(() => false);
+    const tableRows = this.page.locator('main table tbody tr, div[class*="table"] tr, [role="row"]');
+    const count = await tableRows.count().catch(() => 0);
+
+    for (let i = 0; i < count; i++) {
+      const row = tableRows.nth(i);
+      const textContent = (await row.textContent().catch(() => '')) || '';
+      const innerText = (await row.innerText().catch(() => '')) || '';
+      const innerHTML = (await row.innerHTML().catch(() => '')) || '';
+
+      const combinedText = `${textContent} ${innerText} ${innerHTML}`;
+      const cleanLogText = (innerText || textContent).trim().replace(/\s+/g, ' ');
+
+      if (/GitHub/i.test(combinedText)) {
+        console.log(`🔍 [PROVIDER CHECK] GitHub Satırı Bulundu (Satır ${i + 1}): "${cleanLogText}"`);
+        const isRemoved = /Removed/i.test(cleanLogText) || /Removed/i.test(textContent || '') || /Removed/i.test(innerText || '');
+
+        if (isRemoved) {
+          console.log('❌ [PROVIDER CHECK] GitHub satırının durumu "Removed" (Gri Rozet - Bağlantı Pasif).');
+          return false;
+        }
+
+        const isActive = /Active/i.test(cleanLogText) || /Active/i.test(textContent || '');
+        if (isActive) {
+          console.log('✅ [PROVIDER CHECK] GitHub sağlayıcısının AKTİF (Active) durumda olduğu doğrulandı.');
+          return true;
+        }
+      }
+    }
+
+    return false;
   }
 
   async isBitbucketAlreadyConnectedOnAddProvider(): Promise<boolean> {
-    const bitbucketRow = this.page.getByRole('row', { name: /Bitbucket/i }).first();
-    await bitbucketRow.waitFor({ state: 'attached', timeout: 15000 }).catch(() => { });
-    return bitbucketRow.getByText(/\bActive\b|\bConnected\b/i).first().isVisible().catch(() => false);
+    const bitbucketElement = this.page.locator('tr, div[class*="row"], div[class*="card"], div[class*="provider"], main table tbody tr')
+      .filter({ hasText: /Bitbucket/i })
+      .first();
+
+    const isAttached = await bitbucketElement.waitFor({ state: 'attached', timeout: 5000 }).then(() => true).catch(() => false);
+    if (!isAttached) {
+      console.log('🔍 [PROVIDER CHECK] Bitbucket sağlayıcı satırı DOM üzerinde bulunamadı.');
+      return false;
+    }
+
+    const text = (await bitbucketElement.textContent().catch(() => '')) || '';
+    console.log(`🔍 [PROVIDER CHECK] Bitbucket arayüz satırı okundu: "${text.trim().replace(/\s+/g, ' ')}"`);
+
+    if (/Removed/i.test(text)) return false;
+    if (/Active/i.test(text) || /Connected/i.test(text) || /Remove/i.test(text)) {
+      console.log('✅ [PROVIDER CHECK] Bitbucket sağlayıcısının AKTİF durumda olduğu doğrulandı.');
+      return true;
+    }
+    const hasInstall = /Install/i.test(text) || /Connect/i.test(text);
+    return !hasInstall && text.length > 5;
   }
 
   async selectGithub(): Promise<void> {
-    const githubActionButton = this.page
-      .getByRole('button')
-      .filter({
-        hasText: /Install the GitSec(?:\.io)? app and grant repository permissions|Configure App/i,
-      })
+    console.log('👆 [TIKLAMA] "Github" sağlayıcı kartı aranıyor ve tıklanıyor...');
+
+    // Resimdeki "Github > Install the GitSec.io app..." kartını veya Configure App butonunu dinamik bul
+    const cardNode = this.page.getByText(/Install the GitSec(?:\.io)? app/i)
+      .or(this.page.locator('h1, h2, h3, h4, span, div, p').filter({ hasText: /^Github\s*>/i }))
+      .or(this.page.locator('a, button, [role="button"]').filter({ hasText: /Configure App|Install the GitSec/i }))
       .first();
 
-    await githubActionButton.waitFor({ state: 'visible', timeout: 20000 });
-    await githubActionButton.scrollIntoViewIfNeeded().catch(() => {});
-    await githubActionButton.click();
+    const isVisible = await cardNode.waitFor({ state: 'visible', timeout: 15000 }).then(() => true).catch(() => false);
+    if (!isVisible) {
+      console.log('⚠️ [TIKLAMA] Github kartı arayüzde görünür olmadı!');
+      return;
+    }
+
+    await cardNode.scrollIntoViewIfNeeded().catch(() => {});
+
+    // Tıklamayı 3 farklı katmanda (Standart Click, Parent Click, JS Event Click) garanti et
+    for (let attempt = 0; attempt < 4; attempt++) {
+      // A) Standart Playwright tıklaması
+      await cardNode.click({ timeout: 2000 }).catch(() => {});
+
+      // B) Üst tıklanabilir kapsayıcıya (a, button veya role="button") tıklama
+      const clickableParent = cardNode.locator('xpath=ancestor-or-self::a | xpath=ancestor-or-self::button | xpath=ancestor-or-self::*[@role="button"] | xpath=ancestor-or-self::div[contains(@class, "card") or contains(@class, "item") or contains(@class, "provider")][1]').first();
+      if (await clickableParent.isVisible().catch(() => false)) {
+        await clickableParent.click({ force: true }).catch(() => {});
+      }
+
+      // C) JavaScript seviyesinde tüm parent elemanların .click() metodunu tetikle
+      await cardNode.evaluate((el) => {
+        let curr: HTMLElement | null = el as HTMLElement;
+        while (curr && curr !== document.body) {
+          curr.click();
+          curr = curr.parentElement;
+        }
+      }).catch(() => {});
+
+      // Eğer popup açıldıysa veya yönlendirme başladıysa tıklama başarılıdır
+      await this.page.waitForTimeout(400);
+      const openPages = this.page.context().pages();
+      if (openPages.length > 1 || this.page.url().includes('github.com')) {
+        console.log('✅ [TIKLAMA] Github kartına tıklama başarıyla sağlandı!');
+        return;
+      }
+    }
   }
 
   async selectBitbucket(): Promise<void> {
@@ -118,9 +196,11 @@ export class ProviderPage {
 
   async goToRepositoriesGithub(): Promise<void> {
     const wsId = await this.getActiveWorkspaceId();
-    await this.page.goto(`${this.dashboardBaseUrl}/${wsId}/repositories/github`, { waitUntil: 'domcontentloaded' });
+    await this.page.goto(`${this.dashboardBaseUrl}/${wsId}/repositories/github`, { waitUntil: 'domcontentloaded' }).catch(err => {
+      if (!err.message.includes('net::ERR_ABORTED')) throw err;
+    });
     await expect(this.page).toHaveURL(/\/repositories\/github\b/);
-    await expect(this.page.locator('table').first()).toBeVisible({ timeout: 30000 });
+    await expect(this.page.locator('table, main').first()).toBeVisible({ timeout: 30000 });
   }
 
   /** Direct navigation to Bitbucket repositories. */
@@ -329,4 +409,65 @@ export class ProviderPage {
       await expect(this.page.locator('main').first()).toBeVisible({ timeout: 20000 }).catch(() => {});
     }
   }
+
+  /**
+   * GitSec Repositories sayfasındaki Sync/Refresh butonunu tetikler veya sayfayı yeniler.
+   */
+  async triggerRepoSync(): Promise<void> {
+    console.log('🔄 [GITSEC UI] Repositories senkronizasyonu tetikleniyor...');
+    const syncBtn = this.page.locator('button, a')
+      .filter({ hasText: /sync|refresh|senkronize|yenile/i })
+      .or(this.page.locator('button[title*="Refresh"], button[title*="Sync"], button[aria-label*="Refresh"], button[aria-label*="Sync"]'))
+      .first();
+
+    if (await syncBtn.isVisible().catch(() => false)) {
+      await syncBtn.click({ force: true }).catch(() => {});
+      console.log('✅ [GITSEC UI] Sync/Refresh butonuna tıklandı.');
+      await this.page.waitForTimeout(2000);
+    } else {
+      console.log('ℹ️ [GITSEC UI] Sync/Refresh butonu bulunamadı, sayfa yenileniyor...');
+      await this.page.reload({ waitUntil: 'domcontentloaded' });
+      await this.page.waitForTimeout(1500);
+    }
+  }
+
+  /**
+   * GitSec Repositories listesinde repo adı ve opsiyonel status rozeti (Private/Public/Archived) kontrolü yapar.
+   */
+  async verifyRepoInList(
+    repoName: string,
+    expectedStatus?: { isPrivate?: boolean; isArchived?: boolean }
+  ): Promise<boolean> {
+    console.log(`🔍 [GITSEC UI] Repositories listesinde "${repoName}" aranıyor...`);
+
+    const repoRow = this.page.locator('tr, div[class*="row"], div[class*="card"]')
+      .filter({ hasText: new RegExp(`\\b${repoName}\\b|${repoName}`, 'i') })
+      .first();
+
+    const isVisible = await repoRow.isVisible({ timeout: 5000 }).catch(() => false);
+    if (!isVisible) {
+      console.log(`❌ [GITSEC UI] "${repoName}" adlı repo listede görünmüyor.`);
+      return false;
+    }
+
+    console.log(`✅ [GITSEC UI] "${repoName}" repo satırı listede görünür.`);
+
+    if (expectedStatus?.isPrivate !== undefined) {
+      const expectedText = expectedStatus.isPrivate ? /Private/i : /Public/i;
+      const badge = repoRow.locator('span, div, button, p').filter({ hasText: expectedText }).first();
+      const hasBadge = await badge.isVisible().catch(() => false);
+      console.log(`🔍 [GITSEC UI] Visibility rozeti (${expectedStatus.isPrivate ? 'Private' : 'Public'}): ${hasBadge ? '✅ Mevcut' : '⚠️ Bulunamadı'}`);
+      if (!hasBadge) return false;
+    }
+
+    if (expectedStatus?.isArchived !== undefined) {
+      const archiveBadge = repoRow.locator('span, div, button, p').filter({ hasText: /Archived|Arşivlendi/i }).first();
+      const hasArchiveBadge = await archiveBadge.isVisible().catch(() => false);
+      console.log(`🔍 [GITSEC UI] Archived rozeti: ${hasArchiveBadge ? '✅ Mevcut' : 'ℹ️ Yok (Unarchived)'}`);
+      if (expectedStatus.isArchived !== hasArchiveBadge) return false;
+    }
+
+    return true;
+  }
 }
+

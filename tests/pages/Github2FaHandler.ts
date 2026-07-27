@@ -414,7 +414,7 @@ export class Github2FaHandler {
             return true;
         }
 
-        await this.safePause(1200);
+        await this.safePause(50);
         let assessment = await this.assessTwoFactorChallenge();
 
         if (!assessment.hasTwoFactor) {

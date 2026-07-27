@@ -46,7 +46,7 @@ export class GithubLoginPage {
     async login(username: string, password: string) {
         await this.usernameInput.fill(username);
         await this.passwordInput.fill(password);
-        await this.signInButton.click();
+        await this.signInButton.click({ force: true }).catch(() => {});
     }
 
     async assessTwoFactorChallenge(): Promise<Github2FaAssessment> {

@@ -47,11 +47,30 @@ export default defineConfig({
       testMatch: /auth\.setup\.ts/,
     },
     {
+      name: 'provider-setup',
+      dependencies: ['setup'],
+      testMatch: /provider\.setup\.ts/,
+    },
+    {
       name: 'chromium-unauthenticated',
       testMatch: /tests\/e2e\/auth\/(api-login-smoke|forgot-password|forgot-password-mocked|login|login-failures|login-mocked|register|register-failures)\.spec\.ts/,
       use: {
         ...devices['Desktop Chrome'],
-        // Gerçek Chrome kullan — Google bot algılamasını engeller
+        channel: 'chrome',
+        launchOptions: {
+          args: [
+            '--disable-blink-features=AutomationControlled',
+          ],
+        },
+      }
+    },
+    {
+      name: 'chromium-connect',
+      dependencies: ['setup'],
+      testMatch: /tests\/e2e\/providers\/github-connect\.spec\.ts/,
+      use: { 
+        ...devices['Desktop Chrome'],
+        storageState: 'playwright/.auth/user.json',
         channel: 'chrome',
         launchOptions: {
           args: [
@@ -62,12 +81,14 @@ export default defineConfig({
     },
     {
       name: 'chromium',
-      dependencies: ['setup'],
-      testIgnore: /tests\/e2e\/auth\/(api-login-smoke|forgot-password|forgot-password-mocked|login|login-failures|login-mocked|register|register-failures)\.spec\.ts/,
+      dependencies: ['provider-setup'],
+      testIgnore: [
+        /tests\/e2e\/auth\/(api-login-smoke|forgot-password|forgot-password-mocked|login|login-failures|login-mocked|register|register-failures)\.spec\.ts/,
+        /tests\/e2e\/providers\/github-connect\.spec\.ts/
+      ],
       use: { 
         ...devices['Desktop Chrome'],
         storageState: 'playwright/.auth/user-with-provider.json',
-        // Gerçek Chrome kullan (Playwright Chromium yerine) — Google bot algılamasını engeller
         channel: 'chrome',
         launchOptions: {
           args: [
@@ -76,9 +97,6 @@ export default defineConfig({
         },
       }
     },
-
-
-    /* Test against mobile viewports. */
     // {
     //   name: 'Mobile Chrome',
     //   use: { ...devices['Pixel 5'] },
