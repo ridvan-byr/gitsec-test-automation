@@ -225,13 +225,14 @@ export async function tryFetchGithubOtpFromImapOnce(
       hits.sort((a, b) => b.at - a.at);
       console.log('[imap-debug] --- IMAP aday kodlar (en yeni üstte, en fazla 5) ---');
       for (const h of hits.slice(0, 5)) {
-        const when = h.at ? new Date(h.at).toISOString() : '?';
-        console.log(`[imap-debug]   kod="${h.code}"  tarih=${when}  kimden=${h.from}`);
+        const d = h.at ? new Date(h.at) : null;
+        const whenStr = d ? `${d.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })} (Türkiye Saati)` : '?';
+        console.log(`[imap-debug]   kod="${h.code}"  tarih=${whenStr}  kimden=${h.from}`);
         console.log(`[imap-debug]   konu: ${h.subject.slice(0, 100)}`);
       }
       console.log(`[imap-debug] SEÇİLEN (kutuya yazılacak): "${hits[0].code}"`);
       if (minReceivedAt) {
-        console.log(`[imap-debug] minReceivedAt filtresi: ${minReceivedAt.toISOString()}`);
+        console.log(`[imap-debug] minReceivedAt filtresi: ${minReceivedAt.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`);
       }
       if (excludeCodes.length) {
         console.log(`[imap-debug] hariç tutulan kodlar: ${excludeCodes.join(', ')}`);

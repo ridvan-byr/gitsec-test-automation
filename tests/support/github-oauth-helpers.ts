@@ -45,3 +45,29 @@ export async function checkIfOnGithubMainPageAndClose(popup: Page): Promise<bool
   return false;
 }
 
+export async function verifyDashboardConnection(providerPage: any, maxAttempts = 5): Promise<void> {
+  console.log('🚀 [YÖNLENDİRME] Pop-up kapandı; senkronizasyon beklemesi yapılmadan doğrudan "Add Provider" sayfasına gidiliyor...');
+  await providerPage.goToAddProviderPage().catch(() => {});
+
+  console.log('🔍 [KONTROL] GitHub sağlayıcısının GitSec paneli üzerinde aktifleştiği doğrulanıyor...');
+  let attempt = 0;
+
+  while (attempt < maxAttempts) {
+    attempt++;
+
+    const isConnected = await providerPage.isGithubAlreadyConnectedOnAddProvider();
+    if (isConnected) {
+      console.log('🎉 [BAŞARILI] GitHub sağlayıcı bağlantısı Add Provider sayfasında başarıyla doğrulandı (Active).');
+      return;
+    }
+
+    if (attempt < maxAttempts) {
+      console.log(`⏳ [BEKLEME] (Deneme ${attempt}/${maxAttempts}) GitHub sağlayıcısı henüz aktifleşmedi, sayfa yenileniyor...`);
+      await providerPage.goToAddProviderPage().catch(() => {});
+      await providerPage.page.waitForTimeout(2000);
+    }
+  }
+
+  throw new Error(`❌ GitHub sağlayıcısı ${maxAttempts} deneme sonrasında GitSec paneli üzerinde aktifleşmedi.`);
+}
+

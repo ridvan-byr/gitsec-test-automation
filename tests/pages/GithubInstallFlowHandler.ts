@@ -214,59 +214,60 @@ export class GithubInstallFlowHandler {
                 await this.safePause(500);
             }
 
-            // DevTools Dump ile kesinleşen yeşil yetkilendirme butonunu metin filtresi ile tam hedefle
             const installBtn = this.page
                 .locator('button.js-integrations-install-form-submit')
-                .or(this.page.locator('button[data-octo-click="install_integration"]'))
+                .or(this.page.locator('button[data-octo-click*="install"]'))
                 .or(this.page.locator('form.js-integrations-install-form button[type="submit"]'))
-                .filter({ hasText: /Install/i })
+                .or(this.page.getByRole('button', { name: /Install\s*(?:&|and)?\s*Authorize|Install|Yükle|Kur/i }))
+                .or(this.page.locator('button[type="submit"]').filter({ hasText: /Install|Authorize|Yükle|Yetkilendir/i }))
                 .first();
 
-            // Butonun DOM'a yerleşmesini bekle (Maks 5s)
-            await installBtn.waitFor({ state: 'attached', timeout: 5000 }).catch(() => {});
-
-            // Sayfayı ve butonu görünür alana kaydır
+            // Sayfayı ve butonu anında en aşağıya kaydırıp bas
             await this.page.evaluate(() => {
                 window.scrollTo(0, 99999);
                 if (document.documentElement) document.documentElement.scrollTop = 99999;
                 if (document.body) document.body.scrollTop = 99999;
-                const form = document.querySelector('form.js-integrations-install-form');
+                const form = document.querySelector('form.js-integrations-install-form, form[action*="install"]');
                 if (form) form.scrollTop = form.scrollHeight;
             }).catch(() => {});
 
-            await installBtn.scrollIntoViewIfNeeded().catch(() => {});
-            await this.safePause(100);
-
             console.log('[github] 👆 [TIKLAMA] GitHub yeşil "Install & Authorize" butonuna basılıyor...');
             
-            // Doğrudan Buton Tıklaması
-            try {
-                await installBtn.click({ timeout: 5000 });
-            } catch {
-                await installBtn.click({ force: true, timeout: 3000 }).catch(() => {});
-            }
+            await installBtn.click({ force: true }).catch(async () => {
+                await installBtn.evaluate((el: any) => el.click()).catch(() => {});
+            });
 
-            // Sayfanın yönlendiğini veya popup'ın kapandığını denetle
+            // Sayfanın GitSec callback URL'ine yönlenmesini bekle (GitHub backend OAuth tetiklemesi için)
             for (let i = 0; i < 40; i++) {
                 if (this.page.isClosed()) {
                     console.log('[github] 🎉 [BAŞARILI] Kurulum onaylandı ve popup penceresi kapandı.');
                     return true;
                 }
                 const currentUrl = this.page.url();
+                
+                // 1. GitSec Callback URL'ine ulaşıldıysa yönlendirmeyi tamamla
                 if (currentUrl.includes('gitsec.io') || currentUrl.includes('callback')) {
-                    console.log(`[github] 🎉 [BAŞARILI] Kurulum onaylandı, GitSec callback URL'ine yönlendi: ${currentUrl}`);
+                    console.log(`[github] 🎉 [BAŞARILI] Kurulum yetkisi tamamlandı ve GitSec callback URL'ine yönlendi (${currentUrl}).`);
+                    await this.safePause(500);
+                    if (!this.page.isClosed()) {
+                        await this.page.close().catch(() => {});
+                    }
                     return true;
                 }
 
-                // Eğer GitHub App genel yüklemeler sayfasına attıysa "Install" butonuna bas
-                if (currentUrl.includes('/apps/') && currentUrl.includes('/installations') && !currentUrl.includes('/permissions')) {
-                    console.log(`[github] ⚠️ [GITHUB APP] Uygulama ana kurulumlar sayfasına yönlendi: ${currentUrl}. "Install" butonu aranıyor...`);
-                    const installAppBtn = this.page.locator('button, a, input[type="submit"]').filter({ hasText: /^Install$|^Install App$|^Yetkilendir$/i }).first();
-                    if (await installAppBtn.isVisible().catch(() => false)) {
-                        console.log('[github] 👆 [TIKLAMA] GitHub App sayfasında "Install" butonuna tıklanıyor...');
-                        await installAppBtn.click({ force: true }).catch(() => {});
-                        await this.safePause(1000);
+                // 2. Eğer GitHub settings/installations/{id} veya /installations sayfasına attıysa ID ile callback çağır
+                const matchId = currentUrl.match(/settings\/installations\/(\d+)$/i);
+                if (matchId) {
+                    const instId = matchId[1];
+                    const apiBaseUrl = process.env.API_BASE_URL || 'https://staging.api.gitsec.io';
+                    const callbackUrl = `${apiBaseUrl}/api/installations/callback?installation_id=${instId}&setup_action=install`;
+                    console.log(`[github] 🔗 GitHub ayarlar sayfasına düşüldü. Doğrudan GitSec Callback URL'ine yönlendiriliyor: ${callbackUrl}`);
+                    await this.page.goto(callbackUrl).catch(() => {});
+                    await this.safePause(800);
+                    if (!this.page.isClosed()) {
+                        await this.page.close().catch(() => {});
                     }
+                    return true;
                 }
 
                 await this.safePause(150);

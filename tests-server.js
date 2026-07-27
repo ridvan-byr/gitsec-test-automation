@@ -468,13 +468,19 @@ const server = http.createServer((req, res) => {
             }
           }
 
-          // Google'ın kritik oturum çerezleri
-          const criticalCookieNames = ['SID', 'HSID', 'SSID', 'SAPISID', 'APISID'];
+          // 3. Genel Kritik Çerez Süre Kontrolü
+          const criticalCookieNames = ['SID', 'HSID', 'SSID', 'SAPISID', 'APISID', '__Secure-1PSIDRTS', '__Secure-3PSIDRTS', 'SIDTS'];
           const googleCookies = cookies.filter(c => criticalCookieNames.includes(c.name) && c.domain.includes('google.com'));
           
           if (googleCookies.length === 0) {
             expired = true;
             expiredReason = 'Kritik Google oturum çerezleri bulunamadı.';
+          } else {
+            const expiredCritical = googleCookies.find(c => c.expires && c.expires > 0 && c.expires <= now);
+            if (expiredCritical) {
+              expired = true;
+              expiredReason = `Google oturum çerezinin (${expiredCritical.name}) süresi dolmuş. Lütfen oturumu yenileyin.`;
+            }
           }
         } catch (e) {
           expired = true;

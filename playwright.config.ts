@@ -50,6 +50,9 @@ export default defineConfig({
       name: 'provider-setup',
       dependencies: ['setup'],
       testMatch: /provider\.setup\.ts/,
+      use: {
+        storageState: 'playwright/.auth/user.json',
+      }
     },
     {
       name: 'chromium-unauthenticated',
@@ -67,7 +70,7 @@ export default defineConfig({
     {
       name: 'chromium-connect',
       dependencies: ['setup'],
-      testMatch: /tests\/e2e\/providers\/github-connect\.spec\.ts/,
+      testMatch: /tests\/e2e\/providers\/(github|bitbucket)-connect\.spec\.ts/,
       use: { 
         ...devices['Desktop Chrome'],
         storageState: 'playwright/.auth/user.json',
@@ -84,7 +87,7 @@ export default defineConfig({
       dependencies: ['provider-setup'],
       testIgnore: [
         /tests\/e2e\/auth\/(api-login-smoke|forgot-password|forgot-password-mocked|login|login-failures|login-mocked|register|register-failures)\.spec\.ts/,
-        /tests\/e2e\/providers\/github-connect\.spec\.ts/
+        /tests\/e2e\/providers\/(github|bitbucket)-connect\.spec\.ts/
       ],
       use: { 
         ...devices['Desktop Chrome'],

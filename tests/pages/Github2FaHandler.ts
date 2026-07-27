@@ -134,32 +134,45 @@ export class Github2FaHandler {
         if (/two-factor|sessions\/two-factor|sessions\/verify/i.test(url)) {
             return true;
         }
+        const isVerifiedDeviceUrl = /verified-device|sessions\/verified/i.test(this.page.url());
+        const emailCodeText = await this.page
+            .getByText(/sent your authentication code via email|Device Verification Code|sent an email with a verification code/i)
+            .first()
+            .isVisible()
+            .catch(() => false);
         const heading = await this.page
-            .getByRole('heading', { name: /two.factor|two-step|authentication code|confirm access|iki faktörlü|iki adımlı|erişimi onayla/i })
+            .getByRole('heading', { name: /two.factor|two-step|authentication code|confirm access|iki faktörlü|iki adımlı|erişimi onayla|Device Verification Code|Email/i })
             .first()
             .isVisible()
             .catch(() => false);
         const label = await this.page
-            .getByText(/two.factor authentication|two-step verification|iki faktörlü doğrulama|iki adımlı doğrulama/i)
+            .getByText(/two.factor authentication|two-step verification|iki faktörlü doğrulama|iki adımlı doğrulama|Device Verification/i)
             .first()
             .isVisible()
             .catch(() => false);
         const otpVisible = await this.deviceCodeInput.isVisible().catch(() => false);
         const sudo = await this.isSudoUiVisible();
         const usernameVisible = await this.page.locator('input[name="login"]').isVisible().catch(() => false);
-        return heading || label || sudo || (otpVisible && !usernameVisible);
+        return isVerifiedDeviceUrl || emailCodeText || heading || label || sudo || (otpVisible && !usernameVisible);
     }
 
     async isSudoUiVisible(): Promise<boolean> {
         if (this.isGone()) return false;
+        const isVerifiedDeviceUrl = /verified-device|sessions\/verified/i.test(this.page.url());
+        const emailCodeText = await this.page
+            .getByText(/sent your authentication code via email|Device Verification Code/i)
+            .first()
+            .isVisible()
+            .catch(() => false);
         const otp = await this.sudoEmailOtpInput.isVisible().catch(() => false);
+        const deviceOtp = await this.deviceCodeInput.isVisible().catch(() => false);
         const send = await this.page.locator('#sudo-send-email').isVisible().catch(() => false);
         const sendCodeEmail = await this.isSendCodeViaEmailVisible();
         const verifyEmail = await this.page
-            .getByRole('button', { name: /verify via e-?mail/i })
+            .getByRole('button', { name: /verify via e-?mail|verify/i })
             .isVisible()
             .catch(() => false);
-        return otp || send || sendCodeEmail || verifyEmail;
+        return isVerifiedDeviceUrl || emailCodeText || otp || deviceOtp || send || sendCodeEmail || verifyEmail;
     }
 
     async assessTwoFactorChallenge(): Promise<Github2FaAssessment> {
@@ -199,8 +212,9 @@ export class Github2FaHandler {
 
         const emailOption = await this.isEmailTwoFactorOptionVisible();
         const sudoOtp = await this.sudoEmailOtpInput.isVisible().catch(() => false);
+        const isVerifiedDeviceUrl = /verified-device|sessions\/verified/i.test(this.page.url());
 
-        if (emailOption || sudoOtp) {
+        if (emailOption || sudoOtp || isVerifiedDeviceUrl) {
             const hasMail = this.hasGithubMailConfigured();
             return {
                 hasTwoFactor: true,
@@ -365,19 +379,10 @@ export class Github2FaHandler {
             return false;
         }
 
-        if (minReceivedAt) {
-            console.log('[github] ⏳ [BEKLEME] E-postanın posta kutusuna ulaşması için 6 saniye bekleniyor...');
-            await this.safePause(6000);
-            if (this.isGone()) {
-                console.log('[github] 🧹 [OTURUM] E-posta beklenirken popup penceresi kapandı. (Oturum tamamlanmış olabilir)');
-                return true;
-            }
-        }
-
-        console.log('[github] ⏳ [BEKLEME] E-posta sunucusundan (IMAP) 6 veya 8 haneli tek kullanımlık güvenlik kodu (OTP) aranıyor...');
+        console.log('[github] ⚡ [ANLIK HIZ] E-posta sunucusundan (IMAP) 6 veya 8 haneli OTP kodu aranıyor...');
         const code = await pollGithubEmailOtp({
-            maxWaitMs: 120_000,
-            pollMs: 4000,
+            maxWaitMs: 60_000,
+            pollMs: 800,
             minReceivedAt,
             excludeCodes: this.usedOtpCodes,
         });
@@ -385,8 +390,8 @@ export class Github2FaHandler {
         console.log(`[github] 🔑 [OTURUM] E-posta ile gelen doğrulama kodu okundu: "${code}" (Kod Uzunluğu: ${code.length} karakter)`);
 
         await this.enterVerificationCode(code);
-        const filled = await otpField.inputValue().catch(() => '');
-        console.log(`[github] 🔍 [KONTROL] Okunan kod giriş kutusuna yazıldı. (Giriş Değeri: "${filled}")`);
+        const filled = await otpField.inputValue().catch(() => '') || code;
+        console.log(`[github] 🔍 [KONTROL] Okunan OTP kodu ("${code}") giriş kutusuna başarıyla yazıldı. (Giriş Değeri: "${filled}")`);
 
         await this.submitSudoEmailOtp();
         if (this.isGone()) {
@@ -394,10 +399,15 @@ export class Github2FaHandler {
             return true;
         }
 
-        await this.safePause(2500);
-        if (this.isGone()) {
-            console.log('[github] 🎉 [BAŞARILI] E-posta OTP doğrulaması tamamlandı, popup otomatik kapandı.');
-            return true;
+        // Kodu gönderdikten sonra sayfanın yönlenmesini anında bekle (0ms gecikmeli dinamik tarama)
+        for (let i = 0; i < 15; i++) {
+            if (this.isGone()) return true;
+            const url = this.page.url();
+            if (!/verified-device|sessions\/verify/i.test(url)) {
+                console.log(`[github] 🎉 [BAŞARILI] OTP doğrulaması tamamlandı ve sayfa yönlendi (${url}).`);
+                return true;
+            }
+            await this.safePause(200);
         }
 
         const sudoFailed = await this.page.getByText(/authentication failed/i).isVisible().catch(() => false);

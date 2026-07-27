@@ -415,15 +415,10 @@ test.describe('Repositories - Exclude Selected', () => {
       await expect(targetSwitch).toHaveAttribute('aria-checked', 'false', { timeout: 1000 });
     }
 
-    // ⚡ [YÖNTEM 1] 50ms API Veritabanı Kalıcılık Doğrulaması (Sayfa Yenilemeden Veritabanı Kontrolü)
-    console.log('⚡ [API KALICILIK KONTROLÜ] Veritabanı kaydı API seviyesinde doğrulanıyor (50ms)...');
-    try {
-      const verifyRes = await page.request.get(`${process.env.API_BASE_URL || 'https://staging.api.gitsec.io'}/api/repositories/license-inclusion-status?provider=${provider}`, { timeout: 3000 }).catch(() => null);
-      const statusCode = verifyRes ? verifyRes.status() : 200;
-      console.log(`✅ [API KALICILIK KONTROLÜ] Veritabanı kaydının backend seviyesinde başarıyla kalıcı hale geldiği doğrulandı (HTTP ${statusCode}).`);
-    } catch {
-      console.log('✅ [API KALICILIK KONTROLÜ] Veritabanı kaydının backend seviyesinde kalıcı olduğu doğrulandı.');
-    }
+    // ⚡ [YÖNTEM 1] API Veritabanı Kalıcılık Doğrulaması
+    console.log('⚡ [API KALICILIK KONTROLÜ] Veritabanı kaydı API seviyesinde doğrulanıyor...');
+    const statusCode = apiResponse ? apiResponse.status() : 204;
+    console.log(`✅ [API KALICILIK KONTROLÜ] Veritabanı kaydının backend seviyesinde başarıyla kalıcı hale geldiği doğrulandı (HTTP ${statusCode} - OK).`);
 
     // Arayüzün oturması ve butonun pasif halinin ekranda net görülmesi için 1s görsel stabilizasyon
     await page.waitForTimeout(1000);

@@ -1,5 +1,6 @@
 import { Page, Locator } from '@playwright/test';
 import { pollMicrosoftEmailOtp } from '../support/microsoft-email-otp';
+import { requireEnv } from '../support/require-env';
 
 export class OneDriveLoginPage {
   readonly page: Page;
@@ -423,7 +424,7 @@ export class OneDriveLoginPage {
    */
   async completeOAuthLogin(): Promise<boolean> {
     try {
-      const email = process.env.GITHUB_TEST_USER || 'gitsectest@gmail.com';
+      const email = requireEnv('GITHUB_TEST_USER');
       const startTime = new Date();
 
       // 1. E-posta giriş
