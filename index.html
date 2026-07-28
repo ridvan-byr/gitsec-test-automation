@@ -4118,10 +4118,29 @@
               <div class="card-status-dot"></div>
             </div>
             <div class="card-content">
-              <p style="color: var(--text-muted); font-size: 0.8125rem; line-height: 1.5;">
-                Gerçek staging backend'e sıfırlama talebi gönderir, HTTP 200 yanıtını doğrular
-                ve Reset Password e-postasının Gmail kutusuna ulaştığını IMAP üzerinden kontrol eder. Link açılmaz.
+              <p id="forgotPassword-desc"
+                style="color: var(--text-muted); font-size: 0.8125rem; line-height: 1.5; min-height: 3.25rem;">
+                Gerçek staging backend'e sıfırlama talebi gönderir, Gmail'den gelen linki açar, yeni şifre belirler ve giriş yaparak akışı uçtan uca doğrular.
               </p>
+
+              <div class="card-select-group" style="margin-top: 0.75rem;">
+                <label for="forgotPasswordModeSelect"
+                  style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Şifre Sıfırlama Kapsamı (Scope)</label>
+                <div class="gitsec-select-wrapper no-left-icon">
+                  <select id="forgotPasswordModeSelect" class="gitsec-select" style="padding-left: 0.875rem;"
+                    onchange="updateCardUI('card-auth-forgot-password-real', 'forgotPasswordModeSelect', 'forgotPassword-desc'); saveSettings()">
+                    <option value="happy_path">Normal Sıfırlama Akışı (Happy Path)</option>
+                    <option value="failures">Sıfırlama Hataları & Sınır Değerler (Failures)</option>
+                    <option value="all">Tüm Şifre Sıfırlama Testleri (Hepsi)</option>
+                  </select>
+                  <span class="select-chevron-right">
+                    <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                  </span>
+                </div>
+              </div>
             </div>
             <div class="card-footer">
               <span class="card-meta">forgot-password.spec.ts</span>
@@ -5939,6 +5958,13 @@
         } else if (registerMode === 'all') {
           finalTestFile = 'tests/e2e/auth/register.spec.ts tests/e2e/auth/register-failures.spec.ts';
         }
+      } else if (cardId === 'card-auth-forgot-password-real') {
+        const forgotPasswordMode = document.getElementById('forgotPasswordModeSelect') ? document.getElementById('forgotPasswordModeSelect').value : 'happy_path';
+        if (forgotPasswordMode === 'failures') {
+          finalTestFile = 'tests/e2e/auth/forgot-password-failures.spec.ts';
+        } else if (forgotPasswordMode === 'all') {
+          finalTestFile = 'tests/e2e/auth/forgot-password.spec.ts tests/e2e/auth/forgot-password-failures.spec.ts';
+        }
       }
 
       activeCardId = cardId;
@@ -7453,6 +7479,7 @@
         bitbucketConnectMode: document.getElementById('bitbucketConnectModeSelect') ? document.getElementById('bitbucketConnectModeSelect').value : 'happy_path',
         loginMode: document.getElementById('loginModeSelect') ? document.getElementById('loginModeSelect').value : 'happy_path',
         registerMode: document.getElementById('registerModeSelect') ? document.getElementById('registerModeSelect').value : 'happy_path',
+        forgotPasswordMode: document.getElementById('forgotPasswordModeSelect') ? document.getElementById('forgotPasswordModeSelect').value : 'happy_path',
         storageMode: document.getElementById('storageModeSelect') ? document.getElementById('storageModeSelect').value : 'happy_path',
         storageCleanup: document.getElementById('storageCleanupSelect') ? document.getElementById('storageCleanupSelect').value : 'delete',
         workers: document.getElementById('workersCount') ? document.getElementById('workersCount').value : 1,
@@ -7610,6 +7637,9 @@
         if (settings.registerMode !== undefined && document.getElementById('registerModeSelect')) {
           document.getElementById('registerModeSelect').value = settings.registerMode;
         }
+        if (settings.forgotPasswordMode !== undefined && document.getElementById('forgotPasswordModeSelect')) {
+          document.getElementById('forgotPasswordModeSelect').value = settings.forgotPasswordMode;
+        }
         if (settings.storageMode !== undefined && document.getElementById('storageModeSelect')) {
           document.getElementById('storageModeSelect').value = settings.storageMode;
         }
@@ -7654,6 +7684,7 @@
           if (document.getElementById('restoreModeSelect')) updateCardUI('card-restore', 'restoreModeSelect', 'restore-desc', true);
           if (document.getElementById('loginModeSelect')) updateCardUI('card-auth-login', 'loginModeSelect', 'login-desc', true);
           if (document.getElementById('registerModeSelect')) updateCardUI('card-auth-register', 'registerModeSelect', 'register-desc', true);
+          if (document.getElementById('forgotPasswordModeSelect')) updateCardUI('card-auth-forgot-password-real', 'forgotPasswordModeSelect', 'forgotPassword-desc', true);
           if (document.getElementById('storageModeSelect')) updateCardUI('card-storage', 'storageModeSelect', 'storage-desc', true);
           onCodeProviderChange();
         }, 50);
@@ -7713,6 +7744,11 @@
         'happy_path': 'Yeni kullanıcı kayıt formunun başarılı kayıt ve e-posta onay adımlarını uçtan uca doğrular.',
         'failures': 'Kayıt formundaki boş alanlar, geçersiz e-postalar, onay kutuları doğrulaması, sınır değerler ve sunucu hata (429/500/409) senaryolarını test eder.',
         'all': 'Hem başarılı kayıt akışını hem de tüm kayıt hata, sınır değer ve api çökme senaryolarını sırasıyla test eder.'
+      },
+      'card-auth-forgot-password-real': {
+        'happy_path': 'Gerçek backend\'e sıfırlama talebi gönderir, Gmail\'den gelen linki açar, şifreyi günceller ve yeni şifre ile giriş yaparak akışı doğrular.',
+        'failures': 'Sıfırlama formundaki boş alanlar, eşleşmeyen şifreler, zayıf/uzun şifre sınır değerleri, geçersiz token ve sunucu hata (429/500) senaryolarını test eder; son adımda doğru şifre ile sıfırlama ve giriş yapılır.',
+        'all': 'Hem başarılı şifre sıfırlama akışını hem de tüm sıfırlama hata ve sınır değer senaryolarını sırasıyla test eder.'
       }
     };
 

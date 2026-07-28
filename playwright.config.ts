@@ -59,7 +59,7 @@ export default defineConfig({
     },
     {
       name: 'chromium-unauthenticated',
-      testMatch: /tests\/e2e\/auth\/(api-login-smoke|forgot-password|forgot-password-mocked|login|login-failures|login-mocked|register|register-failures)\.spec\.ts/,
+      testMatch: /tests\/e2e\/auth\/(api-login-smoke|forgot-password|forgot-password-failures|forgot-password-mocked|login|login-failures|login-mocked|register|register-failures)\.spec\.ts/,
       use: {
         ...devices['Desktop Chrome'],
         channel: process.env.CI ? undefined : 'chrome',
@@ -92,7 +92,7 @@ export default defineConfig({
       name: 'chromium',
       dependencies: ['provider-setup'],
       testIgnore: [
-        /tests\/e2e\/auth\/(api-login-smoke|forgot-password|forgot-password-mocked|login|login-failures|login-mocked|register|register-failures)\.spec\.ts/,
+        /tests\/e2e\/auth\/(api-login-smoke|forgot-password|forgot-password-failures|forgot-password-mocked|login|login-failures|login-mocked|register|register-failures)\.spec\.ts/,
         /tests\/e2e\/providers\/(github|bitbucket)-connect\.spec\.ts/,
         /tests\/e2e\/billing\/license-change\.spec\.ts/
       ],
