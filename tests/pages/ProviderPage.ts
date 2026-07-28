@@ -85,59 +85,137 @@ export class ProviderPage {
   }
 
   async isGithubAlreadyConnectedOnAddProvider(): Promise<boolean> {
-    const tableRows = this.page.locator('main table tbody tr, div[class*="table"] tr, [role="row"]');
-    const count = await tableRows.count().catch(() => 0);
+    // Görsel takip için sayfayı tablo alanına kaydır
+    await this.page.evaluate(() => window.scrollBy({ top: 350, behavior: 'smooth' })).catch(() => {});
+    await this.page.waitForTimeout(500);
 
-    for (let i = 0; i < count; i++) {
-      const row = tableRows.nth(i);
-      const textContent = (await row.textContent().catch(() => '')) || '';
-      const innerText = (await row.innerText().catch(() => '')) || '';
-      const innerHTML = (await row.innerHTML().catch(() => '')) || '';
+    const checkElement = async (): Promise<boolean> => {
+      const tableRows = this.page.locator('main table tbody tr, div[class*="table"] tr, [role="row"]')
+        .filter({ hasText: /GitHub/i });
+      const count = await tableRows.count().catch(() => 0);
 
-      const combinedText = `${textContent} ${innerText} ${innerHTML}`;
-      const cleanLogText = (innerText || textContent).trim().replace(/\s+/g, ' ');
+      for (let i = 0; i < count; i++) {
+        const row = tableRows.nth(i);
+        await row.scrollIntoViewIfNeeded().catch(() => {});
 
-      if (/GitHub/i.test(combinedText)) {
-        console.log(`🔍 [PROVIDER CHECK] GitHub Satırı Bulundu (Satır ${i + 1}): "${cleanLogText}"`);
-        const isRemoved = /Removed/i.test(cleanLogText) || /Removed/i.test(textContent || '') || /Removed/i.test(innerText || '');
+        const textContent = (await row.textContent().catch(() => '')) || '';
+        const innerText = (await row.innerText().catch(() => '')) || '';
+        const innerHTML = (await row.innerHTML().catch(() => '')) || '';
 
-        if (isRemoved) {
-          console.log('❌ [PROVIDER CHECK] GitHub satırının durumu "Removed" (Gri Rozet - Bağlantı Pasif).');
-          return false;
-        }
+        const combinedText = `${textContent} ${innerText} ${innerHTML}`;
+        const cleanLogText = (innerText || textContent).trim().replace(/\s+/g, ' ');
 
-        const isActive = /Active/i.test(cleanLogText) || /Active/i.test(textContent || '');
-        if (isActive) {
-          console.log('✅ [PROVIDER CHECK] GitHub sağlayıcısının AKTİF (Active) durumda olduğu doğrulandı.');
-          return true;
+        if (/GitHub/i.test(combinedText)) {
+          console.log(`🔍 [PROVIDER CHECK] GitHub Satırı Bulundu (Satır ${i + 1}): "${cleanLogText}"`);
+          const isRemoved = /Removed/i.test(cleanLogText) || /Removed/i.test(textContent || '') || /Removed/i.test(innerText || '');
+
+          if (isRemoved) {
+            console.log('❌ [PROVIDER CHECK] GitHub satırının durumu "Removed" (Gri Rozet - Bağlantı Pasif).');
+            return false;
+          }
+
+          const isActive = /Active/i.test(cleanLogText) || /Connected/i.test(cleanLogText) || /Remove/i.test(cleanLogText);
+          if (isActive) {
+            console.log('✅ [PROVIDER CHECK] GitHub sağlayıcısının AKTİF (Active) durumda olduğu doğrulandı.');
+            return true;
+          }
         }
       }
+      return false;
+    };
+
+    if (await checkElement()) return true;
+
+    console.log('🔄 [PROVIDER CHECK] GitHub ilk görünümde bulunamadı. "Status -> Active" filtresi uygulanıyor...');
+    const filterApplied = await this.filterByActiveStatus();
+
+    if (filterApplied) {
+      if (await checkElement()) return true;
     }
 
     return false;
   }
 
-  async isBitbucketAlreadyConnectedOnAddProvider(): Promise<boolean> {
-    const bitbucketElement = this.page.locator('tr, div[class*="row"], div[class*="card"], div[class*="provider"], main table tbody tr')
-      .filter({ hasText: /Bitbucket/i })
+  /**
+   * Status filtresini açıp "Active" seçeneğini işaretler.
+   */
+  async filterByActiveStatus(): Promise<boolean> {
+    const statusBtn = this.page.getByRole('button', { name: /Status/i })
+      .or(this.page.locator('button:has-text("Status")'))
       .first();
 
-    const isAttached = await bitbucketElement.waitFor({ state: 'attached', timeout: 5000 }).then(() => true).catch(() => false);
-    if (!isAttached) {
-      console.log('🔍 [PROVIDER CHECK] Bitbucket sağlayıcı satırı DOM üzerinde bulunamadı.');
+    const isBtnVisible = await statusBtn.isVisible().catch(() => false);
+    if (!isBtnVisible) {
+      console.log('ℹ️ [FILTER] "Status" filtre butonu bulunamadı.');
       return false;
     }
 
-    const text = (await bitbucketElement.textContent().catch(() => '')) || '';
-    console.log(`🔍 [PROVIDER CHECK] Bitbucket arayüz satırı okundu: "${text.trim().replace(/\s+/g, ' ')}"`);
+    // Görsel takip için filtre butonunu ekrana kaydır
+    await statusBtn.scrollIntoViewIfNeeded().catch(() => {});
+    await this.page.waitForTimeout(500);
 
-    if (/Removed/i.test(text)) return false;
-    if (/Active/i.test(text) || /Connected/i.test(text) || /Remove/i.test(text)) {
-      console.log('✅ [PROVIDER CHECK] Bitbucket sağlayıcısının AKTİF durumda olduğu doğrulandı.');
+    console.log('🔍 [FILTER] "Status" filtresine tıklanıyor...');
+    await statusBtn.click({ force: true }).catch(() => {});
+
+    const activeOption = this.page.getByRole('option', { name: /Active/i })
+      .or(this.page.locator('[data-value="Active"]'))
+      .or(this.page.locator('[data-slot="command-item"]:has-text("Active")'))
+      .first();
+
+    const isOptionVisible = await activeOption.waitFor({ state: 'visible', timeout: 3000 }).then(() => true).catch(() => false);
+    if (isOptionVisible) {
+      console.log('🎯 [FILTER] "Active" durum seçeneği işaretlendi.');
+      await activeOption.click({ force: true }).catch(() => {});
+      await this.page.waitForTimeout(1000);
       return true;
     }
-    const hasInstall = /Install/i.test(text) || /Connect/i.test(text);
-    return !hasInstall && text.length > 5;
+
+    await this.page.keyboard.press('Escape').catch(() => {});
+    return false;
+  }
+
+  async isBitbucketAlreadyConnectedOnAddProvider(): Promise<boolean> {
+    // Görsel takip için sayfayı tablo alanına kaydır
+    await this.page.evaluate(() => window.scrollBy({ top: 350, behavior: 'smooth' })).catch(() => {});
+    await this.page.waitForTimeout(500);
+
+    const checkElement = async (): Promise<boolean> => {
+      const tableRows = this.page.locator('main table tbody tr, div[class*="table"] tr, [role="row"]')
+        .filter({ hasText: /Bitbucket/i });
+
+      const count = await tableRows.count().catch(() => 0);
+      for (let i = 0; i < count; i++) {
+        const row = tableRows.nth(i);
+        await row.scrollIntoViewIfNeeded().catch(() => {});
+        const text = ((await row.innerText().catch(() => '')) || (await row.textContent().catch(() => '')) || '').trim().replace(/\s+/g, ' ');
+
+        console.log(`🔍 [PROVIDER CHECK] Bitbucket arayüz satırı okundu: "${text}"`);
+
+        if (/Removed/i.test(text)) {
+          console.log('❌ [PROVIDER CHECK] Bitbucket satırının durumu "Removed" (Pasif).');
+          return false;
+        }
+
+        if (/Active/i.test(text) || /Connected/i.test(text) || /Remove/i.test(text)) {
+          console.log('✅ [PROVIDER CHECK] Bitbucket sağlayıcısının AKTİF durumda olduğu doğrulandı.');
+          return true;
+        }
+      }
+      return false;
+    };
+
+    // 1. İlk görünümde tabloda Aktif Bitbucket satırını kontrol et
+    if (await checkElement()) return true;
+
+    // 2. Bulunamadıysa veya 2. sayfadaysa "Status -> Active" filtresini uygulayıp tekrar dene
+    console.log('🔄 [PROVIDER CHECK] Bitbucket ilk görünümde AKTİF olarak bulunamadı. "Status -> Active" filtresi uygulanıyor...');
+    const filterApplied = await this.filterByActiveStatus();
+
+    if (filterApplied) {
+      if (await checkElement()) return true;
+    }
+
+    return false;
   }
 
   async selectGithub(): Promise<void> {

@@ -31,7 +31,6 @@ export async function checkIfOnGithubMainPageAndClose(popup: Page): Promise<bool
   }
 
   const isGithubAuthorizedPage =
-    /settings\/installations\/\d+$/i.test(u) ||
     isHostnameMatch ||
     /github\.com\/?$/i.test(u) ||
     /github\.com\/dashboard/i.test(u) ||

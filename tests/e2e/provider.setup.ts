@@ -65,28 +65,11 @@ setup('connect provider if needed', async ({ request, page }) => {
     console.log(`[PROVIDER SETUP / KONTROL] 🔍 /repositories/add sayfasında ${providerName} durumu denetleniyor...`);
     try {
       await providerPage.goToAddProviderPage();
-      
-      const rowLocator = page.locator('main table tbody tr, div[class*="table"] tr, [role="row"]').filter({ hasText: new RegExp(providerName, 'i') }).first();
-      const hasRow = await rowLocator.waitFor({ state: 'visible', timeout: 8000 }).then(() => true).catch(() => false);
 
-      if (hasRow) {
-        const textContent = await rowLocator.textContent().catch(() => '');
-        const innerText = await rowLocator.innerText().catch(() => '');
-        const cleanLogText = (innerText || textContent || '').trim().replace(/\s+/g, ' ');
-
-        console.log(`[PROVIDER SETUP / KONTROL] 🎯 ${providerName} Satırı Bulundu: "${cleanLogText}"`);
-
-        const isRemoved = /Removed/i.test(cleanLogText);
-        if (isRemoved) {
-          console.log(`[PROVIDER SETUP / KONTROL] ❌ ${providerName} satırı "Removed" durumunda. Hızlı OAuth bağlantısı başlatılacak.`);
-          return false;
-        }
-
-        const isActive = /Active/i.test(cleanLogText) || /Configure App/i.test(cleanLogText);
-        if (isActive) {
-          console.log(`[PROVIDER SETUP / KONTROL] ✅ ${providerName} sağlayıcısı ZATEN AKTİF.`);
-          return true;
-        }
+      if (providerName === 'Bitbucket') {
+        return await providerPage.isBitbucketAlreadyConnectedOnAddProvider();
+      } else {
+        return await providerPage.isGithubAlreadyConnectedOnAddProvider();
       }
     } catch (err) {
       console.log(`[PROVIDER SETUP / KONTROL] ⚠️ /repositories/add denetlenirken hata: ${(err as any).message}`);

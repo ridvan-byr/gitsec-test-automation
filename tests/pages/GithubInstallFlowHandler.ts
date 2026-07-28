@@ -144,34 +144,54 @@ export class GithubInstallFlowHandler {
 
     async completePermissionsInstallFlow(): Promise<boolean> {
         const url = this.page.url();
-        if (/settings\/installations\/\d+$/i.test(url)) {
-            console.log(`[github] Uygulama zaten kurulu görünüyor (URL: ${url}).`);
-            const match = url.match(/settings\/installations\/(\d+)$/i);
-            if (match) {
-                const instId = match[1];
-                const apiBaseUrl = process.env.API_BASE_URL || 'https://staging.api.gitsec.io';
-                const callbackUrl = `${apiBaseUrl}/api/installations/callback?installation_id=${instId}&setup_action=install`;
-                console.log(`[github] Doğrudan Callback URL'ine yönlendiriliyor: ${callbackUrl}`);
-                
-                await this.page.goto(callbackUrl).catch(() => {});
-                await this.page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => {});
-                await this.page.close().catch(() => {});
-                return true;
+        if (/settings\/installations\/\d+/i.test(url)) {
+            console.log(`[github] ⚠️ Uygulama zaten kurulu (URL: ${url}). Anında aşağı kaydırılarak Uninstall yapılıyor...`);
+
+            // 1. Sayfayı ve Uninstall butonunu bulup en aşağı kaydır
+            await this.page.evaluate(() => {
+                window.scrollTo(0, 99999);
+                if (document.documentElement) document.documentElement.scrollTop = 99999;
+                if (document.body) document.body.scrollTop = 99999;
+                const uninstall = Array.from(document.querySelectorAll('button, summary, input, a')).find(el => /Uninstall|Kaldır/i.test(el.textContent || (el as HTMLInputElement).value || ''));
+                if (uninstall) uninstall.scrollIntoView({ block: 'center', behavior: 'instant' });
+            }).catch(() => {});
+
+            await this.safePause(200);
+
+            // 2. Danger Zone içerisindeki Uninstall butonunu bul ve tıkla
+            const uninstallBtn = this.page.locator('button, summary, input[type="submit"], [data-show-dialog-id*="uninstall"]')
+                .filter({ hasText: /Uninstall|Kaldır/i })
+                .first();
+
+            const isUninstallVisible = await uninstallBtn.waitFor({ state: 'visible', timeout: 3000 }).then(() => true).catch(() => false);
+            if (isUninstallVisible) {
+                await uninstallBtn.scrollIntoViewIfNeeded().catch(() => {});
+                console.log('[github] 👆 [TIKLAMA] "Uninstall" butonuna tıklandı...');
+                await uninstallBtn.click({ force: true }).catch(() => {});
+                await this.safePause(300);
+
+                // 3. Konfirmasyon modalındaki (dialog) onay butonunu hefle ve bas veya JS ile delete formunu gönder
+                await this.page.evaluate(() => {
+                    const dialog = document.querySelector('dialog[open], dialog[id*="uninstall"], [role="dialog"], details[open]');
+                    if (dialog) {
+                        const form = dialog.querySelector('form');
+                        if (form) { form.submit(); return; }
+                        const btn = dialog.querySelector('button[type="submit"], input[type="submit"], button');
+                        if (btn) { (btn as HTMLElement).click(); return; }
+                    }
+                    const deleteForm = Array.from(document.querySelectorAll('form')).find(f => f.action.includes('installations') || f.querySelector('input[name="_method"][value="delete"]'));
+                    if (deleteForm) { deleteForm.submit(); }
+                }).catch(() => {});
+
+                console.log('[github] 🎉 [BAŞARILI] GitHub uygulaması Uninstall edildi. Taze kurulum sayfasına gidiliyor...');
+                await this.safePause(1500);
+            } else {
+                console.log('[github] ℹ️ Uninstall butonu bulunamadı, taze kurulum sayfasına gidiliyor...');
             }
-            
-            const saveBtn = this.page.locator('button, input[type="submit"]').filter({ hasText: /Save|Kaydet/i }).or(
-                this.page.locator('input[type="submit"][value*="Save"]').or(this.page.locator('input[type="submit"][value*="Kaydet"]'))
-            ).first();
-            await saveBtn.waitFor({ state: 'visible', timeout: 10000 }).catch(() => {});
-            if (await saveBtn.isVisible().catch(() => false)) {
-                console.log('[github] 👆 [TIKLAMA] GitHub settings sayfasında "Save" butonuna tıklanıyor...');
-                await saveBtn.click().catch(() => {});
-                await this.page.waitForLoadState('networkidle', { timeout: 10000 }).catch(() => {});
-                return true;
-            }
-            console.log(`[github] Save butonu bulunamadı. Sayfa başlığı: "${await this.page.title().catch(() => '')}", URL: "${this.page.url()}"`);
-            await this.page.close().catch(() => {});
-            return true;
+
+            // 4. Silme işleminden sonra taze kurulum sayfasına yönlen
+            await this.page.goto('https://github.com/apps/gitsec-backup-staging/installations/new', { waitUntil: 'domcontentloaded' }).catch(() => {});
+            await this.safePause(500);
         }
 
         const clicked = await this.clickInstallAndAuthorize();

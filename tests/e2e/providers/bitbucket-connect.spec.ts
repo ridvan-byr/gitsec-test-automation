@@ -13,23 +13,10 @@ async function verifyDashboardBitbucketConnection(providerPage: ProviderPage, ma
   await providerPage.goToAddProviderPage().catch(() => {});
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-    const bitbucketRow = providerPage.page
-      .locator('main table tbody tr, div[class*="table"] tr, [role="row"]')
-      .filter({ hasText: /Bitbucket/i })
-      .first();
-
-    const isVisible = await bitbucketRow.waitFor({ state: 'visible', timeout: 10000 }).then(() => true).catch(() => false);
-
-    if (isVisible) {
-      const text = (await bitbucketRow.innerText().catch(() => '')) || (await bitbucketRow.textContent().catch(() => '')) || '';
-      const cleanText = String(text).trim().replace(/\s+/g, ' ');
-
-      console.log(`[PROVIDER CHECK] Bitbucket Satırı (Deneme ${attempt}/${maxAttempts}): "${cleanText}"`);
-
-      if (/Active/i.test(cleanText) || /Connected/i.test(cleanText)) {
-        console.log('✅ [PROVIDER CHECK] Bitbucket sağlayıcısının AKTİF (Active) durumda olduğu doğrulandı.');
-        return;
-      }
+    const isConnected = await providerPage.isBitbucketAlreadyConnectedOnAddProvider();
+    if (isConnected) {
+      console.log('✅ [PROVIDER CHECK] Bitbucket sağlayıcısının AKTİF (Active) durumda olduğu doğrulandı.');
+      return;
     }
 
     if (attempt < maxAttempts) {

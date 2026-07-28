@@ -1,5 +1,6 @@
 import { Page, Locator } from '@playwright/test';
 import { pollGithubEmailOtp } from '../support/github-email-otp';
+import * as OTPAuth from 'otpauth';
 
 export type Github2FaAssessment = {
     hasTwoFactor: boolean;
@@ -35,8 +36,33 @@ export class Github2FaHandler {
         return Boolean(process.env.GITHUB_MAIL_USER?.trim()) && Boolean(process.env.GITHUB_MAIL_PASSWORD?.trim());
     }
 
+    hasGithubTotpConfigured(): boolean {
+        const secret = process.env.GITHUB_TEST_TOTP_SECRET?.trim() || process.env.GITHUB_TOTP_SECRET?.trim();
+        return Boolean(secret);
+    }
+
+    generateTotpCode(): string | null {
+        const rawSecret = process.env.GITHUB_TEST_TOTP_SECRET?.trim() || process.env.GITHUB_TOTP_SECRET?.trim();
+        if (!rawSecret) return null;
+        try {
+            const cleanSecret = rawSecret.replace(/\s+/g, '').toUpperCase();
+            const totp = new OTPAuth.TOTP({
+                issuer: 'GitHub',
+                label: 'GitHub',
+                algorithm: 'SHA1',
+                digits: 6,
+                period: 30,
+                secret: OTPAuth.Secret.fromBase32(cleanSecret),
+            });
+            return totp.generate();
+        } catch (err: any) {
+            console.error(`[github-2fa] ❌ [HATA] TOTP kodu üretilemedi: ${err?.message || err}`);
+            return null;
+        }
+    }
+
     loginOtpInput(): Locator {
-        return this.page.locator('#otp, input[name="otp"]').first();
+        return this.page.locator('#app_totp, input[name="app_totp"], #otp, input[name="otp"], input[name="verification_key"], input[autocomplete="one-time-code"]').first();
     }
 
     async activeOtpInput(): Promise<Locator> {
@@ -101,20 +127,28 @@ export class Github2FaHandler {
     }
 
     async isTotpTwoFactorVisible(): Promise<boolean> {
+        const url = this.page.url();
+        if (/\/two-factor\/app|\/two-factor\/totp|\/two-factor\b/i.test(url)) {
+            return true;
+        }
+
         const loginOtp = await this.loginOtpInput().isVisible().catch(() => false);
         const sudoOtp = await this.sudoEmailOtpInput.isVisible().catch(() => false);
-        if (!loginOtp || sudoOtp) {
-            return false;
+        if (loginOtp && !sudoOtp) {
+            return true;
         }
+
         const authenticatorHint = await this.page
-            .getByText(/authenticator app|authentication app|verification code from your app/i)
+            .getByText(/authenticator app|authentication app|verification code from your app|two-factor authentication|enter the code/i)
             .first()
             .isVisible()
             .catch(() => false);
         const totpHeading = await this.page
-            .getByRole('heading', { name: /authentication code|enter the code/i })
+            .getByRole('heading', { name: /authentication code|enter the code|two-factor authentication/i })
+            .first()
             .isVisible()
             .catch(() => false);
+
         return authenticatorHint || totpHeading;
     }
 
@@ -227,23 +261,28 @@ export class Github2FaHandler {
         }
 
         if (await this.isTotpTwoFactorVisible()) {
+            const hasTotp = this.hasGithubTotpConfigured();
             return {
                 hasTwoFactor: true,
                 method: 'totp',
-                automatable: false,
-                message:
-                    'Hesap yalnızca authenticator uygulaması (TOTP) ile korunuyor ve e-posta seçeneği görünmüyor. Otomatik test geçemez; girişi elle yapın veya GitHub ayarlarından e-posta ile doğrulamayı etkinleştirin.',
+                automatable: hasTotp,
+                message: hasTotp
+                    ? 'Hesap TOTP (Authenticator) ile korunuyor; GITHUB_TEST_TOTP_SECRET ile canlı kod otomatik üretilecek.'
+                    : 'Hesap TOTP (Authenticator) ile korunuyor ancak .env içerisinde GITHUB_TEST_TOTP_SECRET tanımlı değil.',
             };
         }
 
         const otpVisible = await this.loginOtpInput().isVisible().catch(() => false);
         if (otpVisible) {
+            const hasTotp = this.hasGithubTotpConfigured();
+            const hasMail = this.hasGithubMailConfigured();
             return {
                 hasTwoFactor: true,
-                method: 'unknown',
-                automatable: false,
-                message:
-                    'İki faktörlü doğrulama kodu isteniyor ancak desteklenen e-posta yolu bulunamadı. Giriş elle yapılmalı veya kayıtlı oturum (playwright/.auth/github.json) kullanılmalı.',
+                method: hasTotp ? 'totp' : (hasMail ? 'email' : 'unknown'),
+                automatable: hasTotp || hasMail,
+                message: hasTotp
+                    ? 'İki faktörlü doğrulama ekranı (TOTP) aktif; GITHUB_TEST_TOTP_SECRET ile otomatik tamamlanacak.'
+                    : (hasMail ? 'İki faktörlü doğrulama ekranı (E-posta) aktif; GITHUB_MAIL_* ile tamamlanacak.' : 'OTP girişi gerekiyor ancak .env bilgisi eksik.'),
             };
         }
 
@@ -263,12 +302,8 @@ export class Github2FaHandler {
         if (!assessment.automatable) {
             console.error('[github-2fa] ❌ [ENGEL] OTOMATİK TEST GEÇİLEMEZ: Bu 2FA türü Playwright ile tamamlanamaz.');
             console.error(
-                '[github-2fa]   └─ Yapılması gerekenler: (1) Tarayıcıda elle giriş yapıp oturumu playwright/.auth/github.json olarak kaydedin,'
+                '[github-2fa]   └─ Yapılması gerekenler: .env dosyasına GITHUB_TEST_TOTP_SECRET ekleyin veya GITHUB_MAIL_* kullanın.'
             );
-            console.error(
-                '[github-2fa]   └─ (2) Test hesabında 2FA\'yı kapatın veya yalnızca e-posta doğrulaması + .env GITHUB_MAIL_* kullanın,'
-            );
-            console.error('[github-2fa]   └─ (3) Passkey / yalnızca authenticator kullanan hesaplarla otomasyon çalışmaz.');
         }
         console.error('[github-2fa] --------------------------------------------------');
     }
@@ -351,7 +386,7 @@ export class Github2FaHandler {
         if (await submit.isVisible().catch(() => false)) {
             await submit.scrollIntoViewIfNeeded().catch(() => {});
             await submit.click({ timeout: 10_000 }).catch(() => {});
-            console.log('[github] 🚀 [GİRİŞ] Güvenli işlem (Sudo) OTP doğrulama kodu gönderildi.');
+            console.log('[github] 🚀 [GİRİŞ] Güvenli işlem OTP doğrulama kodu gönderildi.');
             return;
         }
         await this.sudoEmailOtpInput.press('Enter').catch(() => {});
@@ -362,6 +397,88 @@ export class Github2FaHandler {
         await otpField.click({ timeout: 5000 }).catch(() => {});
         await otpField.fill('');
         await otpField.pressSequentially(code, { delay: 40 });
+    }
+
+    async handlePasskeyOrTrustedDevicePrompts(): Promise<boolean> {
+        if (this.isGone()) return true;
+
+        const url = this.page.url();
+        const isTrustedDevice = /sessions\/trusted-device|trusted-device/i.test(url);
+        const hasPasskeyPrompt = await this.page.getByText(/Configure passwordless authentication|Add a passkey/i).first().isVisible().catch(() => false);
+
+        if (isTrustedDevice || hasPasskeyPrompt) {
+            console.log('⚡ [GITHUB PROMPT] "Configure passwordless authentication / Add a passkey" ekranı tespit edildi.');
+
+            const askMeLaterBtn = this.page.locator('input[value="Ask me later"], input[value*="Ask me later"], button:has-text("Ask me later"), input[type="submit"][value*="Ask me later"]').first();
+            const isAskVisible = await askMeLaterBtn.waitFor({ state: 'visible', timeout: 3000 }).then(() => true).catch(() => false);
+
+            if (isAskVisible) {
+                console.log('👆 [TIKLAMA] "Ask me later" butonuna tıklanıyor...');
+                await askMeLaterBtn.click({ force: true }).catch(() => {});
+                await this.page.waitForLoadState('domcontentloaded').catch(() => {});
+                console.log('✅ [GITHUB PROMPT] "Ask me later" tıklaması başarıyla tamamlandı.');
+                return true;
+            }
+
+            const dontAskBtn = this.page.locator('button:has-text("Don\'t ask again"), input[value*="Don\'t ask"], a:has-text("Don\'t ask again")').first();
+            if (await dontAskBtn.isVisible().catch(() => false)) {
+                console.log('👆 [TIKLAMA] "Don\'t ask again for this browser" butonuna tıklanıyor...');
+                await dontAskBtn.click({ force: true }).catch(() => {});
+                await this.page.waitForLoadState('domcontentloaded').catch(() => {});
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    async completeTotpIfConfigured(): Promise<boolean> {
+        const hasTotp = this.hasGithubTotpConfigured();
+        if (!hasTotp) {
+            console.log('[github-2fa] ⚠️ [UYARI] Çevre değişkenlerinde GITHUB_TEST_TOTP_SECRET eksik.');
+            return false;
+        }
+
+        const code = this.generateTotpCode();
+        if (!code) {
+            console.error('[github-2fa] ❌ [HATA] Canlı TOTP kodu üretilemedi!');
+            return false;
+        }
+
+        console.log(`[github-2fa] 🔑 [TOTP] Canlı 6 haneli TOTP doğrulama kodu otomatik üretildi: "${code}"`);
+        const otpField = await this.activeOtpInput();
+        try {
+            await otpField.waitFor({ state: 'visible', timeout: 10_000 });
+        } catch {
+            console.log('[github-2fa] ⚠️ [UYARI] TOTP giriş kutusu ekranda görünür olmadı.');
+            return false;
+        }
+
+        await this.enterVerificationCode(code);
+        console.log(`[github-2fa] ✍️ [TOTP] TOTP kodu ("${code}") giriş kutusuna yazıldı.`);
+
+        // GitHub 6 basamak yazıldığında formu JS ile otomatik gönderir.
+        // Çift submit veya ekstra Enter basışı GitHub oturumunu yenileme (refresh) döngüsüne soktuğu için bekleme yapılır.
+        await this.safePause(500);
+
+        if (this.isGone()) {
+            console.log('[github-2fa] 🎉 [BAŞARILI] TOTP doğrulaması tamamlandı ve pencere kapandı.');
+            return true;
+        }
+
+        // Anında URL değişimini ve Passkey / Trusted Device "Ask me later" ekranını kontrol et
+        for (let i = 0; i < 20; i++) {
+            if (this.isGone()) return true;
+            await this.handlePasskeyOrTrustedDevicePrompts().catch(() => {});
+            const url = this.page.url();
+            if (!/two-factor|sessions\/verify|sessions\/trusted-device/i.test(url)) {
+                console.log(`[github-2fa] 🎉 [BAŞARILI] TOTP doğrulaması tamamlandı ve sayfa yönlendi (${url}).`);
+                return true;
+            }
+            await this.safePause(100);
+        }
+
+        return true;
     }
 
     async completeEmailOtpIfConfigured(minReceivedAt?: Date): Promise<boolean> {
@@ -399,7 +516,6 @@ export class Github2FaHandler {
             return true;
         }
 
-        // Kodu gönderdikten sonra sayfanın yönlenmesini anında bekle (0ms gecikmeli dinamik tarama)
         for (let i = 0; i < 15; i++) {
             if (this.isGone()) return true;
             const url = this.page.url();
@@ -442,6 +558,16 @@ export class Github2FaHandler {
             return false;
         }
 
+        // A) Eğer TOTP (Authenticator) metodu kullanılıyorsa
+        if (assessment.method === 'totp' || (await this.isTotpTwoFactorVisible())) {
+            const totpOk = await this.completeTotpIfConfigured();
+            if (totpOk || this.isGone()) {
+                console.log('[github-2fa] 🎉 [BAŞARILI] TOTP 2FA doğrulaması otomatik olarak tamamlandı.');
+                return true;
+            }
+        }
+
+        // B) Eğer E-posta metodu kullanılıyorsa
         await this.tryRevealEmailTwoFactorOption();
         const sentAt = preLoginTime || new Date();
         const clicked = await this.tryClickSendCodeViaEmail();
@@ -458,11 +584,11 @@ export class Github2FaHandler {
         if (!otpOk) {
             assessment = await this.assessTwoFactorChallenge();
             if (assessment.hasTwoFactor) {
-                console.error('[github-2fa] ❌ [HATA] E-posta kodu ile 2FA tamamlanamadı.');
+                console.error('[github-2fa] ❌ [HATA] 2FA tamamlanamadı.');
                 this.logTwoFactorBlocked({
                     ...assessment,
                     automatable: false,
-                    message: 'E-posta kodu alınamadı veya reddedildi. GITHUB_MAIL_* ve Gmail uygulama şifresini kontrol edin.',
+                    message: '2FA doğrulama kodu onaylanamadı. GITHUB_TEST_TOTP_SECRET veya GITHUB_MAIL_* bilgilerini kontrol edin.',
                 });
                 return false;
             }
@@ -475,7 +601,7 @@ export class Github2FaHandler {
             return false;
         }
 
-        console.log('[github-2fa] 🎉 [BAŞARILI] E-posta OTP doğrulaması başarıyla tamamlandı. Akış devam ediyor.');
+        console.log('[github-2fa] 🎉 [BAŞARILI] 2FA doğrulaması başarıyla tamamlandı. Akış devam ediyor.');
         return true;
     }
 }
