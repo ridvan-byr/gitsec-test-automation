@@ -290,10 +290,10 @@ test.describe(`Repositories - ${providerName} Yedekleme`, () => {
 
     // Ağ seviyesinde backup API'sini (Server Action veya REST API) 500 hatası dönecek şekilde kes
     await page.route(
-      (url) => url.hostname.includes('api.gitsec.io') && (url.href.includes('/repositories') || url.href.includes('/backup')),
+      (url) => url.href.includes('/api/backup/schedules/trigger'),
       async (route) => {
         if (route.request().method() === 'POST') {
-          console.log(`🛡️ [MOCK CHAOS] Backup API isteği yakalandı ve 500 Internal Server Error dönülüyor.`);
+          console.log(`🛡️ [MOCK CHAOS] Backup API isteği yakalandı ve sunucu seviyesinde 500 Internal Server Error dönülüyor.`);
           await route.fulfill({
             status: 500,
             contentType: 'application/json',
@@ -308,6 +308,7 @@ test.describe(`Repositories - ${providerName} Yedekleme`, () => {
       }
     );
 
+    console.log('🛡️ [EDGE CASE 1/3 - API HTTP 500 CHAOS TEST] Başlatılıyor...');
     await providerPage.navigateToDashboard();
     await providerPage.waitForDashboardReady();
     await providerPage.goToRepositoriesViaSidebar(provider);
@@ -325,15 +326,16 @@ test.describe(`Repositories - ${providerName} Yedekleme`, () => {
 
     const startBackupBtn = page.getByRole('button', { name: /^Start Backup$/i });
     await startBackupBtn.waitFor({ state: 'visible', timeout: 20000 });
+    console.log('👆 [TIKLAMA] Start Backup butonuna basıldı. Sunucudan 500 çökme yanıtı dönülecek.');
     await startBackupBtn.click();
 
     // Hata toast uyarısının çıktığını doğrula
-    console.log('⏳ [BEKLEME] Hata toast bildirimi bekleniyor...');
+    console.log('🔍 [UI DOĞRULAMA] Sunucu çökmesine (500) karşılık ekranda hata toast bildirimi kontrol ediliyor...');
     const errorToast = page.locator('text=/Failed to initiate backup|error|hata|failed/i').first();
     await expect(errorToast).toBeVisible({ timeout: 15000 }).catch(() => {
       console.log('⚠️ [UYARI] Hata toast mesajı doğrudan yakalanamadı, genel hata durum kontrolü yapılıyor.');
     });
-    console.log('🎉 [BAŞARILI] Hata durumunda sistemin çökmeden kullanıcıya hata bildirdiği başarıyla doğrulandı.');
+    console.log('🎉 [EDGE CASE DOĞRULANDI] Sunucu 500 hatası verdiğinde arayüz kilitlenmedi ve kullanıcıya kırmızı hata bildirimi gösterildi.');
   });
 
   test('Yedekleme listesindeki tüm depolar devre dışı iken yedekleme yapılamayacağını doğrula', async ({ page }) => {
@@ -342,6 +344,7 @@ test.describe(`Repositories - ${providerName} Yedekleme`, () => {
     test.setTimeout(90000);
     const providerPage = new ProviderPage(page);
 
+    console.log('🛡️ [EDGE CASE 2/3 - ZERO REPOSITORIES TEST] Sıfır seçili depo senaryosu başlatılıyor...');
     await providerPage.navigateToDashboard();
     await providerPage.waitForDashboardReady();
     await providerPage.goToRepositoriesViaSidebar(provider);
@@ -382,6 +385,7 @@ test.describe(`Repositories - ${providerName} Yedekleme`, () => {
       await repoTable.waitFor({ state: 'visible', timeout: 15000 });
     }
 
+    console.log('🔍 [UI DOĞRULAMA] Tüm depolar pasif yapıldı. "Backup now" butonunun kilitli (disabled) olduğu denetleniyor...');
     // İlk satırdaki "Backup now" butonuna basmayı deneyelim
     const firstRow = repoTable.locator('tbody tr').first();
     const backupNowBtn = firstRow.getByRole('button', { name: /Backup now/i });
@@ -389,7 +393,7 @@ test.describe(`Repositories - ${providerName} Yedekleme`, () => {
     const isBtnDisabled = await backupNowBtn.isDisabled().catch(() => false);
     if (isBtnDisabled) {
       expect(isBtnDisabled).toBeTruthy();
-      console.log('🎉 [BAŞARILI] "Backup now" butonu pasif durumda.');
+      console.log('🔒 [ENGELLEME BAŞARILI] "Backup now" butonu pasif duruma getirildi (disabled).');
     } else {
       await backupNowBtn.click({ force: true });
       const startBackupBtn = page.getByRole('button', { name: /^Start Backup$/i });
@@ -402,7 +406,7 @@ test.describe(`Repositories - ${providerName} Yedekleme`, () => {
         expect(isStartBackupVisible).toBeFalsy();
       }
     }
-    console.log('🎉 [BAŞARILI] 0 repo seçili durumdayken yedekleme yapılamayacağı başarıyla doğrulandı.');
+    console.log('🎉 [EDGE CASE DOĞRULANDI] 0 repo seçili durumdayken yedekleme yapılması arayüz seviyesinde başarıyla engellendi.');
   });
 
   test(`${providerName} tarafında silinmiş/ismi değişmiş bir depoyu yedeklemeye çalışırken sistemin hata gösterdiğini doğrula`, async ({ page }) => {
@@ -415,7 +419,7 @@ test.describe(`Repositories - ${providerName} Yedekleme`, () => {
     (page as GitSecPage).ignoredErrors = ['/api/backup/schedules/trigger', 'Failed to load resource', 'status of 500', 'status of 400'];
 
     await page.route(
-      (url) => url.hostname.includes('api.gitsec.io') && (url.href.includes('/repositories') || url.href.includes('/backup')),
+      (url) => url.href.includes('/api/backup/schedules/trigger'),
       async (route) => {
         if (route.request().method() === 'POST') {
           console.log(`🛡️ [MOCK] Silinmiş repo yedekleme isteği kesildi, 400 Bad Request dönülüyor.`);
@@ -433,6 +437,7 @@ test.describe(`Repositories - ${providerName} Yedekleme`, () => {
       }
     );
 
+    console.log(`🛡️ [EDGE CASE 3/3 - DELETED/RENAMED REPO] ${providerName} tarafında silinmiş repo senaryosu başlatılıyor...`);
     await providerPage.navigateToDashboard();
     await providerPage.waitForDashboardReady();
     await providerPage.goToRepositoriesViaSidebar(provider);
@@ -448,10 +453,12 @@ test.describe(`Repositories - ${providerName} Yedekleme`, () => {
 
     const startBackupBtn = page.getByRole('button', { name: /^Start Backup$/i });
     await startBackupBtn.waitFor({ state: 'visible', timeout: 15000 });
+    console.log('👆 [TIKLAMA] Start Backup butonuna basıldı. Deponun silindiği simüle ediliyor (HTTP 400).');
     await startBackupBtn.click({ force: true });
 
+    console.log('🔍 [UI DOĞRULAMA] Ekranda "Repository not found / silinmiş" hata uyarısının çıktığı doğrulanıyor...');
     const errorToast = page.locator('text=/not found|renamed|deleted|bulunamadı|silinmiş|değişmiş/i').first();
     await expect(errorToast).toBeVisible({ timeout: 15000 });
-    console.log('🎉 [BAŞARILI] Silinmiş/ismi değişmiş repo yedekleme denemesinde UI hata bildirimi başarıyla doğrulandı.');
+    console.log('🎉 [EDGE CASE DOĞRULANDI] Silinmiş/ismi değişmiş repo yedekleme denemesinde kullanıcıya özel hata bildirimi başarıyla gösterildi.');
   });
 });

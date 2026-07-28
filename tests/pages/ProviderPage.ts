@@ -298,10 +298,17 @@ export class ProviderPage {
 
   async goToRepositoriesGithub(): Promise<void> {
     const wsId = await this.getActiveWorkspaceId();
-    await this.page.goto(`${this.dashboardBaseUrl}/${wsId}/repositories/github`, { waitUntil: 'domcontentloaded' }).catch(err => {
+    const targetUrl = `${this.dashboardBaseUrl}/${wsId}/repositories/github`;
+    await this.page.goto(targetUrl, { waitUntil: 'domcontentloaded' }).catch(err => {
       if (!err.message.includes('net::ERR_ABORTED')) throw err;
     });
-    await expect(this.page).toHaveURL(/\/repositories\/github\b/);
+
+    if (!this.page.url().includes('/repositories/github')) {
+      console.warn('⚠️ [NAVİGASYON RECOVERY] Yönlendirme /dashboard üzerinde takıldı, GitHub depoları sayfasına tekrar gidiliyor...');
+      await this.page.goto(targetUrl, { waitUntil: 'domcontentloaded' }).catch(() => {});
+    }
+
+    await expect(this.page).toHaveURL(/\/repositories\/github\b/, { timeout: 15000 });
     await expect(this.page.locator('table, main').first()).toBeVisible({ timeout: 30000 });
   }
 
@@ -332,10 +339,17 @@ export class ProviderPage {
       return;
     }
     const wsId = await this.getActiveWorkspaceId();
-    await this.page.goto(`${this.dashboardBaseUrl}/${wsId}/repositories/bitbucket`, { waitUntil: 'domcontentloaded' }).catch(err => {
+    const targetUrl = `${this.dashboardBaseUrl}/${wsId}/repositories/bitbucket`;
+    await this.page.goto(targetUrl, { waitUntil: 'domcontentloaded' }).catch(err => {
       if (!err.message.includes('net::ERR_ABORTED')) throw err;
     });
-    await expect(this.page).toHaveURL(/\/repositories\/bitbucket\b/);
+
+    if (!this.page.url().includes('/repositories/bitbucket')) {
+      console.warn('⚠️ [NAVİGASYON RECOVERY] Yönlendirme /dashboard üzerinde takıldı, Bitbucket depoları sayfasına tekrar gidiliyor...');
+      await this.page.goto(targetUrl, { waitUntil: 'domcontentloaded' }).catch(() => {});
+    }
+
+    await expect(this.page).toHaveURL(/\/repositories\/bitbucket\b/, { timeout: 15000 });
 
     await this.handleNextJsChunkErrorIfPresent();
 
