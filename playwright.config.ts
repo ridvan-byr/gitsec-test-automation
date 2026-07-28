@@ -32,9 +32,9 @@ export default defineConfig({
       password: process.env.E2E_BASIC_AUTH_PASS || '',
     } : undefined,
 
-    /* Hata durumunda ekran görüntüsü, tam çözünürlüklü video ve trace (iz kaydı) topla */
+    /* Hata durumunda veya başarıda ekran görüntüsü, tam çözünürlüklü video ve trace (iz kaydı) topla */
     trace: 'retain-on-failure',
-    screenshot: 'only-on-failure',
+    screenshot: 'on',
     video: {
       mode: 'retain-on-failure',
       size: { width: 1280, height: 720 },

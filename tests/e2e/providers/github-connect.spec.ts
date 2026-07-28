@@ -20,45 +20,65 @@ async function handleUninstallIfAlreadyInstalled(
 
   // A) Eğer ALZATEN /settings/installations/{id} sayfasındaysak -> Doğrudan ve anında Uninstall yap
   if (/settings\/installations\/\d+/i.test(u)) {
-    console.log(`[github] ⚡ Doğrudan GitHub App ayarlar sayfasındayız (${u}). Anında aşağı kaydırılarak Uninstall yapılıyor...`);
+    console.log(`[github] ⚡ Doğrudan GitHub App ayarlar sayfasındayız (${u}). Anında aşağı ve sağa kaydırılarak Uninstall yapılıyor...`);
     
-    // JS ile Uninstall butonunu doğrudan görüş alanına getir ve scroll et
+    popup.once('dialog', async dialog => {
+      console.log(`[github-dialog] 🔔 Native browser confirm algılandı ("${dialog.message()}"). Otomatik ACCEPT ediliyor...`);
+      await dialog.accept().catch(() => {});
+    });
+
+    await popup.waitForLoadState('domcontentloaded').catch(() => {});
+
     await popup.evaluate(() => {
-      window.scrollTo(0, 99999);
-      if (document.documentElement) document.documentElement.scrollTop = 99999;
-      if (document.body) document.body.scrollTop = 99999;
-      const uninstall = Array.from(document.querySelectorAll('button, summary, input, a')).find(el => /Uninstall|Kaldır/i.test(el.textContent || (el as HTMLInputElement).value || ''));
-      if (uninstall) uninstall.scrollIntoView({ block: 'center', behavior: 'instant' });
+      window.scrollTo(99999, 99999);
+      if (document.documentElement) {
+        document.documentElement.scrollTop = 99999;
+        document.documentElement.scrollLeft = 99999;
+      }
+      if (document.body) {
+        document.body.scrollTop = 99999;
+        document.body.scrollLeft = 99999;
+      }
     }).catch(() => {});
 
-    const uninstallBtn = popup.locator('button, summary, input[type="submit"], a, [data-show-dialog-id*="uninstall"]')
+    const uninstallInput = popup.locator('input[type="submit"][value="Uninstall"], input.btn-danger[value="Uninstall"], input[data-confirm*="uninstall"], button.btn-danger')
       .filter({ hasText: /Uninstall|Kaldır/i })
+      .or(popup.locator('input[type="submit"][value="Uninstall"]'))
       .first();
 
-    const isVisible = await uninstallBtn.waitFor({ state: 'visible', timeout: 3000 }).then(() => true).catch(() => false);
-    if (isVisible) {
-      await uninstallBtn.scrollIntoViewIfNeeded().catch(() => {});
-      console.log('[github] 👆 [TIKLAMA] "Uninstall" butonuna tıklandı...');
-      await uninstallBtn.click({ force: true }).catch(() => {});
-      await popup.waitForTimeout(300);
+    const isInputVisible = await uninstallInput.waitFor({ state: 'visible', timeout: 4000 }).then(() => true).catch(() => false);
 
-      // Konfirmasyon modalı (HTML5 <dialog> veya [role="dialog"]) içerisindeki onay butonunu veya silme formunu gönder
-      await popup.evaluate(() => {
-        const dialog = document.querySelector('dialog[open], dialog[id*="uninstall"], [role="dialog"], details[open]');
-        if (dialog) {
-          const form = dialog.querySelector('form');
-          if (form) { form.submit(); return; }
-          const btn = dialog.querySelector('button[type="submit"], input[type="submit"], button');
-          if (btn) { (btn as HTMLElement).click(); return; }
-        }
-        const deleteForm = Array.from(document.querySelectorAll('form')).find(f => f.action.includes('installations') || f.querySelector('input[name="_method"][value="delete"]'));
-        if (deleteForm) { deleteForm.submit(); }
-      }).catch(() => {});
-
-      console.log('⏳ [BEKLEME] GitHub sunucusunda uygulamanın tamamen kaldırılması bekleniyor (1.5s)...');
-      await popup.waitForTimeout(1500);
+    if (isInputVisible) {
+      await uninstallInput.scrollIntoViewIfNeeded().catch(() => {});
+      console.log('[github] 👆 [TIKLAMA] "<input type=\\"submit\\" value=\\"Uninstall\\">" butonuna tıklandı...');
+      await uninstallInput.click({ force: true }).catch(async () => {
+        await uninstallInput.evaluate((el: any) => el.click()).catch(() => {});
+      });
+      await popup.waitForTimeout(1000);
     }
 
+    console.log('[github] 💥 [KARSILIKSIZ SILME] Silme formu doğrudan form.submit() ile gönderiliyor...');
+    await popup.evaluate(() => {
+      const input = document.querySelector('input[value="Uninstall"], input.btn-danger[value="Uninstall"], input[data-confirm*="uninstall"]');
+      if (input) {
+        const form = input.closest('form');
+        if (form) {
+          form.submit();
+          return;
+        }
+      }
+      const delForm = Array.from(document.querySelectorAll('form')).find(f => {
+        const action = f.getAttribute('action') || (f as HTMLFormElement).action || '';
+        const methodInput = f.querySelector('input[name="_method"]');
+        const methodVal = methodInput ? (methodInput.getAttribute('value') || '').toLowerCase() : '';
+        return action.includes('/settings/installations/') || methodVal === 'delete';
+      });
+      if (delForm) {
+        delForm.submit();
+      }
+    }).catch(() => {});
+
+    await popup.waitForTimeout(2500);
     console.log('🔄 [YENİDEN YÖNLENDİRME] Uygulama kaldırıldı. Taze izinler ekranına gidiliyor...');
     await popup.goto('https://github.com/apps/gitsec-backup-staging/installations/new', { waitUntil: 'domcontentloaded' }).catch(() => {});
     return popup;
@@ -134,7 +154,7 @@ test.describe('Provider Entegrasyonları', () => {
     await providerPage.goToAddProviderPage();
 
     console.log('👆 [TIKLAMA] 3. "GitHub" seçeneğine tıklanıyor ve popup penceresi açılması bekleniyor...');
-    const popupPromise = page.waitForEvent('popup', { timeout: 20000 }).catch(() => null);
+    const popupPromise = page.waitForEvent('popup', { timeout: 15000 }).catch(() => null);
     await providerPage.selectGithub();
     let popup = await popupPromise;
 
@@ -142,8 +162,17 @@ test.describe('Provider Entegrasyonları', () => {
       const pages = page.context().pages();
       if (pages.length > 1) {
         popup = pages[pages.length - 1];
+        console.log('ℹ️ [POPUP] Açık popup penceresi doğrudan yakalandı.');
       } else {
-        popup = page;
+        console.log('🔄 [RETRY] Popup açılmadı, GitHub kartına tekrar basılıyor...');
+        const popupPromise2 = page.waitForEvent('popup', { timeout: 10000 }).catch(() => null);
+        await providerPage.selectGithub();
+        popup = await popupPromise2;
+        if (!popup) {
+          const pages2 = page.context().pages();
+          if (pages2.length > 1) popup = pages2[pages2.length - 1];
+          else popup = page;
+        }
       }
     }
 

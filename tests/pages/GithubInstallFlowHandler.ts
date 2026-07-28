@@ -145,53 +145,74 @@ export class GithubInstallFlowHandler {
     async completePermissionsInstallFlow(): Promise<boolean> {
         const url = this.page.url();
         if (/settings\/installations\/\d+/i.test(url)) {
-            console.log(`[github] ⚠️ Uygulama zaten kurulu (URL: ${url}). Anında aşağı kaydırılarak Uninstall yapılıyor...`);
+            console.log(`[github] ⚠️ Uygulama zaten kurulu (URL: ${url}). Anında aşağı ve sağa kaydırılarak Uninstall yapılıyor...`);
 
-            // 1. Sayfayı ve Uninstall butonunu bulup en aşağı kaydır
+            // 0. Native browser confirm popup'ları için otomatik ACCEPT dinleyicisi ekle
+            this.page.once('dialog', async dialog => {
+                console.log(`[github-dialog] 🔔 Native browser confirm algılandı ("${dialog.message()}"). Otomatik ACCEPT ediliyor...`);
+                await dialog.accept().catch(() => {});
+            });
+
+            await this.page.waitForLoadState('domcontentloaded').catch(() => {});
+
+            // 1. Hem DİKEY hem YATAY kaydırarak Uninstall input butonunu görünür kıl
             await this.page.evaluate(() => {
-                window.scrollTo(0, 99999);
-                if (document.documentElement) document.documentElement.scrollTop = 99999;
-                if (document.body) document.body.scrollTop = 99999;
-                const uninstall = Array.from(document.querySelectorAll('button, summary, input, a')).find(el => /Uninstall|Kaldır/i.test(el.textContent || (el as HTMLInputElement).value || ''));
-                if (uninstall) uninstall.scrollIntoView({ block: 'center', behavior: 'instant' });
+                window.scrollTo(99999, 99999);
+                if (document.documentElement) {
+                    document.documentElement.scrollTop = 99999;
+                    document.documentElement.scrollLeft = 99999;
+                }
+                if (document.body) {
+                    document.body.scrollTop = 99999;
+                    document.body.scrollLeft = 99999;
+                }
             }).catch(() => {});
 
-            await this.safePause(200);
-
-            // 2. Danger Zone içerisindeki Uninstall butonunu bul ve tıkla
-            const uninstallBtn = this.page.locator('button, summary, input[type="submit"], [data-show-dialog-id*="uninstall"]')
+            // 2. Tam HTML eşleşmesi: input[type="submit"][value="Uninstall"] veya input[data-confirm]
+            const uninstallInput = this.page.locator('input[type="submit"][value="Uninstall"], input.btn-danger[value="Uninstall"], input[data-confirm*="uninstall"], button.btn-danger')
                 .filter({ hasText: /Uninstall|Kaldır/i })
+                .or(this.page.locator('input[type="submit"][value="Uninstall"]'))
                 .first();
 
-            const isUninstallVisible = await uninstallBtn.waitFor({ state: 'visible', timeout: 3000 }).then(() => true).catch(() => false);
-            if (isUninstallVisible) {
-                await uninstallBtn.scrollIntoViewIfNeeded().catch(() => {});
-                console.log('[github] 👆 [TIKLAMA] "Uninstall" butonuna tıklandı...');
-                await uninstallBtn.click({ force: true }).catch(() => {});
-                await this.safePause(300);
+            const isInputVisible = await uninstallInput.waitFor({ state: 'visible', timeout: 4000 }).then(() => true).catch(() => false);
 
-                // 3. Konfirmasyon modalındaki (dialog) onay butonunu hefle ve bas veya JS ile delete formunu gönder
-                await this.page.evaluate(() => {
-                    const dialog = document.querySelector('dialog[open], dialog[id*="uninstall"], [role="dialog"], details[open]');
-                    if (dialog) {
-                        const form = dialog.querySelector('form');
-                        if (form) { form.submit(); return; }
-                        const btn = dialog.querySelector('button[type="submit"], input[type="submit"], button');
-                        if (btn) { (btn as HTMLElement).click(); return; }
-                    }
-                    const deleteForm = Array.from(document.querySelectorAll('form')).find(f => f.action.includes('installations') || f.querySelector('input[name="_method"][value="delete"]'));
-                    if (deleteForm) { deleteForm.submit(); }
-                }).catch(() => {});
-
-                console.log('[github] 🎉 [BAŞARILI] GitHub uygulaması Uninstall edildi. Taze kurulum sayfasına gidiliyor...');
-                await this.safePause(1500);
-            } else {
-                console.log('[github] ℹ️ Uninstall butonu bulunamadı, taze kurulum sayfasına gidiliyor...');
+            if (isInputVisible) {
+                await uninstallInput.scrollIntoViewIfNeeded().catch(() => {});
+                console.log('[github] 👆 [TIKLAMA] "<input type=\\"submit\\" value=\\"Uninstall\\">" butonuna tıklandı...');
+                await uninstallInput.click({ force: true }).catch(async () => {
+                    await uninstallInput.evaluate((el: any) => el.click()).catch(() => {});
+                });
+                await this.safePause(1000);
             }
+
+            // 3. Her durumda garanti olması için JS ile direct form.submit() at (data-confirm uyarısını ve CSRF'i doğrudan aşar)
+            console.log('[github] 💥 [KARSILIKSIZ SILME] Silme formu doğrudan form.submit() ile gönderiliyor...');
+            await this.page.evaluate(() => {
+                const input = document.querySelector('input[value="Uninstall"], input.btn-danger[value="Uninstall"], input[data-confirm*="uninstall"]');
+                if (input) {
+                    const form = input.closest('form');
+                    if (form) {
+                        form.submit();
+                        return;
+                    }
+                }
+                const delForm = Array.from(document.querySelectorAll('form')).find(f => {
+                    const action = f.getAttribute('action') || (f as HTMLFormElement).action || '';
+                    const methodInput = f.querySelector('input[name="_method"]');
+                    const methodVal = methodInput ? (methodInput.getAttribute('value') || '').toLowerCase() : '';
+                    return action.includes('/settings/installations/') || methodVal === 'delete';
+                });
+                if (delForm) {
+                    delForm.submit();
+                }
+            }).catch(() => {});
+
+            await this.safePause(2500);
+            console.log('[github] 🎉 [BAŞARILI] GitHub uygulaması Uninstall adımı tamamlandı. Taze kurulum sayfasına gidiliyor...');
 
             // 4. Silme işleminden sonra taze kurulum sayfasına yönlen
             await this.page.goto('https://github.com/apps/gitsec-backup-staging/installations/new', { waitUntil: 'domcontentloaded' }).catch(() => {});
-            await this.safePause(500);
+            await this.safePause(600);
         }
 
         const clicked = await this.clickInstallAndAuthorize();
@@ -275,15 +296,11 @@ export class GithubInstallFlowHandler {
                     return true;
                 }
 
-                // 2. Eğer GitHub settings/installations/{id} veya /installations sayfasına attıysa ID ile callback çağır
+                // 2. Eğer GitHub settings/installations/{id} veya /installations sayfasına attıysa yetkilendirme tamamlanmıştır, popup'ı kapat
                 const matchId = currentUrl.match(/settings\/installations\/(\d+)$/i);
                 if (matchId) {
-                    const instId = matchId[1];
-                    const apiBaseUrl = process.env.API_BASE_URL || 'https://staging.api.gitsec.io';
-                    const callbackUrl = `${apiBaseUrl}/api/installations/callback?installation_id=${instId}&setup_action=install`;
-                    console.log(`[github] 🔗 GitHub ayarlar sayfasına düşüldü. Doğrudan GitSec Callback URL'ine yönlendiriliyor: ${callbackUrl}`);
-                    await this.page.goto(callbackUrl).catch(() => {});
-                    await this.safePause(800);
+                    console.log(`[github] 🎉 [BAŞARILI] Kurulum tamamlandı. GitHub ayarlar sayfasına yönlendi (${currentUrl}). Popup kapatılıyor...`);
+                    await this.safePause(500);
                     if (!this.page.isClosed()) {
                         await this.page.close().catch(() => {});
                     }

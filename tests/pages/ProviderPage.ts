@@ -261,14 +261,8 @@ export class ProviderPage {
     }
 
     await cardNode.scrollIntoViewIfNeeded().catch(() => {});
-    await this.page.waitForTimeout(300);
-
+    await this.page.waitForTimeout(200);
     await cardNode.click({ force: true }).catch(() => {});
-
-    const parentCard = cardNode.locator('xpath=ancestor-or-self::div[contains(@class, "grid") or contains(@class, "card") or contains(@class, "border") or contains(@class, "cursor")][1]').first();
-    if (await parentCard.isVisible().catch(() => false)) {
-      await parentCard.click({ force: true }).catch(() => {});
-    }
   }
 
   async selectBitbucket(): Promise<void> {

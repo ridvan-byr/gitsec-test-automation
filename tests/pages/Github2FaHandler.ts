@@ -458,7 +458,6 @@ export class Github2FaHandler {
         console.log(`[github-2fa] ✍️ [TOTP] TOTP kodu ("${code}") giriş kutusuna yazıldı.`);
 
         // GitHub 6 basamak yazıldığında formu JS ile otomatik gönderir.
-        // Çift submit veya ekstra Enter basışı GitHub oturumunu yenileme (refresh) döngüsüne soktuğu için bekleme yapılır.
         await this.safePause(500);
 
         if (this.isGone()) {
@@ -466,16 +465,36 @@ export class Github2FaHandler {
             return true;
         }
 
-        // Anında URL değişimini ve Passkey / Trusted Device "Ask me later" ekranını kontrol et
-        for (let i = 0; i < 20; i++) {
+        // 1. Anında URL değişimini ve Passkey / Trusted Device "Ask me later" ekranını kontrol et
+        let navigated = false;
+        for (let i = 0; i < 25; i++) {
             if (this.isGone()) return true;
             await this.handlePasskeyOrTrustedDevicePrompts().catch(() => {});
             const url = this.page.url();
             if (!/two-factor|sessions\/verify|sessions\/trusted-device/i.test(url)) {
                 console.log(`[github-2fa] 🎉 [BAŞARILI] TOTP doğrulaması tamamlandı ve sayfa yönlendi (${url}).`);
-                return true;
+                navigated = true;
+                break;
             }
-            await this.safePause(100);
+            await this.safePause(120);
+        }
+
+        // 2. Eğer sayfa yönlenmediyse (kod zaman aşımına uğramışsa): Taze kod üret, yaz ve "Verify" butonuna bas
+        if (!navigated && !this.isGone()) {
+            console.log('[github-2fa] 🔄 [RETRY] TOTP otomatik yönlenmedi. Taze kod ile "Verify" butonuna basılıyor...');
+            const freshCode = this.generateTotpCode();
+            if (freshCode) {
+                await this.enterVerificationCode(freshCode);
+                await this.safePause(300);
+                const verifyBtn = this.page.locator('button[type="submit"]:has-text("Verify"), button.btn-primary:has-text("Verify"), input[type="submit"][value="Verify"]').first();
+                if (await verifyBtn.isVisible().catch(() => false)) {
+                    await verifyBtn.click({ force: true }).catch(() => {});
+                } else {
+                    const otpField = await this.activeOtpInput();
+                    await otpField.press('Enter').catch(() => {});
+                }
+                await this.safePause(2000);
+            }
         }
 
         return true;
