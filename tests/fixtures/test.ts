@@ -1,6 +1,7 @@
 import { test as base, expect, Page } from '@playwright/test';
 import { LoginPage } from '../pages/LoginPage';
 import { RegisterPage } from '../pages/RegisterPage';
+import { ForgotPasswordPage } from '../pages/ForgotPasswordPage';
 import { ProviderPage } from '../pages/ProviderPage';
 import { StoragePage } from '../pages/StoragePage';
 import { RestorePage } from '../pages/RestorePage';
@@ -21,6 +22,7 @@ interface GitSecFixtures {
   page: GitSecPage;
   loginPage: LoginPage;
   registerPage: RegisterPage;
+  forgotPasswordPage: ForgotPasswordPage;
   providerPage: ProviderPage;
   storagePage: StoragePage;
   restorePage: RestorePage;
@@ -304,6 +306,9 @@ export const test = base.extend<GitSecFixtures>({
   },
   registerPage: async ({ page }, use) => {
     await use(new RegisterPage(page));
+  },
+  forgotPasswordPage: async ({ page }, use) => {
+    await use(new ForgotPasswordPage(page));
   },
   providerPage: async ({ page }, use) => {
     await use(new ProviderPage(page));
