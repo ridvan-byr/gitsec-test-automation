@@ -195,8 +195,15 @@ export const test = base.extend<GitSecFixtures>({
       // Testi koştur
       await use(gitSecPage);
     } finally {
-      // Test sonlandıktan sonra detaylı Raporlama yap (Log)
       const testInfo = test.info();
+      const isFailed = testInfo.status === 'failed' || testInfo.status === 'timedOut';
+
+      if (isFailed) {
+        // Video tamponunun (WebM buffer) 0. saniyeden son saniyeye kadar tam yazılması için 500ms flush beklemesi
+        await page.waitForTimeout(500).catch(() => {});
+      }
+
+      // Test sonlandıktan sonra detaylı Raporlama yap (Log)
       const hasErrors = errors.length > 0;
       const hasExpectedErrors = expectedErrors.length > 0;
 
@@ -237,7 +244,26 @@ export const test = base.extend<GitSecFixtures>({
       console.log(`======================================================================\n`);
 
       // Test başarısız/timeout olduysa ve arka planda hata varsa bilgilendirme yap
-      if (testInfo.status === 'failed' || testInfo.status === 'timedOut') {
+      if (isFailed) {
+        // Oluşturulan ekran görüntüsü ve video kanıt yollarını logla
+        const videoPath = page.video() ? await page.video()?.path().catch(() => null) : null;
+        if (videoPath) {
+          const relVideo = videoPath.replace(/\\/g, '/');
+          console.log(`🎥 [KANIT VİDEOSU] Kaydedildi: ${relVideo}`);
+        }
+
+        const attachments = testInfo.attachments || [];
+        attachments.forEach(att => {
+          if (att.path) {
+            const relPath = att.path.replace(/\\/g, '/');
+            if (relPath.endsWith('.png')) {
+              console.log(`📸 [KANIT RESMİ] Kaydedildi: ${relPath}`);
+            } else if (relPath.endsWith('.webm')) {
+              console.log(`🎥 [KANIT VİDEOSU] Kaydedildi: ${relPath}`);
+            }
+          }
+        });
+
         if (hasErrors) {
           console.log(`🚨 [SİTE/SUNUCU HATASI TESPİT EDİLDİ] Test '${testInfo.title}' başarısız oldu. Arka planda web sitesi/sunucu kaynaklı hatalar tespit edildi. Sorun büyük olasılıkla test kodunda değil, SİTE veya SUNUCU (API) kaynaklıdır!\n`);
         } else {

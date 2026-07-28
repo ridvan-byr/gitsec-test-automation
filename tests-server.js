@@ -46,16 +46,40 @@ function broadcast(event, data) {
 }
 
 // Statik dosyaları servis etmek için basit yardımcı
-function serveStaticFile(res, filePath, contentType) {
-  fs.readFile(filePath, (err, content) => {
-    if (err) {
-      res.writeHead(500, { 'Content-Type': 'text/plain' });
-      res.end('500 Server Error');
-      return;
+function serveStaticFile(res, filePath, contentType, req = null) {
+  try {
+    const stat = fs.statSync(filePath);
+    const fileSize = stat.size;
+    const range = req ? req.headers.range : null;
+
+    if (range && (contentType === 'video/webm' || contentType === 'video/mp4')) {
+      const parts = range.replace(/bytes=/, "").split("-");
+      const start = parseInt(parts[0], 10);
+      const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+      const chunksize = (end - start) + 1;
+      const file = fs.createReadStream(filePath, { start, end });
+
+      res.writeHead(206, {
+        'Content-Range': `bytes ${start}-${end}/${fileSize}`,
+        'Accept-Ranges': 'bytes',
+        'Content-Length': chunksize,
+        'Content-Type': contentType,
+      });
+      file.pipe(res);
+    } else {
+      res.writeHead(200, {
+        'Content-Length': fileSize,
+        'Content-Type': contentType,
+        'Accept-Ranges': 'bytes'
+      });
+      fs.createReadStream(filePath).pipe(res);
     }
-    res.writeHead(200, { 'Content-Type': contentType });
-    res.end(content);
-  });
+  } catch (err) {
+    if (res && typeof res.writeHead === 'function') {
+      res.writeHead(500, { 'Content-Type': 'text/plain' });
+      res.end('500 Server Error: ' + err.message);
+    }
+  }
 }
 
 const server = http.createServer((req, res) => {
@@ -149,7 +173,7 @@ const server = http.createServer((req, res) => {
         if (filePath.endsWith('.html')) contentType = 'text/html';
         if (filePath.endsWith('.json')) contentType = 'application/json';
 
-        serveStaticFile(res, filePath, contentType);
+        serveStaticFile(res, filePath, contentType, req);
       } else {
         res.writeHead(404, { 'Content-Type': 'text/plain' });
         res.end('Artifact Not Found');

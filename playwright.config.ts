@@ -32,10 +32,13 @@ export default defineConfig({
       password: process.env.E2E_BASIC_AUTH_PASS || '',
     } : undefined,
 
-    /* Hata durumunda ekran görüntüsü, video ve trace (iz kaydı) topla (CI/Local ayrımı yapıldı) */
-    trace: process.env.CI ? 'on-first-retry' : 'off',
+    /* Hata durumunda ekran görüntüsü, tam çözünürlüklü video ve trace (iz kaydı) topla */
+    trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
-    video: process.env.CI ? 'retain-on-failure' : 'off',
+    video: {
+      mode: 'retain-on-failure',
+      size: { width: 1280, height: 720 },
+    },
     actionTimeout: 15000,
     navigationTimeout: 20000,
   },
