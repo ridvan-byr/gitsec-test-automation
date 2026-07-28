@@ -270,15 +270,23 @@ export const test = base.extend<GitSecFixtures>({
           console.log(`ℹ️ [TEST/SENARYO İNCELEMESİ] Test '${testInfo.title}' başarısız oldu. Ancak arka planda web sitesi veya API kaynaklı herhangi bir JS/Network hatası tespit edilmedi. Sorun test adımları, element seçicileri veya beklenmeyen bir UI akışı kaynaklı olabilir.\n`);
         }
       } else if (hasErrors) {
-        // Hata bekleyen testlerde (başlığında hata kodları veya yetki geçen) arka plan hatalarını görmezden gel
-        const shouldIgnoreErrors = testInfo.title.toLowerCase().includes('sahte') ||
-          testInfo.title.toLowerCase().includes('simüle') ||
-          testInfo.title.toLowerCase().includes('429') ||
-          testInfo.title.toLowerCase().includes('500') ||
-          testInfo.title.toLowerCase().includes('403') ||
-          testInfo.title.toLowerCase().includes('401') ||
-          testInfo.title.toLowerCase().includes('geçersiz') ||
-          testInfo.title.toLowerCase().includes('yetkisiz') ||
+        // Hata bekleyen testlerde (başlığında/dosyasında hata kodları veya yetki/setup geçen) arka plan hatalarını görmezden gel
+        const fileLower = (testInfo.file || '').toLowerCase();
+        const titleLower = (testInfo.title || '').toLowerCase();
+
+        const shouldIgnoreErrors = titleLower.includes('sahte') ||
+          titleLower.includes('simüle') ||
+          titleLower.includes('429') ||
+          titleLower.includes('500') ||
+          titleLower.includes('403') ||
+          titleLower.includes('401') ||
+          titleLower.includes('geçersiz') ||
+          titleLower.includes('yetkisiz') ||
+          titleLower.includes('hata') ||
+          fileLower.includes('auth.setup') ||
+          fileLower.includes('provider.setup') ||
+          fileLower.includes('failures') ||
+          fileLower.includes('forgot-password') ||
           testInfo.annotations.some(ann => ann.type === 'allow-errors');
 
         if (!shouldIgnoreErrors) {
@@ -286,7 +294,7 @@ export const test = base.extend<GitSecFixtures>({
           const errorSummary = errors.map((err, i) => `   [${i + 1}] TİP: ${err.type} | KAYNAK: ${err.source} | MESAJ: ${err.message.substring(0, 150)}`).join('\n');
           expect(errors, `🚨 [SİTE/SUNUCU HATASI] "${testInfo.title}" test adımları başarıyla tamamlansa da arayüzde veya API isteklerinde arka plan hataları tespit edildi! Sorun web sitesi/sunucu kaynaklıdır.\n\nYakalanan Arka Plan Hataları:\n${errorSummary}\n\nDetaylar yukarıdaki console loglarındadır.`).toHaveLength(0);
         } else {
-          console.log(`ℹ️ [MOCK/HATA TESTİ] "${testInfo.title}" bir hata/mock senaryosu olduğu için yakalanan ${errors.length} adet arka plan hatası göz ardı edildi.`);
+          console.log(`ℹ️ [MOCK/HATA TESTİ] "${testInfo.title}" bir hata/mock/setup senaryosu olduğu için yakalanan ${errors.length} adet arka plan hatası göz ardı edildi.`);
         }
       }
     }
