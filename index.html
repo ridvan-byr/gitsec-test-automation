@@ -5212,6 +5212,11 @@
         const providerName = providerSelect && providerSelect.value === 'bitbucket' ? 'Bitbucket' : 'GitHub';
         return englishMode ? `${providerName} Exclude` : `${providerName} Hariç Tutma`;
       }
+      if (cardId === 'card-github-backup') {
+        const providerSelect = document.getElementById('backupProviderSelect');
+        const providerName = providerSelect && providerSelect.value === 'bitbucket' ? 'Bitbucket' : 'GitHub';
+        return englishMode ? `${providerName} Backup` : `${providerName} Yedekleme`;
+      }
       if (englishMode) {
         const engMap = {
           'card-storage': 'Storage Provider',
@@ -7215,6 +7220,10 @@
         if (tag) tag.textContent = provider.toUpperCase();
       }
 
+      if (typeof renderConsoleTabs === 'function') {
+        renderConsoleTabs();
+      }
+
       saveSettings();
     }
 
@@ -7536,7 +7545,20 @@
       const val = select.value;
 
       if (descEl && cardDescriptions[cardId] && cardDescriptions[cardId][val]) {
-        descEl.innerHTML = cardDescriptions[cardId][val];
+        let descText = cardDescriptions[cardId][val];
+        let pName = 'GitHub';
+        if (cardId === 'card-github-backup') {
+          const pSelect = document.getElementById('backupProviderSelect');
+          if (pSelect && pSelect.value === 'bitbucket') pName = 'Bitbucket';
+        } else if (cardId === 'card-github-include') {
+          const pSelect = document.getElementById('includeProviderSelect');
+          if (pSelect && pSelect.value === 'bitbucket') pName = 'Bitbucket';
+        } else if (cardId === 'card-github-exclude') {
+          const pSelect = document.getElementById('excludeProviderSelect');
+          if (pSelect && pSelect.value === 'bitbucket') pName = 'Bitbucket';
+        }
+        descText = descText.replace(/GitHub/g, pName);
+        descEl.innerHTML = descText;
       }
 
       if (!isInitialLoad) {

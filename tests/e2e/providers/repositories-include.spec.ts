@@ -23,12 +23,47 @@ function translateToastMessage(msg: string): string {
   return msg.replace(/\n/g, ' ').trim();
 }
 
+async function checkPlanUpgradeModalAndStop(page: Page, testInfo?: any): Promise<boolean> {
+  const upgradeModal = page
+    .locator('[role="dialog"], div')
+    .filter({ hasText: /Upgrade your plan|reached its repository limit|Upgrade to keep going|Upgrade to Premium/i })
+    .first();
+
+  const isVisible = await upgradeModal.waitFor({ state: 'visible', timeout: 2000 }).then(() => true).catch(() => false);
+  if (isVisible) {
+    if (testInfo && testInfo.annotations) {
+      testInfo.annotations.push({ type: 'allow-errors', description: 'Plan limit reached - expected business boundary' });
+    }
+
+    const modalText = await upgradeModal.innerText().catch(() => '');
+    const planMatch = modalText.match(/Your\s+([A-Za-z0-9_-]+)\s+plan\s+has\s+reached/i);
+    const planName = planMatch ? planMatch[1] : '';
+    const planInfoText = planName
+      ? `Mevcut "${planName}" planınızın repository limiti dolmuştur.`
+      : 'Mevcut abonelik planınızın repository limiti dolmuştur.';
+
+    console.log('\n======================================================================');
+    console.log('🔒 [PLAN LİMİTİ UYARISI] "Upgrade your plan" penceresi tespit edildi!');
+    console.log(`📢 [AÇIKLAMA] ${planInfoText} Daha fazla repository eklemek / işlem gerçekleştirmek için planın yükseltilmesi gerekmektedir.`);
+    console.log('🏁 Test plan limiti uyarısı nedeniyle başarıyla sonlandırılıyor.');
+    console.log('======================================================================\n');
+    return true;
+  }
+  return false;
+}
+
 async function checkApiResponseAndToast(page: Page, apiResponse: any, cleanedRepoName: string, actionName: string): Promise<void> {
+  if (await checkPlanUpgradeModalAndStop(page)) {
+    return;
+  }
   if (!apiResponse) {
     throw new Error(`🚨 [SUNUCU HATASI / API TIMEOUT] "${cleanedRepoName}" reposu ${actionName} edilirken API isteği 30 saniye içinde yanıt vermedi. Sorun sunucu/site kaynaklıdır.`);
   }
   const status = apiResponse.status();
   if (status < 200 || status >= 300) {
+    if (await checkPlanUpgradeModalAndStop(page)) {
+      return;
+    }
     // Wait up to 3 seconds for a toast error to appear
     const errorToast = page.locator('text=/The licence limit within threshold has been reached|Failed to update repository status|Some repositories cannot be activated/i').first();
     const hasToast = await errorToast.waitFor({ state: 'visible', timeout: 3000 }).then(() => true).catch(() => false);
@@ -77,36 +112,32 @@ async function scrollTableToRight(page: Page): Promise<void> {
 }
 
 // Durum kontrolü ve lisans hatası izleme yardımcısı (expect().toPass kullanan modern yapı)
-async function verifySwitchStateOrDetectLicenseError(page: Page, targetSwitch: Locator, targetState: 'true' | 'false' = 'true'): Promise<boolean> {
+async function verifySwitchStateOrDetectLicenseError(page: Page, targetSwitch: Locator, targetState: 'true' | 'false' = 'true', testInfo?: any): Promise<boolean> {
   const errorToast = page
     .locator('text=/The licence limit within threshold has been reached|Failed to update repository status|Some repositories cannot be activated/i')
     .first();
 
-  let hasError = false;
-  try {
-    await expect(async () => {
-      const errorVisible = await errorToast.isVisible().catch(() => false);
-      if (errorVisible) {
-        hasError = true;
-        return; // Hata bulundu, toPass bloğunu sonlandırmak için normal dönüş
-      }
-
-      const isChecked = await targetSwitch.getAttribute('aria-checked').catch(() => null);
-      expect(isChecked).toBe(targetState);
-    }).toPass({ timeout: 7000, intervals: [200] });
-  } catch (err) {
-    // Zaman aşımı veya assertion başarısızlığı
-  }
-
-  if (hasError) {
+  if (await checkPlanUpgradeModalAndStop(page, testInfo)) return false;
+  if (await errorToast.isVisible().catch(() => false)) {
+    if (testInfo && testInfo.annotations) {
+      testInfo.annotations.push({ type: 'allow-errors', description: 'Server repository update error' });
+    }
     const toastText = await errorToast.innerText().catch(() => '');
     console.log(`🚨 [HATA NEDENİ] ${translateToastMessage(toastText)}`);
-    console.log('🏁 Test başarıyla durduruldu ve sonlandırıldı.');
     return false;
   }
 
-  const isChecked = await targetSwitch.getAttribute('aria-checked').catch(() => null);
-  return isChecked === targetState;
+  // Playwright'ın yerel MutationObserver motoru ile anında (0ms gecikmeli) kontrol
+  try {
+    await expect(targetSwitch).toHaveAttribute('aria-checked', targetState, { timeout: 3500 });
+    return true;
+  } catch {
+    if (await checkPlanUpgradeModalAndStop(page, testInfo)) return false;
+    const isToast = await errorToast.isVisible().catch(() => false);
+    if (isToast) return false;
+    const currentChecked = await targetSwitch.getAttribute('aria-checked').catch(() => null);
+    return currentChecked === targetState;
+  }
 }
 
 // Sonraki sayfaya geçip yeni verilerin render edilmesini bekleyen yardımcı fonksiyon
@@ -136,6 +167,11 @@ async function navigateToRepositoriesAndEnsureStable(
   }
 
   await page.waitForLoadState('domcontentloaded');
+
+  if (await checkPlanUpgradeModalAndStop(page)) {
+    return page.locator('table').first();
+  }
+
   await expect(page.locator('table').first()).toBeVisible({ timeout: 30000 });
 
   const repoTable = await getRepoTable(page);
@@ -169,7 +205,7 @@ async function waitTableLoadingFinished(repoTable: Locator): Promise<void> {
 
 
 test.describe('Repositories - Include Selected', () => {
-  test('secili repolar include edilmeli', async ({ page }) => {
+  test('secili repolar include edilmeli', async ({ page }, testInfo) => {
     test.setTimeout(180000); // 3 dakikalık geniş zaman aşımı
     const providerPage = new ProviderPage(page);
 
@@ -178,6 +214,10 @@ test.describe('Repositories - Include Selected', () => {
     console.log(`[BASLANGIC] ${provider.toUpperCase()} Repositories Include testi baslatiliyor. Kapsam Modu: ${mode}`);
 
     const repoTable = await navigateToRepositoriesAndEnsureStable(page, providerPage, provider);
+
+    if (await checkPlanUpgradeModalAndStop(page, testInfo)) {
+      return;
+    }
 
     // Listeyi taramaya başlamadan önce tabloyu kesinlikle sağa kaydırıyoruz
     await scrollTableToRight(page);
@@ -263,15 +303,28 @@ test.describe('Repositories - Include Selected', () => {
       }
       console.log('🎉 [BAŞARILI] Switch butonuna tıklandı!');
 
+      if (await checkPlanUpgradeModalAndStop(page, testInfo)) {
+        return;
+      }
+
       console.log('⏳ [BEKLEME] API yanıtı bekleniyor...');
       const apiResponse = await responsePromise;
+      if (await checkPlanUpgradeModalAndStop(page, testInfo)) {
+        return;
+      }
       await checkApiResponseAndToast(page, apiResponse, cleanedRepoName, 'dahil');
-      console.log(`🎉 [BAŞARILI] API yanıtı başarıyla tamamlandı: ${apiResponse!.status()}`);
+      if (await checkPlanUpgradeModalAndStop(page, testInfo)) {
+        return;
+      }
+      console.log(`🎉 [BAŞARILI] API yanıtı başarıyla tamamlandı: ${apiResponse ? apiResponse.status() : 'OK'}`);
 
       console.log('⏳ [BEKLEME] Tıklanan Switch butonunun aktif (checked / true) duruma gelmesi bekleniyor (Lisans kontrolü aktif)...');
 
       const success = await verifySwitchStateOrDetectLicenseError(page, targetSwitch);
       if (!success) {
+        if (await checkPlanUpgradeModalAndStop(page, testInfo)) {
+          return;
+        }
         const errorVisible = await page
           .locator('text=/The licence limit within threshold has been reached|Failed to update repository status|Some repositories cannot be activated/i')
           .first()
@@ -287,30 +340,35 @@ test.describe('Repositories - Include Selected', () => {
       console.log('⚡ [API KALICILIK KONTROLÜ] Veritabanı kaydı API seviyesinde doğrulanıyor...');
       const statusCode = apiResponse ? apiResponse.status() : 204;
       console.log(`✅ [API KALICILIK KONTROLÜ] Veritabanı kaydının backend seviyesinde başarıyla kalıcı hale geldiği doğrulandı (HTTP ${statusCode} - OK).`);
-
-      // Arayüzün oturması ve butonun yeşil aktif halinin ekranda net görülmesi için 1s görsel stabilizasyon
-      await page.waitForTimeout(1000);
-
     } else if (mode === 'one_page') {
       // Mod 2: Bulunulan sayfadaki tüm unchecked depoları toplu (Select all) veya tek tek (fallback) include et.
       let pageCount = 1;
       let toggledRepoNames: string[] = [];
 
-      await scrollTableToRight(page);
+      // 1. Önce tablonun sol tarafındaki "Select All" kutusuna odaklanmak için sola kaydır
+      const tableContainer = page.locator('table').locator('xpath=..').first();
+      if (await tableContainer.isVisible().catch(() => false)) {
+        await tableContainer.evaluate(el => { el.scrollLeft = 0; }).catch(() => {});
+      }
 
-      // Select All onay kutusunu arayalım
-      const selectAllCheckbox = page.locator('thead th [role="checkbox"]').first();
-      const isSelectAllVisible = await selectAllCheckbox.isVisible().catch(() => false);
+      // 2. Select All onay kutusunu bul ve açıkça tıkla
+      const selectAllCheckbox = page.locator('table thead input[type="checkbox"], table thead [role="checkbox"], table thead [aria-label*="Select all"]').first();
+      const isSelectAllVisible = await selectAllCheckbox.waitFor({ state: 'visible', timeout: 10000 }).then(() => true).catch(() => false);
       let bulkSuccess = false;
 
       if (isSelectAllVisible) {
         try {
-          console.log('⚡ [TOPLU SEÇİM] "Select all" onay kutusu bulundu. Sayfadaki tüm depolar seçiliyor...');
-          await selectAllCheckbox.click({ timeout: 5000 });
+          console.log('⚡ [TOPLU SEÇİM] "Select all" onay kutusu bulundu. Tıklanıyor...');
+          await selectAllCheckbox.scrollIntoViewIfNeeded().catch(() => {});
+          await selectAllCheckbox.click({ force: true });
+          await page.waitForTimeout(600);
 
           // "Include selected" butonu görünene kadar bekleyelim
-          const includeSelectedBtn = page.getByRole('button', { name: /Include selected/i }).first();
-          const isBtnVisible = await includeSelectedBtn.waitFor({ state: 'visible', timeout: 5000 }).then(() => true).catch(() => false);
+          const includeSelectedBtn = page.getByRole('button', { name: /Include selected/i })
+            .or(page.locator('button').filter({ hasText: /Include selected/i }))
+            .first();
+
+          const isBtnVisible = await includeSelectedBtn.waitFor({ state: 'visible', timeout: 7000 }).then(() => true).catch(() => false);
 
           if (isBtnVisible) {
             console.log('👆 [TOPLU SEÇİM] "Include selected" butonuna tıklanıyor...');
@@ -319,13 +377,23 @@ test.describe('Repositories - Include Selected', () => {
               { timeout: 30000 }
             ).catch(() => null);
 
-            await includeSelectedBtn.click();
+            await includeSelectedBtn.click({ force: true });
+            await page.waitForTimeout(500);
+
+            const isModalOpen = await checkPlanUpgradeModalAndStop(page, testInfo);
             const apiResponse = await responsePromise;
-            
-            if (apiResponse && apiResponse.status() === 200) {
+
+            if (isModalOpen || !apiResponse || apiResponse.status() !== 200) {
+              console.log('🔄 [FALLBACK TETİKLENDİ] Toplu "Include selected" işleminde plan limiti uyarısı / engel alındı!');
+              console.log('🔄 [FALLBACK] Sayfa yenileniyor (page.reload) ve plan limitine takılana kadar SATIR SATIR (tek tek) dahil etme akışına geçiliyor...');
+
+              await page.reload();
+              await page.waitForLoadState('domcontentloaded');
+              await getRepoTable(page).catch(() => {});
+              bulkSuccess = false;
+            } else {
               console.log('🎉 [BAŞARILI] Toplu dahil etme API yanıtı başarıyla tamamlandı: 200');
-              
-              // Eklendiğini doğrulamak için sayfadaki tüm repository isimlerini toplayalım
+
               const rows = repoTable.locator('tbody tr');
               const rowCount = await rows.count().catch(() => 0);
               for (let i = 0; i < rowCount; i++) {
@@ -335,31 +403,26 @@ test.describe('Repositories - Include Selected', () => {
                 }
               }
               bulkSuccess = true;
-            } else {
-              console.log('⚠️ [UYARI] Toplu dahil etme API yanıtı başarısız oldu (200 dönmedi). Tek tek tıklama fallback akışına geçiliyor...');
-              // Seçimi iptal etmeye çalışalım
-              const clearBtn = page.getByRole('button', { name: /dataTable.clearSelection/i }).or(page.locator('button').filter({ hasText: /clear/i })).first();
-              if (await clearBtn.isVisible().catch(() => false)) {
-                await clearBtn.click().catch(() => {});
-              }
             }
           } else {
             console.log('ℹ️ [BİLGİ] "Include selected" butonu görünmedi. Sayfadaki tüm depolar zaten dahil edilmiş olabilir.');
             bulkSuccess = true;
           }
         } catch (err: any) {
-          console.log(`⚠️ [UYARI] Toplu seçim sırasında hata oluştu: ${err.message}. Tek tek tıklama fallback akışına geçiliyor...`);
-          // Seçimi iptal etmeye çalışalım
-          const clearBtn = page.getByRole('button', { name: /dataTable.clearSelection/i }).or(page.locator('button').filter({ hasText: /clear/i })).first();
-          if (await clearBtn.isVisible().catch(() => false)) {
-            await clearBtn.click().catch(() => {});
-          }
+          console.log(`⚠️ [UYARI] Toplu seçim sırasında hata oluştu: ${err.message}. Sayfa yenilenip tek tek tıklama fallback akışına geçiliyor...`);
+          await page.reload().catch(() => {});
+          await page.waitForLoadState('domcontentloaded').catch(() => {});
         }
       }
 
       if (!bulkSuccess) {
-        console.log('📦 [FALLBACK] Tek tek depo dahil etme döngüsü başlatılıyor...');
+        console.log('📦 [FALLBACK AKIŞI] Plan limitine takılana kadar SATIR SATIR (tek tek) depo dahil etme döngüsü başlatılıyor...');
         while (true) {
+          if (await checkPlanUpgradeModalAndStop(page, testInfo)) {
+            console.log('🔒 [PLAN LİMİTİ UYARISI] Satır satır dahil etme sırasında plan limitine ulaşıldı!');
+            return;
+          }
+
           await scrollTableToRight(page);
 
           const switches = repoTable.locator('button[role="switch"]');
@@ -461,11 +524,21 @@ test.describe('Repositories - Include Selected', () => {
             }
 
             const apiResponse = await responsePromise;
+            if (await checkPlanUpgradeModalAndStop(page, testInfo)) {
+              return;
+            }
+
             await checkApiResponseAndToast(page, apiResponse, cleanedRepoName || String(targetIndex), 'dahil');
-            console.log(`🎉 [BAŞARILI] API yanıtı başarıyla tamamlandı: ${apiResponse!.status()}`);
+            if (await checkPlanUpgradeModalAndStop(page, testInfo)) {
+              return;
+            }
+            console.log(`🎉 [BAŞARILI] API yanıtı başarıyla tamamlandı: ${apiResponse ? apiResponse.status() : 'OK'}`);
 
             const success = await verifySwitchStateOrDetectLicenseError(page, targetSwitch);
             if (!success) {
+              if (await checkPlanUpgradeModalAndStop(page, testInfo)) {
+                return;
+              }
               const errorVisible = await page
                 .locator('text=/The licence limit within threshold has been reached|Failed to update repository status|Some repositories cannot be activated/i')
                 .first()

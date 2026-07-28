@@ -59,7 +59,7 @@ export default defineConfig({
       testMatch: /tests\/e2e\/auth\/(api-login-smoke|forgot-password|forgot-password-mocked|login|login-failures|login-mocked|register|register-failures)\.spec\.ts/,
       use: {
         ...devices['Desktop Chrome'],
-        channel: 'chrome',
+        channel: process.env.CI ? undefined : 'chrome',
         launchOptions: {
           args: [
             '--disable-blink-features=AutomationControlled',
@@ -74,7 +74,7 @@ export default defineConfig({
       use: { 
         ...devices['Desktop Chrome'],
         storageState: 'playwright/.auth/user.json',
-        channel: 'chrome',
+        channel: process.env.CI ? undefined : 'chrome',
         launchOptions: {
           args: [
             '--disable-blink-features=AutomationControlled',
@@ -92,7 +92,7 @@ export default defineConfig({
       use: { 
         ...devices['Desktop Chrome'],
         storageState: 'playwright/.auth/user-with-provider.json',
-        channel: 'chrome',
+        channel: process.env.CI ? undefined : 'chrome',
         launchOptions: {
           args: [
             '--disable-blink-features=AutomationControlled',
