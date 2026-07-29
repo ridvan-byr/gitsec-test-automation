@@ -1,6 +1,13 @@
 import { defineConfig, devices } from '@playwright/test';
 import 'dotenv/config';
 
+const headedSlowMo = process.env.PW_HEADED_SLOW_MO ? parseInt(process.env.PW_HEADED_SLOW_MO, 10) : 0;
+
+const chromeLaunchOptions = {
+  args: ['--disable-blink-features=AutomationControlled'],
+  ...(headedSlowMo > 0 ? { slowMo: headedSlowMo } : {}),
+};
+
 /**
  * See https://playwright.dev/docs/test-configuration.
  */
@@ -59,15 +66,11 @@ export default defineConfig({
     },
     {
       name: 'chromium-unauthenticated',
-      testMatch: /tests\/e2e\/auth\/(api-login-smoke|forgot-password|forgot-password-failures|forgot-password-mocked|login|login-failures|login-mocked|register|register-failures)\.spec\.ts/,
+      testMatch: /tests\/e2e\/auth\/(api-login-smoke|forgot-password(?:-edge-cases|-mocked)?|login(?:-failures|-mocked)?|register(?:-failures)?)\.spec\.ts/,
       use: {
         ...devices['Desktop Chrome'],
         channel: process.env.CI ? undefined : 'chrome',
-        launchOptions: {
-          args: [
-            '--disable-blink-features=AutomationControlled',
-          ],
-        },
+        launchOptions: chromeLaunchOptions,
       }
     },
     {
@@ -81,18 +84,14 @@ export default defineConfig({
         ...devices['Desktop Chrome'],
         storageState: 'playwright/.auth/user.json',
         channel: process.env.CI ? undefined : 'chrome',
-        launchOptions: {
-          args: [
-            '--disable-blink-features=AutomationControlled',
-          ],
-        },
+        launchOptions: chromeLaunchOptions,
       }
     },
     {
       name: 'chromium',
       dependencies: ['provider-setup'],
       testIgnore: [
-        /tests\/e2e\/auth\/(api-login-smoke|forgot-password|forgot-password-failures|forgot-password-mocked|login|login-failures|login-mocked|register|register-failures)\.spec\.ts/,
+        /tests\/e2e\/auth\/(api-login-smoke|forgot-password(?:-edge-cases|-mocked)?|login(?:-failures|-mocked)?|register(?:-failures)?)\.spec\.ts/,
         /tests\/e2e\/providers\/(github|bitbucket)-connect\.spec\.ts/,
         /tests\/e2e\/billing\/license-change\.spec\.ts/
       ],
@@ -100,11 +99,7 @@ export default defineConfig({
         ...devices['Desktop Chrome'],
         storageState: 'playwright/.auth/user-with-provider.json',
         channel: process.env.CI ? undefined : 'chrome',
-        launchOptions: {
-          args: [
-            '--disable-blink-features=AutomationControlled',
-          ],
-        },
+        launchOptions: chromeLaunchOptions,
       }
     },
     // {
