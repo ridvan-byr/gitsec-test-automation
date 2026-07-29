@@ -8,7 +8,6 @@ import {
   expectForgotPasswordRequestBlocked,
   expectPasswordMismatchFeedback,
   expectPasswordPolicyFeedback,
-  expectResetApiErrorVisible,
   expectResetSubmitBlocked,
   expectInvalidResetAttemptBlocked,
   expectVisibleValidationFeedback,
