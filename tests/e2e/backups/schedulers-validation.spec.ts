@@ -101,35 +101,52 @@ async function assertAndLogDynamicError(page: Page, expectedPattern: RegExp): Pr
 }
 
 async function fillBaseSchedulerForm(page: Page, nameVal: string): Promise<string> {
-  const maxRetries = 2;
+  const maxRetries = 3;
   let attempt = 0;
   let modalReady = false;
 
-  while (attempt <= maxRetries && !modalReady) {
-    if (attempt > 0) {
-      console.log(`🔄 [YENİDEN DENEME] Modal/combobox yüklenemedi, sayfa yenileniyor... (Deneme: ${attempt + 1}/${maxRetries + 1})`);
-      await page.reload({ waitUntil: 'domcontentloaded' });
+  while (attempt < maxRetries && !modalReady) {
+    attempt++;
+    
+    // 404 Veya Yanlış Sayfa Kontrolü ve Kurtarma
+    const is404 = await page.getByText(/Page Not Found|404/i).first().isVisible().catch(() => false);
+    if (is404 || !page.url().includes('/schedulers')) {
+      console.log('🔄 [RECOVERY] 404 hatası veya Schedulers dışı sayfa tespit edildi. Schedulers URL yönlendirmesi yapılıyor...');
+      await page.goto(`${dashboardBaseUrl}/${workspaceId}/schedulers`, { waitUntil: 'domcontentloaded' }).catch(() => {});
       const providerPage = new ProviderPage(page);
-      await providerPage.recoverFromChunkLoadError();
-      await expect(page.locator('main').first()).toBeVisible({ timeout: 15000 }).catch(() => {});
+      await providerPage.recoverFromChunkLoadError().catch(() => {});
     }
 
-    const newSchedulerBtn = page.getByRole('button', { name: /New Scheduler/i }).first();
+    const openModal = page.locator('[role="dialog"], [data-slot="dialog-content"]').first();
+    if (await openModal.isVisible().catch(() => false)) {
+      await page.keyboard.press('Escape');
+      await openModal.waitFor({ state: 'hidden', timeout: 3000 }).catch(() => {});
+    }
+
+    const newSchedulerBtn = page.getByRole('button', { name: /New Scheduler|Yeni Planlayıcı/i })
+      .or(page.locator('button').filter({ hasText: /New Scheduler|Yeni Planlayıcı/i }))
+      .first();
+
     try {
-      await newSchedulerBtn.waitFor({ state: 'visible', timeout: 15000 });
-      await newSchedulerBtn.click();
+      await newSchedulerBtn.waitFor({ state: 'visible', timeout: 10000 });
+      await newSchedulerBtn.click({ force: true });
       console.log('👆 [TIKLAMA] "New Scheduler" butonuna tıklandı.');
       
-      await page.locator('[role="dialog"], [data-slot="dialog-content"]').first().waitFor({ state: 'visible', timeout: 10000 });
+      await openModal.waitFor({ state: 'visible', timeout: 10000 });
       
       const repoCombo = page.getByRole('combobox').filter({ hasText: /Select a repository/i }).first();
       await repoCombo.waitFor({ state: 'visible', timeout: 10000 });
       modalReady = true;
     } catch (err) {
-      console.log('⚠️ [UYARI] Modal veya repository combobox yüklenemedi, yeniden denenecek...');
+      console.log(`⚠️ [UYARI] Modal veya repository combobox yüklenemedi (Deneme ${attempt}/${maxRetries}), yeniden denenecek...`);
       await page.keyboard.press('Escape');
-      await page.locator('[role="dialog"], [data-slot="dialog-content"]').first().waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {});
-      attempt++;
+      await openModal.waitFor({ state: 'hidden', timeout: 3000 }).catch(() => {});
+      
+      if (attempt < maxRetries) {
+        await page.goto(`${dashboardBaseUrl}/${workspaceId}/schedulers`, { waitUntil: 'domcontentloaded' }).catch(() => {});
+        const providerPage = new ProviderPage(page);
+        await providerPage.recoverFromChunkLoadError().catch(() => {});
+      }
     }
   }
 
@@ -176,79 +193,77 @@ async function fillBaseSchedulerForm(page: Page, nameVal: string): Promise<strin
 }
 
 async function deleteSchedulerRow(page: Page, schedulerName: string) {
-  const matchingRows = page.locator('tr').filter({ hasText: schedulerName });
-  const countBefore = await matchingRows.count();
+  let matchingRows = page.locator('tr').filter({ hasText: schedulerName });
+  let count = await matchingRows.count().catch(() => 0);
   
-  if (countBefore === 0) {
+  if (count === 0) {
+    // Ekrana düşmemiş olma ihtimaline karşı arayüzdeki yenileme butonuna bas
+    const refreshBtn = page.locator('button:has(svg[class*="rotate"]), button:has(svg[class*="refresh"]), button[title*="Refresh"]').first();
+    if (await refreshBtn.isVisible().catch(() => false)) {
+      await refreshBtn.click({ force: true }).catch(() => {});
+      await page.waitForTimeout(1000);
+      count = await matchingRows.count().catch(() => 0);
+    }
+  }
+
+  if (count === 0) {
     console.log(`🔍 [KONTROL] "${schedulerName}" planlayıcısı bulunamadı, silme adımı atlanıyor.`);
     return;
   }
 
-  console.log(`📦 [İŞLEM] Temizlik: "${schedulerName}" planlayıcısı siliniyor... (Mevcut satır sayısı: ${countBefore})`);
-  const schedulerRow = matchingRows.first();
+  let attempts = 0;
+  const maxAttempts = 10;
   
-  let clicked = false;
-
-  const trashIconBtn = schedulerRow.locator('button')
-    .filter({ has: schedulerRow.locator('svg[class*="trash"], svg.lucide-trash, svg.lucide-trash-2') })
-    .first();
-  if (await trashIconBtn.isVisible().catch(() => false)) {
-    console.log('👆 [TIKLAMA] SVG trash icon butonu bulundu, tıklanıyor...');
-    await trashIconBtn.click();
-    clicked = true;
-  }
-
-  if (!clicked) {
-    const allButtons = schedulerRow.locator('button');
-    const btnCount = await allButtons.count();
-    if (btnCount > 0) {
-      const lastBtn = allButtons.nth(btnCount - 1);
-      console.log(`👆 [TIKLAMA] Son buton (${btnCount}. buton) tıklanıyor...`);
-      await lastBtn.click();
-      clicked = true;
+  while (attempts < maxAttempts) {
+    attempts++;
+    matchingRows = page.locator('tr').filter({ hasText: schedulerName });
+    const currentCount = await matchingRows.count().catch(() => 0);
+    
+    if (currentCount === 0) {
+      console.log(`🎉 [BAŞARILI] "${schedulerName}" ile eşleşen tüm planlayıcılar silindi.`);
+      break;
     }
-  }
 
-  if (!clicked) {
-    const rowMenuTrigger = schedulerRow.locator('button[aria-haspopup="menu"]').or(schedulerRow.locator('button[id*="radix"]')).first();
-    if (await rowMenuTrigger.isVisible().catch(() => false)) {
-      await rowMenuTrigger.click();
-      const deleteAction = page.getByRole('menuitem', { name: /delete|remove|sil/i }).first();
-      await deleteAction.waitFor({ state: 'visible', timeout: 5000 });
-      await deleteAction.click();
-      clicked = true;
-    }
-  }
+    console.log(`📦 [İŞLEM] Temizlik (${attempts}. silme işlemi): "${schedulerName}" planlayıcısı siliniyor... (Mevcut satır sayısı: ${currentCount})`);
+    const schedulerRow = matchingRows.first();
+    
+    let clicked = false;
 
-  if (!clicked) {
-    const deleteBtn = schedulerRow.locator('button').filter({ hasText: /delete|remove|sil/i })
-      .or(schedulerRow.locator('button[title*="Delete"]'))
+    const trashIconBtn = schedulerRow.locator('button')
+      .filter({ has: schedulerRow.locator('svg[class*="trash"], svg.lucide-trash, svg.lucide-trash-2') })
       .first();
-    await deleteBtn.click();
-  }
+    if (await trashIconBtn.isVisible().catch(() => false)) {
+      await trashIconBtn.click({ force: true }).catch(() => {});
+      clicked = true;
+    }
 
-  const confirmDeleteBtn = page.locator('[role="dialog"] button, [role="alertdialog"] button').filter({ hasText: /confirm|delete|yes|sure|sil|remove|continue/i }).first();
-  if (await confirmDeleteBtn.waitFor({ state: 'visible', timeout: 5000 }).then(() => true).catch(() => false)) {
-    console.log('👆 [TIKLAMA] Onay diyalogu bulundu, onaylanıyor...');
-    await confirmDeleteBtn.click();
-  }
+    if (!clicked) {
+      const allButtons = schedulerRow.locator('button');
+      const btnCount = await allButtons.count().catch(() => 0);
+      if (btnCount > 0) {
+        await allButtons.nth(btnCount - 1).click({ force: true }).catch(() => {});
+        clicked = true;
+      }
+    }
 
-  // Sayfayı yenileyerek satır sayısının azaldığını doğrula (toleranslı bekleme döngüsü)
-  let countAfter = countBefore;
-  await expect(async () => {
-    await page.reload({ waitUntil: 'domcontentloaded' });
-    const providerPage = new ProviderPage(page);
-    await providerPage.recoverFromChunkLoadError();
-    countAfter = await matchingRows.count();
-    expect(countAfter).toBeLessThan(countBefore);
-  }).toPass({ timeout: 15000, intervals: [3000] }).catch(() => {});
+    if (!clicked) {
+      const rowMenuTrigger = schedulerRow.locator('button[aria-haspopup="menu"]').or(schedulerRow.locator('button[id*="radix"]')).first();
+      if (await rowMenuTrigger.isVisible().catch(() => false)) {
+        await rowMenuTrigger.click({ force: true }).catch(() => {});
+        const deleteAction = page.getByRole('menuitem', { name: /delete|remove|sil/i }).first();
+        await deleteAction.waitFor({ state: 'visible', timeout: 5000 }).catch(() => {});
+        await deleteAction.click({ force: true }).catch(() => {});
+        clicked = true;
+      }
+    }
 
-  console.log(`🔍 [KONTROL] Silme sonrası nihai satır sayısı: ${countAfter} (Önce: ${countBefore})`);
+    const confirmDeleteBtn = page.locator('[role="dialog"] button, [role="alertdialog"] button').filter({ hasText: /confirm|delete|yes|sure|sil|remove|continue/i }).first();
+    if (await confirmDeleteBtn.waitFor({ state: 'visible', timeout: 5000 }).then(() => true).catch(() => false)) {
+      await confirmDeleteBtn.click({ force: true }).catch(() => {});
+    }
 
-  if (countAfter < countBefore) {
-    console.log('🎉 [BAŞARILI] Temizlik tamamlandı.');
-  } else {
-    console.log('⚠️ [UYARI] Planlayıcı satır sayısı azalmadı.');
+    await expect(schedulerRow).toBeHidden({ timeout: 8000 }).catch(() => {});
+    await page.waitForTimeout(500);
   }
 }
 
@@ -256,6 +271,9 @@ test.describe('Backup Schedulers - Form ve Sınır Doğrulama (Validation)', () 
   test.setTimeout(180000);
 
   test.beforeEach(async ({ page }) => {
+    // Rate Limit (HTTP 429) koruması: Testler arasında sunucuya 400ms nefes alma es'i ver
+    await page.waitForTimeout(400);
+
     workspaceId = requireEnv('WORKSPACE_ID');
     dashboardBaseUrl = requireEnv('DASHBOARD_BASE_URL');
     (page as GitSecPage).ignoredErrors = [
@@ -284,6 +302,45 @@ test.describe('Backup Schedulers - Form ve Sınır Doğrulama (Validation)', () 
     }
 
     await providerPage.recoverFromChunkLoadError();
+
+    // Sadece 'delete' modunda tüm eski E2E artıklarını temizle
+    const cleanupMode = process.env.E2E_SCHEDULER_CLEANUP || 'delete';
+    if (cleanupMode === 'delete') {
+      const staleRegex = /e2e-schedule-\d+|DenemeRıdvan|Weekly-Fail|Dup-Sched|Cron-Fail|Cron-7-Fail|Backup for|Plan_|ArapçaZeroWidth/i;
+      const staleRows = page.locator('tr').filter({ hasText: staleRegex });
+      const staleCount = await staleRows.count().catch(() => 0);
+      if (staleCount > 0) {
+        console.log(`🧹 [TEMİZLİK] ${staleCount} adet eski E2E test artığı tespit edildi, temizleniyor...`);
+        let deleteAttempts = 0;
+        while (deleteAttempts < 15) {
+          deleteAttempts++;
+          const row = page.locator('tr').filter({ hasText: staleRegex }).first();
+          if (await row.isVisible().catch(() => false)) {
+            const trashBtn = row.getByRole('button', { name: /delete|trash|remove|sil/i })
+              .or(row.locator('button:has(svg[class*="trash"])'))
+              .or(row.getByRole('button').last())
+              .first();
+            if (await trashBtn.isVisible().catch(() => false)) {
+              await trashBtn.click({ force: true }).catch(() => {});
+              const confirmBtn = page.getByRole('dialog').or(page.getByRole('alertdialog')).first()
+                .getByRole('button', { name: /confirm|delete|yes|sure|sil|remove|continue/i }).first();
+              if (await confirmBtn.waitFor({ state: 'visible', timeout: 3000 }).then(() => true).catch(() => false)) {
+                await confirmBtn.click({ force: true }).catch(() => {});
+              }
+              await page.waitForTimeout(1000);
+              await page.reload({ waitUntil: 'domcontentloaded' }).catch(() => {});
+              await providerPage.recoverFromChunkLoadError().catch(() => {});
+            } else {
+              break;
+            }
+          } else {
+            break;
+          }
+        }
+        const remainingStale = await page.locator('tr').filter({ hasText: staleRegex }).count().catch(() => 0);
+        console.log(`🧹 [TEMİZLİK] Temizlik tamamlandı. Kalan artık: ${remainingStale}`);
+      }
+    }
   });
 
   test('Boş Planlayıcı ismi girildiğinde default isimlendirmeyi doğrula', async ({ page }) => {
@@ -458,6 +515,8 @@ test.describe('Backup Schedulers - Form ve Sınır Doğrulama (Validation)', () 
 
     await assertAndLogDynamicError(page, /select|choose|day|gün|error|hata|required/i);
     await page.keyboard.press('Escape');
+    await page.locator('[role="dialog"], [data-slot="dialog-content"]').first().waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {});
+    await deleteSchedulerRow(page, schedulerName);
     console.log('🎉 [BAŞARILI] Boş haftalık gün seçimi doğrulama senaryosu tamamlandı.');
   });
 

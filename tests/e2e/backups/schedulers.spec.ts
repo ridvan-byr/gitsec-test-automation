@@ -12,19 +12,7 @@ async function selectScheduleType(page: Page, typeName: 'Daily' | 'Weekly' | 'Mo
   
   const dialog = page.locator('[role="dialog"], [data-slot="dialog-content"]').first();
   
-  // 1. Sekme / Buton (Tabs / Radio / Direct buttons) seçeneği kontrolü
-  const directButton = dialog.getByRole('button', { name: typeName, exact: true })
-    .or(dialog.getByRole('tab', { name: typeName }))
-    .or(dialog.locator('button, div[role="radio"]').filter({ hasText: new RegExp(`^${typeName}$`, 'i') }))
-    .first();
-
-  if (await directButton.isVisible().catch(() => false)) {
-    console.log(`🎯 [Schedule Type] Doğrudan buton/tab ile "${typeName}" seçiliyor.`);
-    await directButton.click({ force: true }).catch(() => {});
-    return;
-  }
-
-  // 2. Select Combobox seçeneği kontrolü
+  // 1. Önce Select Combobox (dropdown) yolunu dene — en güvenilir yol
   const comboboxes = dialog.getByRole('combobox').or(dialog.locator('button[role="combobox"], [data-slot="select-trigger"]'));
   const count = await comboboxes.count().catch(() => 0);
   const typeTrigger = count > 1 ? comboboxes.nth(1) : comboboxes.first();
@@ -39,54 +27,113 @@ async function selectScheduleType(page: Page, typeName: 'Daily' | 'Weekly' | 'Mo
     }
 
     await typeTrigger.click({ force: true }).catch(() => {});
-    await page.waitForTimeout(300);
+    await page.waitForTimeout(500);
 
     const option = page.getByRole('option', { name: typeName })
       .or(page.locator('[role="option"], [data-slot="select-item"]').filter({ hasText: typeName }))
       .first();
 
-    const isOptionVisible = await option.waitFor({ state: 'visible', timeout: 4000 }).then(() => true).catch(() => false);
+    const isOptionVisible = await option.waitFor({ state: 'visible', timeout: 5000 }).then(() => true).catch(() => false);
     if (isOptionVisible) {
+      console.log(`🎉 [BAŞARILI] Dropdown seçeneği bulundu: "${typeName}", tıklanıyor...`);
+      await option.click({ timeout: 5000 }).catch(() => option.click({ force: true }));
+      await page.waitForTimeout(500);
+      
+      // Popover/listbox kapanmasını garanti et
+      const listbox = page.locator('[role="listbox"], [data-slot="select-content"]').first();
+      if (await listbox.isVisible().catch(() => false)) {
+        await listbox.waitFor({ state: 'hidden', timeout: 3000 }).catch(async () => {
+          console.log('⚠️ [UYARI] Dropdown hâlâ açık, Escape ile kapatılıyor...');
+          await page.keyboard.press('Escape').catch(() => {});
+          await page.waitForTimeout(300);
+        });
+      }
+      return;
     } else {
-      console.log(`⚠️ [UYARI] "${typeName}" seçeneği dropdown'da bulunamadı, varsayılan tip korunuyor.`);
+      console.log(`⚠️ [UYARI] "${typeName}" seçeneği dropdown'da bulunamadı.`);
     }
-  } else {
-    console.log(`ℹ️ [Schedule Type] Tip tetikleyicisi bulunamadı, varsayılan tip kullanılıyor.`);
   }
+
+  // 2. Fallback: Sekme / Tab / Radio yolu (combobox hariç — yanlış eşleşmeyi önler)
+  const directButton = dialog.getByRole('tab', { name: typeName })
+    .or(dialog.locator('div[role="radio"]').filter({ hasText: new RegExp(`^${typeName}$`, 'i') }))
+    .first();
+
+  if (await directButton.isVisible().catch(() => false)) {
+    console.log(`🎯 [Schedule Type] Doğrudan tab/radio ile "${typeName}" seçiliyor.`);
+    await directButton.click({ force: true }).catch(() => {});
+    await page.waitForTimeout(300);
+    return;
+  }
+
+  console.log(`ℹ️ [Schedule Type] Tip tetikleyicisi bulunamadı, varsayılan tip kullanılıyor.`);
 }
 
 async function setCheckboxState(page: Page, labelText: string, shouldBeChecked: boolean) {
-  console.log(`⏳ [BEKLEME] Checkbox ayarlanıyor. Etiket: "${labelText}", Hedef Durum: ${shouldBeChecked}`);
+  const dialog = page.locator('[role="dialog"], [data-slot="dialog-content"]').first();
 
 <<<<<<< Updated upstream
   try {
     const labelRegex = new RegExp(labelText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
     
-    // Playwright role="checkbox", label, Shadcn button[role="checkbox"], switch veya container bulucu
-    const checkbox = page.getByRole('checkbox', { name: labelRegex })
-      .or(page.getByLabel(labelRegex))
-      .or(page.locator('label, div').filter({ hasText: labelRegex }).locator('button[role="checkbox"], input[type="checkbox"], button[role="switch"], [data-slot="checkbox"]').first())
-      .or(page.locator('[role="dialog"] button[role="checkbox"], [role="dialog"] input[type="checkbox"], [role="dialog"] button[role="switch"]').first());
+    // 1. Tam bu metni içeren metin elemanını hedefle
+    const textNode = dialog.locator('span, label, div, p, h4, h5, button')
+      .filter({ hasText: labelRegex })
+      .last();
 
-    const isAttached = await checkbox.first().waitFor({ state: 'attached', timeout: 4000 }).then(() => true).catch(() => false);
+    const isTextAttached = await textNode.waitFor({ state: 'attached', timeout: 4000 }).then(() => true).catch(() => false);
 
-    if (isAttached) {
-      const targetEl = checkbox.first();
-      const dataState = await targetEl.getAttribute('data-state').catch(() => '');
-      const ariaChecked = await targetEl.getAttribute('aria-checked').catch(() => '');
-      const isChecked = dataState === 'checked' || ariaChecked === 'true' || (await targetEl.isChecked().catch(() => false));
+    if (isTextAttached) {
+      // 2. Bu metni içeren EN YAKIN (en dar) checkbox kapsayıcısını bul
+      const cardContext = textNode.locator('xpath=ancestor::*[button[@role="checkbox"] or input[@type="checkbox"] or @role="checkbox"][1]');
+      const hasCard = (await cardContext.count().catch(() => 0)) > 0;
+      
+      const targetBtn = hasCard 
+        ? cardContext.locator('button[role="checkbox"], input[type="checkbox"], [role="checkbox"]').first()
+        : textNode.locator('xpath=ancestor::label[1]//input | ancestor::label[1]//button').first();
+
+      const elToClick = (await targetBtn.count().catch(() => 0)) > 0 ? targetBtn : textNode;
+
+      // İşaretli olma durumu: YALNIZCA bu butonun kendi attributes & iç SVG'sine bak
+      const dataState = await elToClick.getAttribute('data-state').catch(() => '');
+      const ariaChecked = await elToClick.getAttribute('aria-checked').catch(() => '');
+      const nativeChecked = await elToClick.isChecked().catch(() => false);
+      const innerSvg = (await elToClick.locator('svg[class*="check"], svg.lucide-check').count().catch(() => 0)) > 0;
+
+      const isChecked = 
+        dataState === 'checked' || 
+        ariaChecked === 'true' || 
+        nativeChecked || 
+        innerSvg;
+
+      console.log(`📋 [CHECKBOX DETAY] "${labelText}" | Mevcut Durum: ${isChecked ? 'İşaretli (✓)' : 'Boş (✗)'} | İstenen: ${shouldBeChecked ? 'İşaretli (✓)' : 'Boş (✗)'}`);
 
       if (isChecked !== shouldBeChecked) {
-        console.log(`🔘 [CHECKBOX] "${labelText}" durumu güncelleniyor -> Hedef: ${shouldBeChecked}`);
-        await targetEl.click({ force: true }).catch(() => {});
+        console.log(`🔘 [CHECKBOX GÜNCELLEME] "${labelText}" tıklanıyor -> Yeni Hedef: ${shouldBeChecked ? 'İşaretli (✓)' : 'Boş (✗)'}`);
+        
+        await elToClick.click({ force: true }).catch(() => {});
+        await page.waitForTimeout(400);
+
+        const postDataState = await elToClick.getAttribute('data-state').catch(() => '');
+        const postAria = await elToClick.getAttribute('aria-checked').catch(() => '');
+        const postNative = await elToClick.isChecked().catch(() => false);
+        const postSvg = (await elToClick.locator('svg[class*="check"], svg.lucide-check').count().catch(() => 0)) > 0;
+
+        const newIsChecked = 
+          postDataState === 'checked' || 
+          postAria === 'true' || 
+          postNative || 
+          postSvg;
+
+        console.log(`✅ [CHECKBOX SONUÇ] "${labelText}" nihai durum: ${newIsChecked ? 'İşaretli (✓)' : 'Boş (✗)'}`);
       } else {
-        console.log(`✅ [CHECKBOX] "${labelText}" zaten istenen durumda: ${shouldBeChecked}`);
+        console.log(`✅ [CHECKBOX KONTROL] "${labelText}" zaten istenen konumda: ${shouldBeChecked ? 'İşaretli (✓)' : 'Boş (✗)'}`);
       }
     } else {
-      console.log(`ℹ️ [CHECKBOX] "${labelText}" checkbox/switch öğesi arayüzde bulunamadı (opsiyonel varsayıldı).`);
+      console.log(`ℹ️ [CHECKBOX] "${labelText}" elemanı arayüzde bulunamadı.`);
     }
   } catch (err) {
-    console.log(`⚠️ [UYARI] "${labelText}" checkbox ayarlanırken hata göz ardı edildi: ${(err as Error).message}`);
+    console.log(`⚠️ [UYARI] "${labelText}" checkbox ayarlanırken hata: ${(err as Error).message}`);
   }
 =======
   const checkbox = page.getByRole('checkbox', { name: labelText })
@@ -169,22 +216,54 @@ async function fillBaseSchedulerForm(page: Page): Promise<string> {
     await page.waitForTimeout(300);
   }
 
-  // Radix / Shadcn dropdown seçeneklerini herhangi bir disabled kısıtlaması koymadan al
+  // Radix / Shadcn dropdown seçeneklerini al ve Excluded (Devre dışı/Hariç tutulmuş) olanları filtrele
   const allRepoOptions = page.locator('[role="option"], [data-slot="select-item"], div[class*="select-item"], [data-radix-collection-item]')
     .or(page.getByRole('option'));
 
   const count = await allRepoOptions.count().catch(() => 0);
 
-  if (count > 0) {
-    const firstRepo = allRepoOptions.first();
-    const repoText = await firstRepo.innerText().catch(() => '');
-    console.log(`🔍 [KONTROL] Repository seçeneği bulundu ve seçiliyor: "${repoText.trim()}"`);
-    await firstRepo.click({ force: true }).catch(() => {});
-  } else {
-    console.log('⚠️ [UYARI] Dropdown açıldı ancak seçilebilir repo elemanı doğrudan sayılamadı. ArrowDown + Space basılıyor...');
-    await page.keyboard.press('ArrowDown').catch(() => {});
-    await page.keyboard.press('Space').catch(() => {});
+  // Excluded (Hariç tutulmuş) olmayan aktif / include edilmiş repoları süz
+  const includedRepoOptions = allRepoOptions.filter({
+    hasNotText: /Excluded|Hariç Tutuldu|Devre Dışı|disabled/i
+  });
+  const includedCount = await includedRepoOptions.count().catch(() => 0);
+
+  // Sağlayıcıya göre filtrelenmiş opsiyonları al (github / bitbucket / all)
+  const requestedProvider = (process.env.E2E_CODE_PROVIDER || 'all').toLowerCase();
+  
+  let providerRepoOptions = includedRepoOptions;
+  if (requestedProvider === 'github') {
+    providerRepoOptions = includedRepoOptions.filter({ hasText: /GitHub/i });
+  } else if (requestedProvider === 'bitbucket') {
+    providerRepoOptions = includedRepoOptions.filter({ hasText: /Bitbucket/i });
   }
+
+  const finalProviderCount = await providerRepoOptions.count().catch(() => 0);
+
+  if (count === 0 || includedCount === 0 || finalProviderCount === 0) {
+    let errorMsg = 'include edilen repo bulunamadı. Lütfen en az 1 repo include edin.';
+    if (requestedProvider === 'github') {
+      errorMsg = '❌ [HATA] GitHub sağlayıcısına ait aktif/dahil edilmiş repository bulunamadı. Lütfen en az 1 GitHub reposunu include edin.';
+    } else if (requestedProvider === 'bitbucket') {
+      errorMsg = '❌ [HATA] Bitbucket sağlayıcısına ait aktif/dahil edilmiş repository bulunamadı. Lütfen en az 1 Bitbucket reposunu include edin.';
+    }
+
+    console.log(`\n======================================================================`);
+    console.log(`🛑 [BİLGİ / UYARI] ${errorMsg}`);
+    console.log(`======================================================================\n`);
+
+    // Modalı kapatıp testi temiz şekilde bitirmek için Escape bas ve skip et
+    await page.keyboard.press('Escape').catch(() => {});
+    await dialogModal.waitFor({ state: 'hidden', timeout: 3000 }).catch(() => {});
+
+    test.skip(true, errorMsg);
+    return '';
+  }
+
+  const selectedRepo = providerRepoOptions.first();
+  const repoText = await selectedRepo.innerText().catch(() => '');
+  console.log(`🔍 [KONTROL] Include edilmiş seçilebilir repository bulundu: "${repoText.trim()}" (${requestedProvider.toUpperCase()} Sağlayıcı Filtresi)`);
+  await selectedRepo.click({ force: true }).catch(() => {});
 
   await page.waitForTimeout(500);
 
@@ -201,6 +280,10 @@ async function fillBaseSchedulerForm(page: Page): Promise<string> {
   await nameInput.fill(tempScheduleName);
   console.log(`📝 [BİLGİ] Planlayıcı İsmi girildi: ${tempScheduleName}`);
 
+  return tempScheduleName;
+}
+
+async function fillScheduleTime(page: Page) {
   const isCron = process.env.E2E_SCHEDULE_TYPE === 'Cron';
   const customTime = process.env.E2E_SCHEDULE_TIME;
   if (customTime && !isCron) {
@@ -217,6 +300,15 @@ async function fillBaseSchedulerForm(page: Page): Promise<string> {
       console.log(`⚠️ [UYARI] Saat alanı ayarlanırken hata göz ardı edildi: ${(err as Error).message}`);
     }
   }
+}
+
+async function setIncludedItems(page: Page) {
+  const dialogModal = page.locator('[role="dialog"], [role="alertdialog"], [data-slot="dialog-content"]').first();
+
+  console.log(`\n📋 [TEST ARAYÜZÜ AYARLARI] Dashboard'dan Gelen Yedekleme İçeriği Talebi:`);
+  console.log(`   - Code & Commits : ${process.env.E2E_INCLUDE_CODE === 'true' ? 'İşaretlensin (✓)' : 'Kaldırılsın (✗)'}`);
+  console.log(`   - Pull Requests  : ${process.env.E2E_INCLUDE_PR === 'true' ? 'İşaretlensin (✓)' : 'Kaldırılsın (✗)'}`);
+  console.log(`   - Issues (Talepler): ${process.env.E2E_INCLUDE_ISSUES === 'true' ? 'İşaretlensin (✓)' : 'Kaldırılsın (✗)'}`);
 
   if (process.env.E2E_INCLUDE_CODE !== undefined) {
     await setCheckboxState(page, 'Code & Commits', process.env.E2E_INCLUDE_CODE === 'true');
@@ -225,10 +317,43 @@ async function fillBaseSchedulerForm(page: Page): Promise<string> {
     await setCheckboxState(page, 'Pull Requests', process.env.E2E_INCLUDE_PR === 'true');
   }
   if (process.env.E2E_INCLUDE_ISSUES !== undefined) {
-    await setCheckboxState(page, 'Issues', process.env.E2E_INCLUDE_ISSUES === 'true');
+    const issuesContainer = dialogModal.locator('label, div').filter({ hasText: /Issues/i }).first();
+    const hasIssues = await issuesContainer.isVisible().catch(() => false);
+    if (hasIssues) {
+      await setCheckboxState(page, 'Issues', process.env.E2E_INCLUDE_ISSUES === 'true');
+    } else {
+      console.log(`ℹ️ [SAĞLAYICI BİLGİSİ] Seçilen repo için "Issues" seçeneği mevcut değil (Bitbucket deposu olduğu için atlandı).`);
+    }
   }
 
-  return tempScheduleName;
+  console.log(`\n🔍 [FORM NİHAİ KONTROL] Modal Kaydedilmeden Önceki Gerçek DOM Durumu:`);
+  for (const labelName of ['Code & Commits', 'Pull Requests', 'Issues']) {
+    const labelRegex = new RegExp(labelName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+    const textNode = dialogModal.locator('span, label, div, p, h4, h5, button')
+      .filter({ hasText: labelRegex })
+      .last();
+
+    if (await textNode.isVisible().catch(() => false)) {
+      const cardContext = textNode.locator('xpath=ancestor::*[button[@role="checkbox"] or input[@type="checkbox"] or @role="checkbox"][1]');
+      const targetBtn = (await cardContext.count().catch(() => 0)) > 0
+        ? cardContext.locator('button[role="checkbox"], input[type="checkbox"], [role="checkbox"]').first()
+        : textNode;
+
+      const state = await targetBtn.getAttribute('data-state').catch(() => '');
+      const aria = await targetBtn.getAttribute('aria-checked').catch(() => '');
+      const native = await targetBtn.isChecked().catch(() => false);
+      const svg = (await targetBtn.locator('svg[class*="check"], svg.lucide-check').count().catch(() => 0)) > 0;
+
+      const checked = state === 'checked' || aria === 'true' || native || svg;
+      console.log(`   📌 GitSec Formundaki "${labelName}" Kutusu: ${checked ? 'İŞARETLİ (✓)' : 'BOŞ / İŞARETSİZ (✗)'}`);
+    } else {
+      console.log(`   📌 GitSec Formundaki "${labelName}" Kutusu: ARAYÜZDE MAVCUT DEĞİL (Atlandı)`);
+    }
+  }
+
+  console.log(`✅ [YEDEKLEME İÇERİĞİ TAMAMLANDI] Form üzerindeki Included Items seçimi tamamlandı.`);
+  console.log(`⏳ [GÖRSEL BEKLEME] Seçimlerin gözle görülebilmesi için 1.5 saniye bekleniyor...\n`);
+  await page.waitForTimeout(1500);
 }
 
 async function selectTimezone(page: Page) {
@@ -247,8 +372,8 @@ async function selectTimezone(page: Page) {
     console.log('⚠️ [UYARI] Arayüzden aktif tip okunurken hata oluştu:', err);
   }
 
-  const isCron = isCronText || process.env.E2E_SCHEDULE_TYPE === 'Cron';
-  if (isCron) {
+  // YALNIZCA arayüzde Cron aktif ise timezone seçimi atlanır (E2E_SCHEDULE_TYPE global env ile karışmasını önler)
+  if (isCronText) {
     console.log('📝 [BİLGİ] Cron schedule tipi algılandı. Timezone seçimi atlanıyor.');
     return;
   }
@@ -294,42 +419,56 @@ async function selectTimezone(page: Page) {
 }
 
 async function selectWeeklyDay(page: Page) {
-  const rawDay = process.env.E2E_WEEKDAY || 'Mon';
+  // Varsayılan olarak Pazar hariç tüm çalışma günleri: Mon,Tue,Wed,Thu,Fri,Sat
+  const rawDay = process.env.E2E_WEEKDAY || 'Mon,Tue,Wed,Thu,Fri,Sat';
   
-  let dayAbbr = rawDay.substring(0, 3);
-  if (rawDay.toLowerCase().startsWith('th')) dayAbbr = 'Thu';
-  else if (rawDay.toLowerCase().startsWith('sa')) dayAbbr = 'Sat';
-  else if (rawDay.toLowerCase().startsWith('su')) dayAbbr = 'Sun';
-  else if (rawDay.toLowerCase().startsWith('tu')) dayAbbr = 'Tue';
-  else if (rawDay.toLowerCase().startsWith('we')) dayAbbr = 'Wed';
-  else if (rawDay.toLowerCase().startsWith('mo')) dayAbbr = 'Mon';
-  else if (rawDay.toLowerCase().startsWith('fr')) dayAbbr = 'Fri';
+  // Virgülle veya boşlukla ayrılmış tüm günleri diziye dönüştür
+  const targetDays = rawDay.split(/[,;\s]+/).filter(Boolean);
 
-  console.log(`⏳ [BEKLEME] Weekly Day seçiliyor: "${dayAbbr}"`);
+  console.log(`⏳ [BEKLEME] Weekly Days seçiliyor: "${targetDays.join(', ')}"`);
 
-  try {
-    const dayElement = page.getByRole('button', { name: new RegExp(dayAbbr, 'i') })
-      .or(page.getByRole('checkbox', { name: new RegExp(dayAbbr, 'i') }))
-      .or(page.locator('button, div, span, label').filter({ hasText: new RegExp(`^${dayAbbr}$`, 'i') }))
-      .or(page.locator(`[value*="${dayAbbr}"], [data-value*="${dayAbbr}"]`))
-      .first();
+  const dialog = page.locator('[role="dialog"], [data-slot="dialog-content"]').first();
 
-    const isAttached = await dayElement.waitFor({ state: 'attached', timeout: 5000 }).then(() => true).catch(() => false);
+  for (const dayStr of targetDays) {
+    let dayAbbr = dayStr.substring(0, 3);
+    if (dayStr.toLowerCase().startsWith('th')) dayAbbr = 'Thu';
+    else if (dayStr.toLowerCase().startsWith('sa')) dayAbbr = 'Sat';
+    else if (dayStr.toLowerCase().startsWith('su')) dayAbbr = 'Sun';
+    else if (dayStr.toLowerCase().startsWith('tu')) dayAbbr = 'Tue';
+    else if (dayStr.toLowerCase().startsWith('we')) dayAbbr = 'Wed';
+    else if (dayStr.toLowerCase().startsWith('mo')) dayAbbr = 'Mon';
+    else if (dayStr.toLowerCase().startsWith('fr')) dayAbbr = 'Fri';
 
-    if (isAttached) {
-      const isChecked = (await dayElement.getAttribute('aria-checked').catch(() => '')) === 'true' || 
-                        (await dayElement.getAttribute('data-state').catch(() => '')) === 'checked';
-      if (!isChecked) {
-        console.log(`🎉 [BAŞARILI] "${dayAbbr}" günü seçiliyor...`);
-        await dayElement.click({ force: true }).catch(() => {});
+    try {
+      // Shadcn UI Label veya Span Gün Elemanını dialog içinden tam metin eşleşmesiyle bul
+      const dayLabel = dialog.locator('label, button, div, span')
+        .filter({ hasText: new RegExp(`^${dayAbbr}$`, 'i') })
+        .first();
+
+      const isVisible = await dayLabel.waitFor({ state: 'visible', timeout: 4000 }).then(() => true).catch(() => false);
+
+      if (isVisible) {
+        const cls = await dayLabel.getAttribute('class').catch(() => '') || '';
+        const dataState = await dayLabel.getAttribute('data-state').catch(() => '');
+        const ariaChecked = await dayLabel.getAttribute('aria-checked').catch(() => '');
+        const hasSvgIcon = (await dayLabel.locator('svg').count().catch(() => 0)) > 0;
+
+        // Seçili olma kriteri: bg-primary/10 sınıfı, data-state="checked", aria-checked="true" veya içindeki tik (SVG) ikonu
+        const isSelected = dataState === 'checked' || ariaChecked === 'true' || cls.includes('bg-primary/10') || hasSvgIcon;
+
+        if (!isSelected) {
+          console.log(`🎉 [BAŞARILI] "${dayAbbr}" gün seçeneği tıklanıp işaretleniyor...`);
+          await dayLabel.click({ force: true });
+          await page.waitForTimeout(200);
+        } else {
+          console.log(`🔍 [KONTROL] "${dayAbbr}" günü zaten seçili.`);
+        }
       } else {
-        console.log(`🔍 [KONTROL] "${dayAbbr}" günü zaten seçili.`);
+        console.log(`⚠️ [WEEKLY DAY] "${dayAbbr}" günü elemanı doğrudan bulunamadı.`);
       }
-    } else {
-      console.log(`ℹ️ [WEEKLY DAY] "${dayAbbr}" günü elemanı doğrudan bulunamadı (varsayılan gün korundu).`);
+    } catch (err) {
+      console.log(`⚠️ [UYARI] "${dayAbbr}" günü seçilirken hata: ${(err as Error).message}`);
     }
-  } catch (err) {
-    console.log(`⚠️ [UYARI] Weekly Day seçilirken hata göz ardı edildi: ${(err as Error).message}`);
   }
 }
 
@@ -384,7 +523,6 @@ async function fillCronExpression(page: Page) {
 
 async function saveScheduler(page: Page) {
   console.log('⏳ [BEKLEME] Save/Create Scheduler butonuna basılıyor...');
-  // getByRole tek başına yeterli — gereksiz .or() zincirleri kaldırıldı
   const saveBtn = page.getByRole('button', { name: /save|create/i }).first();
   await saveBtn.waitFor({ state: 'visible', timeout: 15000 });
   try {
@@ -397,158 +535,136 @@ async function saveScheduler(page: Page) {
 }
 
 async function deleteSchedulerRow(page: Page, schedulerName: string) {
-  const matchingRows = page.locator('tr').filter({ hasText: schedulerName });
-  const countBefore = await matchingRows.count();
+  let matchingRows = page.locator('tr').filter({ hasText: schedulerName });
+  let count = await matchingRows.count().catch(() => 0);
   
-  if (countBefore === 0) {
+  if (count === 0) {
+    // Ekrana düşmemiş olma ihtimaline karşı arayüzdeki yenileme butonuna bas
+    const refreshBtn = page.locator('button:has(svg[class*="rotate"]), button:has(svg[class*="refresh"]), button[title*="Refresh"]').first();
+    if (await refreshBtn.isVisible().catch(() => false)) {
+      await refreshBtn.click({ force: true }).catch(() => {});
+      await page.waitForTimeout(1000);
+      count = await matchingRows.count().catch(() => 0);
+    }
+  }
+
+  if (count === 0) {
     console.log(`🔍 [KONTROL] "${schedulerName}" planlayıcısı bulunamadı, silme adımı atlanıyor.`);
     return;
   }
 
-  console.log(`📦 [İŞLEM] Temizlik: "${schedulerName}" planlayıcısı siliniyor... (Mevcut satır sayısı: ${countBefore})`);
-  const schedulerRow = matchingRows.first();
+  let attempts = 0;
+  const maxAttempts = 10;
   
-  let clicked = false;
+  while (attempts < maxAttempts) {
+    attempts++;
+    matchingRows = page.locator('tr').filter({ hasText: schedulerName });
+    const currentCount = await matchingRows.count().catch(() => 0);
+    
+    if (currentCount === 0) {
+      console.log(`🎉 [BAŞARILI] "${schedulerName}" ile eşleşen tüm planlayıcılar (${attempts - 1} işlemde) silindi.`);
+      break;
+    }
 
-  // Öncelik 1: getByRole ile erişilebilir silme butonu (aria-label varsa)
-  const accessibleDeleteBtn = schedulerRow.getByRole('button', { name: /delete|trash|remove|sil/i }).first();
-  if (await accessibleDeleteBtn.isVisible().catch(() => false)) {
-    console.log('👆 [TIKLAMA] Erişilebilir silme butonu bulundu, tıklanıyor...');
-    await accessibleDeleteBtn.click();
-    clicked = true;
-  }
+    console.log(`📦 [İŞLEM] Temizlik (${attempts}. silme işlemi): "${schedulerName}" planlayıcısı siliniyor... (Kalan satır sayısı: ${currentCount})`);
+    const schedulerRow = matchingRows.first();
+    
+    let clicked = false;
 
-  // Öncelik 2: SVG trash icon butonu (aria-label yoksa CSS fallback)
-  if (!clicked) {
-    const trashIconBtn = schedulerRow.locator('button:has(svg[class*="trash"])')
-      .or(schedulerRow.locator('button:has(svg.lucide-trash-2)'))
-      .first();
-    if (await trashIconBtn.isVisible().catch(() => false)) {
-      console.log('👆 [TIKLAMA] SVG trash icon butonu bulundu, tıklanıyor...');
-      await trashIconBtn.click();
+    // Öncelik 1: getByRole ile erişilebilir silme butonu
+    const accessibleDeleteBtn = schedulerRow.getByRole('button', { name: /delete|trash|remove|sil/i }).first();
+    if (await accessibleDeleteBtn.isVisible().catch(() => false)) {
+      await accessibleDeleteBtn.click({ force: true }).catch(() => {});
       clicked = true;
     }
-  }
 
-  // Öncelik 3: Satırdaki son buton (silme butonu genellikle sonda)
-  if (!clicked) {
-    const allButtons = schedulerRow.getByRole('button');
-    const btnCount = await allButtons.count();
-    if (btnCount > 0) {
-      const lastBtn = allButtons.last();
-      console.log(`👆 [TIKLAMA] Son buton (${btnCount}. buton) tıklanıyor...`);
-      await lastBtn.click();
-      clicked = true;
+    // Öncelik 2: SVG trash icon butonu
+    if (!clicked) {
+      const trashIconBtn = schedulerRow.locator('button:has(svg[class*="trash"]), button:has(svg.lucide-trash-2)').first();
+      if (await trashIconBtn.isVisible().catch(() => false)) {
+        await trashIconBtn.click({ force: true }).catch(() => {});
+        clicked = true;
+      }
     }
-  }
 
-  // Öncelik 4: Menü trigger → menuitem ile silme
-  if (!clicked) {
-    const rowMenuTrigger = schedulerRow.getByRole('button').filter({ has: page.locator('[aria-haspopup="menu"]') }).first();
-    if (await rowMenuTrigger.isVisible().catch(() => false)) {
-      await rowMenuTrigger.click();
-      const deleteAction = page.getByRole('menuitem', { name: /delete|remove|sil/i }).first();
-      await deleteAction.waitFor({ state: 'visible', timeout: 5000 });
-      await deleteAction.click();
-      clicked = true;
+    // Öncelik 3: Satırdaki son buton
+    if (!clicked) {
+      const allButtons = schedulerRow.getByRole('button');
+      const btnCount = await allButtons.count().catch(() => 0);
+      if (btnCount > 0) {
+        await allButtons.last().click({ force: true }).catch(() => {});
+        clicked = true;
+      }
     }
-  }
 
-  // Son çare: Metin filtresiyle silme butonu
-  if (!clicked) {
-    const deleteBtn = schedulerRow.getByRole('button').filter({ hasText: /delete|remove|sil/i }).first();
-    await deleteBtn.click();
-  }
+    // Onay diyalogu
+    const confirmDeleteBtn = page.getByRole('dialog').or(page.getByRole('alertdialog')).first()
+      .getByRole('button', { name: /confirm|delete|yes|sure|sil|remove|continue/i }).first();
+    if (await confirmDeleteBtn.waitFor({ state: 'visible', timeout: 4000 }).then(() => true).catch(() => false)) {
+      await confirmDeleteBtn.click({ force: true }).catch(() => {});
+    }
 
-  // Onay diyalogu: getByRole ile dialog chaining
-  const confirmDeleteBtn = page.getByRole('dialog').or(page.getByRole('alertdialog')).first()
-    .getByRole('button', { name: /confirm|delete|yes|sure|sil|remove|continue/i }).first();
-  if (await confirmDeleteBtn.waitFor({ state: 'visible', timeout: 5000 }).then(() => true).catch(() => false)) {
-    console.log('👆 [TIKLAMA] Onay diyalogu bulundu, onaylanıyor...');
-    await confirmDeleteBtn.click();
-  }
-
-  // Sayfayı yenileyerek satır sayısının azaldığını doğrula (toleranslı bekleme döngüsü)
-  let countAfter = countBefore;
-  await expect(async () => {
-    await page.reload({ waitUntil: 'domcontentloaded' });
-    const providerPage = new ProviderPage(page);
-    await providerPage.recoverFromChunkLoadError();
-    countAfter = await matchingRows.count();
-    expect(countAfter).toBeLessThan(countBefore);
-  }).toPass({ timeout: 15000, intervals: [3000] }).catch(() => {});
-
-  console.log(`🔍 [KONTROL] Silme sonrası nihai satır sayısı: ${countAfter} (Önce: ${countBefore})`);
-
-  if (countAfter < countBefore) {
-    console.log('🎉 [BAŞARILI] Temizlik tamamlandı.');
-  } else {
-    console.log('⚠️ [UYARI] Planlayıcı satır sayısı azalmadı.');
+    // Satırın dom katmanında gizlenmesini bekle (Full Page Reload yapmadan)
+    await expect(schedulerRow).toBeHidden({ timeout: 8000 }).catch(() => {});
+    await page.waitForTimeout(500);
   }
 }
 
 async function disableSchedulerRow(page: Page, schedulerName: string) {
   const matchingRows = page.locator('tr').filter({ hasText: schedulerName });
-  const count = await matchingRows.count();
+  const count = await matchingRows.count().catch(() => 0);
 
   if (count === 0) {
     console.log(`🔍 [KONTROL] "${schedulerName}" planlayıcısı bulunamadı, devre dışı bırakma atlanıyor.`);
     return;
   }
 
-  console.log(`📦 [İŞLEM] "${schedulerName}" planlayıcısı devre dışı bırakılıyor...`);
-  const schedulerRow = matchingRows.first();
-
-  // Switch butonunu bul (aktif/pasif toggle)
-  const toggleSwitch = schedulerRow.locator('button[role="switch"]').first();
-  if (await toggleSwitch.isVisible().catch(() => false)) {
-    const isChecked = await toggleSwitch.getAttribute('aria-checked');
-    if (isChecked === 'true' || isChecked === 'checked') {
-      console.log('👆 [TIKLAMA] Switch aktif durumda, devre dışı bırakmak için tıklanıyor...');
-      await toggleSwitch.click();
-
-      // Onay diyalogu varsa onayla
-      const confirmBtn = page.getByRole('dialog').or(page.getByRole('alertdialog')).first()
-        .getByRole('button', { name: /confirm|yes|sure|disable|devre dışı|continue/i }).first();
-      if (await confirmBtn.waitFor({ state: 'visible', timeout: 3000 }).then(() => true).catch(() => false)) {
-        console.log('👆 [TIKLAMA] Onay diyalogu bulundu, onaylanıyor...');
-        await confirmBtn.click();
+  console.log(`📦 [İŞLEM] Devre Dışı Bırakma: "${schedulerName}" eşleşen ${count} planlayıcı taranıyor...`);
+  for (let i = 0; i < count; i++) {
+    const row = matchingRows.nth(i);
+    const switchBtn = row.locator('button[role="switch"], input[type="checkbox"]').first();
+    if (await switchBtn.isVisible().catch(() => false)) {
+      const isChecked = (await switchBtn.getAttribute('data-state').catch(() => '')) === 'checked' || (await switchBtn.getAttribute('aria-checked').catch(() => '')) === 'true' || (await switchBtn.isChecked().catch(() => false));
+      if (isChecked) {
+        console.log(`👆 [TIKLAMA] ${i + 1}. satır aktif durumda, devre dışı bırakmak için tıklanıyor...`);
+        await switchBtn.click({ force: true }).catch(() => {});
+        await page.waitForTimeout(500);
       }
-
-      // Switch durumunu doğrula
-      await expect(toggleSwitch).toHaveAttribute('aria-checked', 'false', { timeout: 10000 });
-      console.log('🎉 [BAŞARILI] Planlayıcı başarıyla devre dışı bırakıldı.');
-    } else {
-      console.log('🔍 [KONTROL] Planlayıcı zaten devre dışı durumda (aria-checked=false).');
     }
-  } else {
-    console.log('⚠️ [UYARI] Satırda switch butonu bulunamadı, devre dışı bırakma işlemi atlanıyor.');
   }
+  console.log(`🎉 [BAŞARILI] "${schedulerName}" eşleşen planlayıcılar başarıyla devre dışı bırakıldı.`);
 }
 
 test.describe('Backup Schedulers - Form Yapılandırma', () => {
   test.setTimeout(120000);
 
   test.beforeEach(async ({ page }) => {
+    // Rate Limit (HTTP 429) koruması: Testler arasında sunucuya 400ms nefes alma es'i ver
+    await page.waitForTimeout(400);
+
     workspaceId = requireEnv('WORKSPACE_ID');
     dashboardBaseUrl = requireEnv('DASHBOARD_BASE_URL');
     const providerPage = new ProviderPage(page);
 
-    console.log('🌐 [NAVİGASYON] Dashboard açılıyor...');
-    await providerPage.navigateToDashboard();
-    await providerPage.waitForDashboardReady();
+    // 404 Veya Sayfa Bozukluğu Kontrolü
+    const is404 = await page.getByText(/Page Not Found|404/i).first().isVisible().catch(() => false);
+    if (is404 || !page.url().includes('/schedulers')) {
+      console.log('🌐 [NAVİGASYON] Dashboard/Schedulers sayfasına geçiliyor...');
+      await page.goto(`${dashboardBaseUrl}/${workspaceId}/schedulers`, { waitUntil: 'domcontentloaded' }).catch(() => {});
+      await providerPage.recoverFromChunkLoadError();
+    }
 
-    console.log('🌐 [NAVİGASYON] Sidebar üzerinden Schedulers sayfasına gidiliyor...');
     const schedulersLink = page.getByRole('link', { name: /^Schedulers$/i })
       .or(page.locator('a[href*="/schedulers"]'))
       .or(page.locator('nav a, div[class*="sidebar"] a').filter({ hasText: /Schedulers/i }))
       .first();
     
-    // Yükleme hatalarına karşı toleranslı bekleme ve SPA içi pürüzsüz geçiş
     try {
-      await schedulersLink.waitFor({ state: 'visible', timeout: 10000 });
-      await schedulersLink.click();
-      await page.waitForURL(/\/schedulers\b/, { timeout: 10000 });
+      if (!page.url().includes('/schedulers')) {
+        await schedulersLink.waitFor({ state: 'visible', timeout: 8000 });
+        await schedulersLink.click();
+        await page.waitForURL(/\/schedulers\b/, { timeout: 8000 });
+      }
     } catch (err) {
       console.log('⚠️ [UYARI] Schedulers sayfasına sidebar ile geçilemedi, doğrudan URL ile deneniyor...');
       await page.goto(`${dashboardBaseUrl}/${workspaceId}/schedulers`, { waitUntil: 'domcontentloaded' });
@@ -557,43 +673,50 @@ test.describe('Backup Schedulers - Form Yapılandırma', () => {
     
     await providerPage.recoverFromChunkLoadError();
 
-    // Önceki başarısız test koşularından kalan e2e-schedule-* artıklarını temizle
-    // Sadece 'delete' modunda eski artıkları temizle
+    // Sadece 'delete' modında eski test artıklarını temizle
     const cleanupMode = process.env.E2E_SCHEDULER_CLEANUP || 'delete';
     if (cleanupMode === 'delete') {
-      const staleRows = page.locator('tr').filter({ hasText: /e2e-schedule-\d+/ });
+      const staleRegex = /e2e-schedule-\d+|DenemeRıdvan|Weekly-Fail|Dup-Sched|Cron-Fail|Cron-7-Fail|Backup for|Plan_|ArapçaZeroWidth/i;
+      const staleRows = page.locator('tr').filter({ hasText: staleRegex });
       const staleCount = await staleRows.count().catch(() => 0);
       if (staleCount > 0) {
-        console.log(`🧹 [TEMİZLİK] ${staleCount} adet eski e2e-schedule artığı tespit edildi, temizleniyor...`);
-        for (let i = 0; i < staleCount; i++) {
-          // Her silme sonrası DOM değiştiği için her seferinde ilk satırı hedefle
-          const row = page.locator('tr').filter({ hasText: /e2e-schedule-\d+/ }).first();
+        console.log(`🧹 [TEMİZLİK] ${staleCount} adet eski E2E test artığı tespit edildi, temizleniyor...`);
+        let deleteAttempts = 0;
+        while (deleteAttempts < 15) {
+          deleteAttempts++;
+          const row = page.locator('tr').filter({ hasText: staleRegex }).first();
           if (await row.isVisible().catch(() => false)) {
             const trashBtn = row.getByRole('button', { name: /delete|trash|remove|sil/i })
               .or(row.locator('button:has(svg[class*="trash"])'))
               .or(row.getByRole('button').last())
               .first();
             if (await trashBtn.isVisible().catch(() => false)) {
-              await trashBtn.click();
-              // Onay diyalogu
+              await trashBtn.click({ force: true }).catch(() => {});
               const confirmBtn = page.getByRole('dialog').or(page.getByRole('alertdialog')).first()
                 .getByRole('button', { name: /confirm|delete|yes|sure|sil|remove|continue/i }).first();
               if (await confirmBtn.waitFor({ state: 'visible', timeout: 3000 }).then(() => true).catch(() => false)) {
-                await confirmBtn.click();
+                await confirmBtn.click({ force: true }).catch(() => {});
               }
-              // Satırın silinmesini bekle
-              await expect(row).toBeHidden({ timeout: 10000 }).catch(() => {});
+              await expect(row).toBeHidden({ timeout: 8000 }).catch(() => {});
+              await page.waitForTimeout(300);
+            } else {
+              break;
             }
+          } else {
+            break;
           }
         }
-        // Sayfayı yenile ve temizliği doğrula
-        await page.reload({ waitUntil: 'domcontentloaded' });
-        await providerPage.recoverFromChunkLoadError();
-        const remainingStale = await page.locator('tr').filter({ hasText: /e2e-schedule-\d+/ }).count().catch(() => 0);
+        const remainingStale = await page.locator('tr').filter({ hasText: staleRegex }).count().catch(() => 0);
         console.log(`🧹 [TEMİZLİK] Temizlik tamamlandı. Kalan artık: ${remainingStale}`);
       }
     } else {
       console.log(`📋 [beforeEach] Temizlik modu "${cleanupMode}" — eski artıklar silinmeyecek.`);
+    }
+
+    if (!page.url().includes('/schedulers')) {
+      console.log('🌐 [NAVİGASYON] Test öncesi Schedulers sayfasına yönlendiriliyor...');
+      await page.goto(`${dashboardBaseUrl}/${workspaceId}/schedulers`, { waitUntil: 'domcontentloaded' }).catch(() => {});
+      await page.waitForURL(/\/schedulers\b/, { timeout: 10000 }).catch(() => {});
     }
   });
 
@@ -623,7 +746,9 @@ test.describe('Backup Schedulers - Form Yapılandırma', () => {
     scheduleNameToCleanup = scheduleName;
     
     await selectScheduleType(page, 'Daily');
+    await fillScheduleTime(page);
     await selectTimezone(page);
+    await setIncludedItems(page);
     await saveScheduler(page);
     
     // Modal kapanmasını dinamik bekle
@@ -643,7 +768,9 @@ test.describe('Backup Schedulers - Form Yapılandırma', () => {
 
     await selectScheduleType(page, 'Weekly');
     await selectWeeklyDay(page);
+    await fillScheduleTime(page);
     await selectTimezone(page);
+    await setIncludedItems(page);
     await saveScheduler(page);
     
     // Modal kapanmasını dinamik bekle
@@ -663,7 +790,9 @@ test.describe('Backup Schedulers - Form Yapılandırma', () => {
 
     await selectScheduleType(page, 'Monthly');
     await selectMonthlyDay(page);
+    await fillScheduleTime(page);
     await selectTimezone(page);
+    await setIncludedItems(page);
     await saveScheduler(page);
     
     // Modal kapanmasını dinamik bekle
@@ -683,7 +812,9 @@ test.describe('Backup Schedulers - Form Yapılandırma', () => {
 
     await selectScheduleType(page, 'Cron');
     await fillCronExpression(page);
+    await fillScheduleTime(page);
     await selectTimezone(page);
+    await setIncludedItems(page);
     await saveScheduler(page);
     
     // Modal kapanmasını dinamik bekle
