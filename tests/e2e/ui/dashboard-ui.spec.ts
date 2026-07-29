@@ -18,7 +18,7 @@ test.describe('Dashboard UI & Widget Etkileşim Doğrulamaları (UI & Interactiv
     dashboardUrl = getDashboardUrl(dashboardBaseUrl, workspaceId);
   });
 
-  test('Dashboard widget etkileşimleri — Lisans, Tur, Görevler, Aktiviteler', { tag: ['@critical'] }, async ({ page }) => {
+  test('Dashboard widget etkileşimleri — Lisans, Tur, Görevler, Aktiviteler', { tag: ['@manual-interactive'] }, async ({ page }) => {
     const viewAllUrlPattern = new RegExp(`/${workspaceId}/(executions|tasks|backups|activity)`);
 
     await openDashboard(page, dashboardBaseUrl, workspaceId);

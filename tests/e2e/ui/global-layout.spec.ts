@@ -18,7 +18,7 @@ test.describe('Global Layout & Common UI Components (Genel Arayüz & Ortak Bile�
     dashboardBaseUrl = requireEnv('DASHBOARD_BASE_URL');
   });
 
-  test('Ortak Arayüz & Navigasyon Bileşenleri — Sidebar, Arama, Profil, Tema', { tag: ['@critical'] }, async ({ page }) => {
+  test('Ortak Arayüz & Navigasyon Bileşenleri — Sidebar, Arama, Profil, Tema', { tag: ['@manual-interactive'] }, async ({ page }) => {
     await openDashboard(page, dashboardBaseUrl, workspaceId);
 
     await test.step('Kısım 1: Sidebar Daraltma ve Genişletme (Toggle Sidebar) Butonu', async () => {
