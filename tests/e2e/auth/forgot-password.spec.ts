@@ -5,7 +5,6 @@ import {
   pollPasswordResetLink
 } from '../../support/password-reset-email';
 import {
-  prepareStableForgotPasswordForm,
   resolveForgotPasswordMailConfig,
   submitForgotPasswordRequest
 } from '../../support/forgot-password-flow';
@@ -15,7 +14,7 @@ test.describe('Forgot Password — Gerçek Backend, Gmail ve Şifre Sıfırlama 
 
   test(
     'Sıfırlama e-postası gelmeli, link açılmalı, şifre güncellenmeli ve giriş yapılabilmeli',
-    { tag: ['@critical', '@manual-interactive'] },
+    { tag: ['@manual-interactive'] },
     async ({ page, loginPage, forgotPasswordPage }) => {
       test.setTimeout(300_000);
 
