@@ -2,7 +2,13 @@ name: Playwright E2E
 
 on:
   pull_request:
+    branches: [ main, master ]
   workflow_dispatch:
+    inputs:
+      grep:
+        description: 'Test grep tag (e.g. @smoke, @daily)'
+        required: false
+        default: '@smoke'
   schedule:
     - cron: '0 2 * * *'
 
@@ -14,7 +20,7 @@ jobs:
   smoke:
     if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 15
     env:
       WORKSPACE_ID: ${{ secrets.WORKSPACE_ID || '291' }}
       DASHBOARD_BASE_URL: ${{ secrets.DASHBOARD_BASE_URL || 'https://staging.dashboard.gitsec.io' }}
@@ -60,7 +66,12 @@ jobs:
         if: steps.playwright-cache.outputs.cache-hit == 'true'
         run: npx playwright install-deps
       - name: Run tagged smoke and regression suite
-        run: npx playwright test --grep "@smoke|@critical|@daily|@weekly|@monthly|@cron|@regression|@mocked"
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ inputs.grep }}" ]; then
+            npx playwright test --grep "${{ inputs.grep }}"
+          else
+            npx playwright test --grep "@smoke|@critical|@daily|@weekly|@monthly|@cron|@regression|@mocked"
+          fi
       - name: Upload artifacts
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4
@@ -69,12 +80,12 @@ jobs:
           path: |
             playwright-report
             test-results
-          retention-days: 14
+          retention-days: 7
 
   nightly-full:
     if: github.event_name == 'schedule'
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 30
     env:
       WORKSPACE_ID: ${{ secrets.WORKSPACE_ID }}
       DASHBOARD_BASE_URL: ${{ secrets.DASHBOARD_BASE_URL }}
@@ -129,5 +140,6 @@ jobs:
           path: |
             playwright-report
             test-results
-          retention-days: 14
+          retention-days: 7
+
 

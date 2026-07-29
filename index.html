@@ -58,6 +58,7 @@
       position: relative;
       overflow: hidden;
     }
+
     .btn-artifact-glowing:hover {
       background: linear-gradient(135deg, rgba(244, 63, 94, 0.35), rgba(168, 85, 247, 0.28));
       border-color: rgba(244, 63, 94, 0.75);
@@ -65,9 +66,11 @@
       box-shadow: 0 6px 25px rgba(244, 63, 94, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.3);
       transform: translateY(-2px);
     }
+
     .btn-artifact-glowing:active {
       transform: translateY(0);
     }
+
     .btn-artifact-glowing .pulse-dot {
       width: 8px;
       height: 8px;
@@ -77,10 +80,22 @@
       animation: pulse-glow 1.5s infinite;
       flex-shrink: 0;
     }
+
     @keyframes pulse-glow {
-      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(244, 63, 94, 0.7); }
-      70% { transform: scale(1.15); box-shadow: 0 0 0 8px rgba(244, 63, 94, 0); }
-      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(244, 63, 94, 0); }
+      0% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(244, 63, 94, 0.7);
+      }
+
+      70% {
+        transform: scale(1.15);
+        box-shadow: 0 0 0 8px rgba(244, 63, 94, 0);
+      }
+
+      100% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(244, 63, 94, 0);
+      }
     }
 
     /* Video Player Scrubber Range Custom Styling */
@@ -95,9 +110,11 @@
       cursor: pointer;
       transition: height 0.15s ease;
     }
+
     .video-scrubber-input:hover {
       height: 8px;
     }
+
     .video-scrubber-input::-webkit-slider-thumb {
       -webkit-appearance: none;
       appearance: none;
@@ -109,10 +126,12 @@
       cursor: pointer;
       transition: all 0.15s ease;
     }
+
     .video-scrubber-input::-webkit-slider-thumb:hover {
       transform: scale(1.3);
       box-shadow: 0 0 20px #f43f5e, 0 0 0 4px rgba(244, 63, 94, 0.5);
     }
+
     .video-scrubber-input::-moz-range-thumb {
       width: 14px;
       height: 14px;
@@ -140,15 +159,18 @@
       transition: all 0.2s ease;
       user-select: none;
     }
+
     .v-ctrl-btn:hover {
       background: rgba(255, 255, 255, 0.14);
       border-color: rgba(255, 255, 255, 0.25);
       color: #ffffff;
       transform: translateY(-1px);
     }
+
     .v-ctrl-btn:active {
       transform: translateY(0);
     }
+
     .v-ctrl-btn.primary-play {
       background: linear-gradient(135deg, #f43f5e, #e11d48);
       border: 1px solid rgba(244, 63, 94, 0.6);
@@ -156,6 +178,7 @@
       box-shadow: 0 4px 15px rgba(244, 63, 94, 0.4);
       padding: 0.45rem 1.15rem;
     }
+
     /* --- Glassmorphic Lightbox Zoom Overlay --- */
     .lightbox-overlay {
       position: fixed;
@@ -172,6 +195,7 @@
       overflow: hidden;
       user-select: none;
     }
+
     .lightbox-container {
       position: relative;
       width: 95vw;
@@ -181,6 +205,7 @@
       align-items: center;
       justify-content: center;
     }
+
     .lightbox-header {
       position: absolute;
       top: 1rem;
@@ -196,6 +221,7 @@
       border: 1px solid rgba(255, 255, 255, 0.12);
       backdrop-filter: blur(16px);
     }
+
     .lightbox-viewport {
       width: 100%;
       height: 100%;
@@ -205,9 +231,11 @@
       overflow: hidden;
       cursor: grab;
     }
+
     .lightbox-viewport:active {
       cursor: grabbing;
     }
+
     .lightbox-image-zoom {
       max-width: 90%;
       max-height: 85vh;
@@ -1885,24 +1913,28 @@
     /* Included Items Grid */
     .included-items-grid {
       display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 0.85rem;
-      margin-top: 0.65rem;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.6rem;
+      margin-top: 0.5rem;
+      width: 100%;
+      box-sizing: border-box;
     }
 
     .included-item-card {
       display: flex;
       align-items: center;
-      gap: 0.85rem;
+      gap: 0.6rem;
       background: var(--input-bg);
       border: 1px solid var(--panel-border);
       border-radius: 0.6rem;
-      padding: 0.85rem 1.15rem;
+      padding: 0.65rem 0.75rem;
       cursor: pointer;
       transition: var(--transition-smooth);
       position: relative;
       user-select: none;
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      box-sizing: border-box;
+      min-width: 0;
     }
 
     .included-item-card:hover:not(.disabled) {
@@ -1932,9 +1964,10 @@
       border-radius: 0.25rem;
       background: transparent;
       transition: var(--transition-smooth);
+      flex-shrink: 0;
     }
 
-    .included-item-card .checkbox-box .check-icon {
+    .included-item-card .check-icon {
       width: 0.7rem;
       height: 0.7rem;
       color: #ffffff;
@@ -1946,7 +1979,7 @@
       background-color: var(--gitsec-blue);
     }
 
-    .included-item-card.checked .checkbox-box .check-icon {
+    .included-item-card.checked .check-icon {
       display: block;
     }
 
@@ -1957,23 +1990,41 @@
       height: 0;
     }
 
-    .included-item-card span {
-      font-size: 0.875rem;
+    .included-item-card .card-label-text {
+      font-size: 0.8125rem;
       font-weight: 600;
       color: var(--text-main);
+      flex: 1;
+      min-width: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .coming-soon-badge {
       margin-left: auto;
-      font-size: 0.65rem;
+      font-size: 0.625rem;
       font-weight: 700;
+      letter-spacing: 0.02em;
       text-transform: uppercase;
-      background: rgba(71, 85, 105, 0.2);
+      background: rgba(71, 85, 105, 0.25);
       color: var(--text-dark);
-      padding: 0.2rem 0.5rem;
+      padding: 0.18rem 0.45rem;
       border-radius: 9999px;
       border: 1px solid var(--panel-border);
-      letter-spacing: 0.05em;
+      white-space: nowrap;
+      flex-shrink: 0;
+      line-height: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .coming-soon-badge.github {
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.18), rgba(99, 102, 241, 0.14));
+      color: #60a5fa;
+      border: 1px solid rgba(96, 165, 250, 0.35);
+      box-shadow: 0 0 8px rgba(59, 130, 246, 0.15);
     }
 
     .hidden {
@@ -3156,7 +3207,9 @@
                 <label for="workspaceId">Çalışma Alanı Kimliği (Workspace ID)</label>
                 <input type="text" id="workspaceId" value="" placeholder="Boşsa Otomatik Algılanır (Örn: 278)"
                   oninput="syncEnvField('WORKSPACE_ID', this.value)">
-                <span class="field-hint" style="color: var(--text-muted); font-size: 0.725rem; margin-top: 0.2rem;">İsteğe bağlıdır. Boş bırakılırsa hesabın Workspace ID'si otomatik tespit edilir.</span>
+                <span class="field-hint"
+                  style="color: var(--text-muted); font-size: 0.725rem; margin-top: 0.2rem;">İsteğe bağlıdır. Boş
+                  bırakılırsa hesabın Workspace ID'si otomatik tespit edilir.</span>
               </div>
               <div class="form-group">
                 <label for="baseUrl">GitSec Panel Adresi (Dashboard Base URL)</label>
@@ -3178,7 +3231,8 @@
               <div class="form-group">
                 <label for="e2eCodeProvider">Kod Sağlayıcısı (Code Provider)</label>
                 <div class="gitsec-select-wrapper no-left-icon">
-                  <select id="e2eCodeProvider" class="gitsec-select" style="padding-left: 0.875rem;" onchange="onCodeProviderChange()">
+                  <select id="e2eCodeProvider" class="gitsec-select" style="padding-left: 0.875rem;"
+                    onchange="onCodeProviderChange()">
                     <option value="github">GitHub</option>
                     <option value="bitbucket">Bitbucket</option>
                   </select>
@@ -3216,7 +3270,9 @@
             </div>
             <div class="card-content">
               <p style="color: var(--text-muted); font-size: 0.8125rem; line-height: 1.5;">
-                Tüm sayfalarda ortak olan genel bileşenleri; sol menü daraltma/genişletme (Toggle Sidebar) butonunu, global arama (Search) girdisini, kullanıcı profil dropdown menüsünü ve tema değiştirici (Theme Toggle) dropdown durumunu test eder.
+                Tüm sayfalarda ortak olan genel bileşenleri; sol menü daraltma/genişletme (Toggle Sidebar) butonunu,
+                global arama (Search) girdisini, kullanıcı profil dropdown menüsünü ve tema değiştirici (Theme Toggle)
+                dropdown durumunu test eder.
               </p>
             </div>
             <div class="card-footer">
@@ -3238,7 +3294,8 @@
             </div>
             <div class="card-content">
               <p style="color: var(--text-muted); font-size: 0.8125rem; line-height: 1.5;">
-                Ana Dashboard sayfasındaki dinamik lisans butonunu, rehber turunu (Take a Tour), tamamlanan/aktif görevlerin "View All" linklerini ve son aktiviteler listesini test eder.
+                Ana Dashboard sayfasındaki dinamik lisans butonunu, rehber turunu (Take a Tour), tamamlanan/aktif
+                görevlerin "View All" linklerini ve son aktiviteler listesini test eder.
               </p>
             </div>
             <div class="card-footer">
@@ -3265,7 +3322,8 @@
               </p>
               <div class="card-select-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
                 <div>
-                  <label for="licenseTargetPlanSelect" style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted);">HEDEF LİSANS</label>
+                  <label for="licenseTargetPlanSelect"
+                    style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted);">HEDEF LİSANS</label>
                   <select id="licenseTargetPlanSelect" class="gitsec-select" onchange="saveSettings()">
                     <option value="Freemium">Freemium</option>
                     <option value="Startup" selected>Startup</option>
@@ -3274,7 +3332,8 @@
                   </select>
                 </div>
                 <div>
-                  <label for="licenseBillingCycleSelect" style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted);">FATURALANDIRMA</label>
+                  <label for="licenseBillingCycleSelect"
+                    style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted);">FATURALANDIRMA</label>
                   <select id="licenseBillingCycleSelect" class="gitsec-select" onchange="saveSettings()">
                     <option value="monthly">Aylık</option>
                     <option value="yearly">Yıllık</option>
@@ -3282,14 +3341,18 @@
                 </div>
               </div>
               <div style="margin-top: 0.75rem;">
-                <label for="iyzicoSmsCodeInput" style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted);">IYZICO YEDEK SMS KODU</label>
+                <label for="iyzicoSmsCodeInput"
+                  style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted);">IYZICO YEDEK SMS KODU</label>
                 <input id="iyzicoSmsCodeInput" type="text" inputmode="numeric" maxlength="6" value="123456"
                   pattern="[0-9]{6}" class="gitsec-select" onchange="saveSettings()">
-                <span class="field-hint" style="color: #64748b; font-size: 0.75rem;">Öncelikle Iyzico mesajındaki parantez içi kod kullanılır; bu değer yalnızca kod okunamazsa devreye girer.</span>
+                <span class="field-hint" style="color: #64748b; font-size: 0.75rem;">Öncelikle Iyzico mesajındaki
+                  parantez içi kod kullanılır; bu değer yalnızca kod okunamazsa devreye girer.</span>
               </div>
               <div style="margin-top: 0.75rem;">
-                <label for="paymentCardSelect" style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted);">💳 İYZİCO TEST KARTI SEÇİMİ</label>
-                <select id="paymentCardSelect" class="gitsec-select" onchange="saveSettings(); toggleInstallmentVisibility();">
+                <label for="paymentCardSelect" style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted);">💳
+                  İYZİCO TEST KARTI SEÇİMİ</label>
+                <select id="paymentCardSelect" class="gitsec-select"
+                  onchange="saveSettings(); toggleInstallmentVisibility();">
                   <option value="mastercard_debit" selected>💳 Akbank Mastercard Banka Kartı (Debit)</option>
                   <option value="visa_credit">💳 Denizbank Visa Kredi Kartı (Credit)</option>
                   <option value="troy_credit">💳 Akbank Troy Kredi Kartı (Credit)</option>
@@ -3301,10 +3364,13 @@
                   <option value="error_invalid_cvc">🔴 Hata - Hatalı CVC (4124...)</option>
                   <option value="error_declined">🔴 Hata - Banka Reddi (4129...)</option>
                 </select>
-                <span class="field-hint" style="color: #64748b; font-size: 0.75rem;">.env üzerindeki aktif kullanıcınızla test edilecek tek İyzico kartını seçin.</span>
+                <span class="field-hint" style="color: #64748b; font-size: 0.75rem;">.env üzerindeki aktif
+                  kullanıcınızla test edilecek tek İyzico kartını seçin.</span>
               </div>
               <div id="iyzicoInstallmentContainer" style="margin-top: 0.75rem; display: none;">
-                <label for="iyzicoInstallmentSelect" style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted);">📊 TAKSİT SEÇİMİ (İşbank & Yapıkredi)</label>
+                <label for="iyzicoInstallmentSelect"
+                  style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted);">📊 TAKSİT SEÇİMİ (İşbank &
+                  Yapıkredi)</label>
                 <select id="iyzicoInstallmentSelect" class="gitsec-select" onchange="saveSettings()">
                   <option value="1" selected>1 — Tek Çekim</option>
                   <option value="2">2 Taksit</option>
@@ -3313,14 +3379,16 @@
                   <option value="9">9 Taksit (Tüm Seçenekleri Aç)</option>
                   <option value="12">12 Taksit (Tüm Seçenekleri Aç)</option>
                 </select>
-                <span class="field-hint" style="color: #64748b; font-size: 0.75rem;">Seçilen taksit destekli kartta istenen taksit opsiyonuna otomatik tıklanır.</span>
+                <span class="field-hint" style="color: #64748b; font-size: 0.75rem;">Seçilen taksit destekli kartta
+                  istenen taksit opsiyonuna otomatik tıklanır.</span>
               </div>
 
             </div>
 
             <div class="card-footer">
               <span class="card-meta">license-change.spec.ts</span>
-              <button class="btn-run" onclick="runTest('', 'card-license-change', 'tests/e2e/billing/license-change.spec.ts')">
+              <button class="btn-run"
+                onclick="runTest('', 'card-license-change', 'tests/e2e/billing/license-change.spec.ts')">
                 <span>Çalıştır</span>
               </button>
             </div>
@@ -3337,12 +3405,14 @@
             </div>
             <div class="card-content">
               <p style="color: var(--text-muted); font-size: 0.8125rem; line-height: 1.5;">
-                Workspace ayarlarını (General, Members, Repositories sekmeleri), üye davet etme formunu, mevcut üye/davet listelerini ve yeni Workspace oluşturma sihirbazını (Add Workspace Wizard) test eder.
+                Workspace ayarlarını (General, Members, Repositories sekmeleri), üye davet etme formunu, mevcut
+                üye/davet listelerini ve yeni Workspace oluşturma sihirbazını (Add Workspace Wizard) test eder.
               </p>
             </div>
             <div class="card-footer">
               <span class="card-meta">workspace-settings-ui.spec.ts</span>
-              <button class="btn-run" onclick="runTest('', 'card-workspace-settings-ui', 'tests/e2e/ui/workspace-settings-ui.spec.ts')">
+              <button class="btn-run"
+                onclick="runTest('', 'card-workspace-settings-ui', 'tests/e2e/ui/workspace-settings-ui.spec.ts')">
                 <span>Çalıştır</span>
               </button>
             </div>
@@ -3486,13 +3556,13 @@
             </div>
             <div class="card-content">
               <p style="color: var(--text-muted); font-size: 0.8125rem; line-height: 1.5; min-height: 3.25rem;">
-                Zamanlayıcılar (Schedulers) sayfasındaki ve ekleme modalındaki tüm butonların, sıklık seçim butonlarının, durum switchlerinin ve form bileşenlerinin doğruluğunu test eder.
+                Zamanlayıcılar (Schedulers) sayfasındaki ve ekleme modalındaki tüm butonların, sıklık seçim
+                butonlarının, durum switchlerinin ve form bileşenlerinin doğruluğunu test eder.
               </p>
             </div>
             <div class="card-footer">
               <span class="card-meta">schedulers-ui.spec.ts</span>
-              <button class="btn-run"
-                onclick="runTest('', 'card-scheduler-ui', 'tests/e2e/ui/schedulers-ui.spec.ts')">
+              <button class="btn-run" onclick="runTest('', 'card-scheduler-ui', 'tests/e2e/ui/schedulers-ui.spec.ts')">
                 <span>Çalıştır</span>
               </button>
             </div>
@@ -3509,13 +3579,13 @@
             </div>
             <div class="card-content">
               <p style="color: var(--text-muted); font-size: 0.8125rem; line-height: 1.5; min-height: 3.25rem;">
-                Geri yükleme (Restores) geçmiş listesindeki tablo bileşenlerini ve geri yükleme sihirbazı modalı (Start a Restore) içindeki tüm aksiyon butonlarını test eder.
+                Geri yükleme (Restores) geçmiş listesindeki tablo bileşenlerini ve geri yükleme sihirbazı modalı (Start
+                a Restore) içindeki tüm aksiyon butonlarını test eder.
               </p>
             </div>
             <div class="card-footer">
               <span class="card-meta">restore-ui.spec.ts</span>
-              <button class="btn-run"
-                onclick="runTest('', 'card-restore-ui', 'tests/e2e/ui/restore-ui.spec.ts')">
+              <button class="btn-run" onclick="runTest('', 'card-restore-ui', 'tests/e2e/ui/restore-ui.spec.ts')">
                 <span>Çalıştır</span>
               </button>
             </div>
@@ -3532,13 +3602,13 @@
             </div>
             <div class="card-content">
               <p style="color: var(--text-muted); font-size: 0.8125rem; line-height: 1.5; min-height: 3.25rem;">
-                Yedek Snapshots (Backup Snapshots) sayfasındaki yenileme/refresh butonunu, görünüm filtrelerini, tablo sütunlarını, satır içi silme modal diyalogunu ve sayfalama bileşenlerini test eder.
+                Yedek Snapshots (Backup Snapshots) sayfasındaki yenileme/refresh butonunu, görünüm filtrelerini, tablo
+                sütunlarını, satır içi silme modal diyalogunu ve sayfalama bileşenlerini test eder.
               </p>
             </div>
             <div class="card-footer">
               <span class="card-meta">backups-ui.spec.ts</span>
-              <button class="btn-run"
-                onclick="runTest('', 'card-backups-ui', 'tests/e2e/ui/backups-ui.spec.ts')">
+              <button class="btn-run" onclick="runTest('', 'card-backups-ui', 'tests/e2e/ui/backups-ui.spec.ts')">
                 <span>Çalıştır</span>
               </button>
             </div>
@@ -3567,7 +3637,8 @@
 
               <div class="card-select-group" style="margin-top: 0.75rem;">
                 <label for="githubConnectModeSelect"
-                  style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">GitHub Bağlantısı Kapsamı (Scope)</label>
+                  style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">GitHub
+                  Bağlantısı Kapsamı (Scope)</label>
                 <div class="gitsec-select-wrapper no-left-icon">
                   <select id="githubConnectModeSelect" class="gitsec-select" style="padding-left: 0.875rem;"
                     onchange="updateCardUI('card-github-connect', 'githubConnectModeSelect', 'github-connect-desc'); saveSettings()">
@@ -3636,7 +3707,8 @@
 
               <div class="card-select-group" style="margin-top: 0.75rem;">
                 <label for="bitbucketConnectModeSelect"
-                  style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Bitbucket Bağlantısı Kapsamı (Scope)</label>
+                  style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Bitbucket
+                  Bağlantısı Kapsamı (Scope)</label>
                 <div class="gitsec-select-wrapper no-left-icon">
                   <select id="bitbucketConnectModeSelect" class="gitsec-select" style="padding-left: 0.875rem;"
                     onchange="updateCardUI('card-bitbucket-connect', 'bitbucketConnectModeSelect', 'bitbucket-connect-desc'); saveSettings()">
@@ -3673,13 +3745,18 @@
             </div>
             <div class="card-content">
               <p style="color: var(--text-muted); font-size: 0.8125rem; line-height: 1.5;">
-                Bitbucket / Google SSO ve Google Drive entegrasyonlarının otomasyon engellerine takılmadan çalışması için Google hesabınızla gerçek Chrome tarayıcısında bir kez oturum açmanızı sağlar.
+                Bitbucket / Google SSO ve Google Drive entegrasyonlarının otomasyon engellerine takılmadan çalışması
+                için Google hesabınızla gerçek Chrome tarayıcısında bir kez oturum açmanızı sağlar.
               </p>
-              <div style="margin-top: 0.75rem; display: flex; align-items: center; justify-content: space-between; font-size: 0.75rem; background: rgba(0,0,0,0.2); padding: 0.5rem 0.75rem; border-radius: 6px; border: 1px solid var(--panel-border);">
+              <div
+                style="margin-top: 0.75rem; display: flex; align-items: center; justify-content: space-between; font-size: 0.75rem; background: rgba(0,0,0,0.2); padding: 0.5rem 0.75rem; border-radius: 6px; border: 1px solid var(--panel-border);">
                 <span style="color: var(--text-muted);">Oturum Durumu:</span>
-                <span id="code-google-session-badge" class="google-session-badge" style="font-weight: 600; padding: 2px 8px; border-radius: 4px; border: 1px solid #475569;">Kontrol Ediliyor...</span>
+                <span id="code-google-session-badge" class="google-session-badge"
+                  style="font-weight: 600; padding: 2px 8px; border-radius: 4px; border: 1px solid #475569;">Kontrol
+                  Ediliyor...</span>
               </div>
-              <div style="margin-top: 0.35rem; display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.72rem; background: rgba(0,0,0,0.25); padding: 0.5rem 0.75rem; border-radius: 6px; border: 1px solid var(--panel-border);">
+              <div
+                style="margin-top: 0.35rem; display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.72rem; background: rgba(0,0,0,0.25); padding: 0.5rem 0.75rem; border-radius: 6px; border: 1px solid var(--panel-border);">
                 <div style="display: flex; align-items: center; justify-content: space-between;">
                   <span style="color: var(--text-muted);">🔑 Güvenlik Çerezi (SIDRTS):</span>
                   <span class="google-session-rts-expiry" style="font-weight: 600; color: #f59e0b;">-</span>
@@ -3886,12 +3963,15 @@
               </div>
 
               <div class="card-select-group" style="margin-top: 0.75rem;">
-                <label style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Yedekleme İçeriği (Backup Scopes)</label>
+                <label
+                  style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Yedekleme
+                  İçeriği (Backup Scopes)</label>
                 <div class="included-items-grid" style="margin-top: 0.375rem;">
                   <label class="included-item-card checked" id="card-backupIncludeCode">
                     <input type="checkbox" id="backupIncludeCode" checked onchange="toggleIncludedItemClass(this)">
                     <span class="checkbox-box">
-                      <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                      <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
+                        stroke-linecap="round" stroke-linejoin="round">
                         <polyline points="20 6 9 17 4 12"></polyline>
                       </svg>
                     </span>
@@ -3900,7 +3980,8 @@
                   <label class="included-item-card" id="card-backupIncludePr">
                     <input type="checkbox" id="backupIncludePr" onchange="toggleIncludedItemClass(this)">
                     <span class="checkbox-box">
-                      <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                      <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
+                        stroke-linecap="round" stroke-linejoin="round">
                         <polyline points="20 6 9 17 4 12"></polyline>
                       </svg>
                     </span>
@@ -3909,7 +3990,8 @@
                   <label class="included-item-card" id="card-backupIncludeIssues">
                     <input type="checkbox" id="backupIncludeIssues" onchange="toggleIncludedItemClass(this)">
                     <span class="checkbox-box">
-                      <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                      <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
+                        stroke-linecap="round" stroke-linejoin="round">
                         <polyline points="20 6 9 17 4 12"></polyline>
                       </svg>
                     </span>
@@ -3938,7 +4020,8 @@
             </div>
             <div class="card-content">
               <p style="color: var(--text-muted); font-size: 0.8125rem; line-height: 1.5;">
-                Kod Depoları (Repositories) sayfasındaki liste görünüm değiştirme butonlarını, tablo switchlerini, arama kutusunu ve yeni sağlayıcı ekleme sayfasındaki Configure/Connect butonlarını test eder.
+                Kod Depoları (Repositories) sayfasındaki liste görünüm değiştirme butonlarını, tablo switchlerini, arama
+                kutusunu ve yeni sağlayıcı ekleme sayfasındaki Configure/Connect butonlarını test eder.
               </p>
             </div>
             <div class="card-footer">
@@ -4017,7 +4100,8 @@
 
               <div class="card-select-group" style="margin-top: 0.75rem;">
                 <label for="registerModeSelect"
-                  style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Kayıt Kapsamı (Scope)</label>
+                  style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Kayıt
+                  Kapsamı (Scope)</label>
                 <div class="gitsec-select-wrapper no-left-icon">
                   <select id="registerModeSelect" class="gitsec-select" style="padding-left: 0.875rem;"
                     onchange="updateCardUI('card-auth-register', 'registerModeSelect', 'register-desc'); saveSettings()">
@@ -4053,12 +4137,14 @@
             </div>
             <div class="card-content">
               <p style="color: var(--text-muted); font-size: 0.8125rem; line-height: 1.5;">
-                Giriş formunu doldurup, arka plandaki API çağrılarını mock'layarak captcha'sız ve rate-limitsiz güvenli bir UI yönlendirme akışını doğrular.
+                Giriş formunu doldurup, arka plandaki API çağrılarını mock'layarak captcha'sız ve rate-limitsiz güvenli
+                bir UI yönlendirme akışını doğrular.
               </p>
             </div>
             <div class="card-footer">
               <span class="card-meta">login-mocked.spec.ts</span>
-              <button class="btn-run" onclick="runTest('', 'card-auth-login-mocked', 'tests/e2e/auth/login-mocked.spec.ts')">
+              <button class="btn-run"
+                onclick="runTest('', 'card-auth-login-mocked', 'tests/e2e/auth/login-mocked.spec.ts')">
                 <span>Çalıştır</span>
               </button>
             </div>
@@ -4075,12 +4161,14 @@
             </div>
             <div class="card-content">
               <p style="color: var(--text-muted); font-size: 0.8125rem; line-height: 1.5;">
-                Staging identity sunucusunun `/auth/signin` ve `/api/workspaces` servislerinin genel sağlığını ve yanıt yapılarını test eder.
+                Staging identity sunucusunun `/auth/signin` ve `/api/workspaces` servislerinin genel sağlığını ve yanıt
+                yapılarını test eder.
               </p>
             </div>
             <div class="card-footer">
               <span class="card-meta">api-login-smoke.spec.ts</span>
-              <button class="btn-run" onclick="runTest('', 'card-auth-api-smoke', 'tests/e2e/auth/api-login-smoke.spec.ts')">
+              <button class="btn-run"
+                onclick="runTest('', 'card-auth-api-smoke', 'tests/e2e/auth/api-login-smoke.spec.ts')">
                 <span>Çalıştır</span>
               </button>
             </div>
@@ -4097,12 +4185,14 @@
             </div>
             <div class="card-content">
               <p style="color: var(--text-muted); font-size: 0.8125rem; line-height: 1.5;">
-                Giriş ekranından şifre sıfırlama linkine geçerek e-posta girişi yapmayı ve başarılı sıfırlama bildirimini test eder.
+                Giriş ekranından şifre sıfırlama linkine geçerek e-posta girişi yapmayı ve başarılı sıfırlama
+                bildirimini test eder.
               </p>
             </div>
             <div class="card-footer">
               <span class="card-meta">forgot-password-mocked.spec.ts</span>
-              <button class="btn-run" onclick="runTest('', 'card-auth-forgot-password', 'tests/e2e/auth/forgot-password-mocked.spec.ts')">
+              <button class="btn-run"
+                onclick="runTest('', 'card-auth-forgot-password', 'tests/e2e/auth/forgot-password-mocked.spec.ts')">
                 <span>Çalıştır</span>
               </button>
             </div>
@@ -4120,12 +4210,14 @@
             <div class="card-content">
               <p id="forgotPassword-desc"
                 style="color: var(--text-muted); font-size: 0.8125rem; line-height: 1.5; min-height: 3.25rem;">
-                Gerçek staging backend'e sıfırlama talebi gönderir, Gmail'den gelen linki açar, yeni şifre belirler ve giriş yaparak akışı uçtan uca doğrular.
+                Gerçek staging backend'e sıfırlama talebi gönderir, Gmail'den gelen linki açar, yeni şifre belirler ve
+                giriş yaparak akışı uçtan uca doğrular.
               </p>
 
               <div class="card-select-group" style="margin-top: 0.75rem;">
                 <label for="forgotPasswordModeSelect"
-                  style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Şifre Sıfırlama Kapsamı (Scope)</label>
+                  style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Şifre
+                  Sıfırlama Kapsamı (Scope)</label>
                 <div class="gitsec-select-wrapper no-left-icon">
                   <select id="forgotPasswordModeSelect" class="gitsec-select" style="padding-left: 0.875rem;"
                     onchange="updateCardUI('card-auth-forgot-password-real', 'forgotPasswordModeSelect', 'forgotPassword-desc'); saveSettings()">
@@ -4144,7 +4236,8 @@
             </div>
             <div class="card-footer">
               <span class="card-meta">forgot-password.spec.ts</span>
-              <button class="btn-run" onclick="runTest('', 'card-auth-forgot-password-real', 'tests/e2e/auth/forgot-password.spec.ts')">
+              <button class="btn-run"
+                onclick="runTest('', 'card-auth-forgot-password-real', 'tests/e2e/auth/forgot-password.spec.ts')">
                 <span>Çalıştır</span>
               </button>
             </div>
@@ -4254,20 +4347,28 @@
             </div>
             <div class="card-content">
               <p style="color: var(--text-muted); font-size: 0.8125rem; line-height: 1.5;">
-                Google Drive ve Google tabanlı entegrasyon testlerinin otomasyon engellerine takılmadan çalışması için Google hesabınızla gerçek Chrome tarayıcısında bir kez oturum açmanızı ve oturum çerezlerini (google-session.json) tazelemenizi sağlar.
+                Google Drive ve Google tabanlı entegrasyon testlerinin otomasyon engellerine takılmadan çalışması için
+                Google hesabınızla gerçek Chrome tarayıcısında bir kez oturum açmanızı ve oturum çerezlerini
+                (google-session.json) tazelemenizi sağlar.
               </p>
-              <div style="margin-top: 0.75rem; display: flex; align-items: center; justify-content: space-between; font-size: 0.75rem; background: rgba(0,0,0,0.2); padding: 0.5rem 0.75rem; border-radius: 6px; border: 1px solid var(--panel-border);">
+              <div
+                style="margin-top: 0.75rem; display: flex; align-items: center; justify-content: space-between; font-size: 0.75rem; background: rgba(0,0,0,0.2); padding: 0.5rem 0.75rem; border-radius: 6px; border: 1px solid var(--panel-border);">
                 <span style="color: var(--text-muted);">Oturum Durumu:</span>
-                <span id="google-session-badge" class="google-session-badge" style="font-weight: 600; padding: 2px 8px; border-radius: 4px; border: 1px solid #475569;">Kontrol Ediliyor...</span>
+                <span id="google-session-badge" class="google-session-badge"
+                  style="font-weight: 600; padding: 2px 8px; border-radius: 4px; border: 1px solid #475569;">Kontrol
+                  Ediliyor...</span>
               </div>
-              <div style="margin-top: 0.35rem; display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.72rem; background: rgba(0,0,0,0.25); padding: 0.5rem 0.75rem; border-radius: 6px; border: 1px solid var(--panel-border);">
+              <div
+                style="margin-top: 0.35rem; display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.72rem; background: rgba(0,0,0,0.25); padding: 0.5rem 0.75rem; border-radius: 6px; border: 1px solid var(--panel-border);">
                 <div style="display: flex; align-items: center; justify-content: space-between;">
                   <span style="color: var(--text-muted);">🔑 Güvenlik Çerezi (SIDRTS):</span>
-                  <span id="google-session-rts-expiry" class="google-session-rts-expiry" style="font-weight: 600; color: #f59e0b;">-</span>
+                  <span id="google-session-rts-expiry" class="google-session-rts-expiry"
+                    style="font-weight: 600; color: #f59e0b;">-</span>
                 </div>
                 <div style="display: flex; align-items: center; justify-content: space-between;">
                   <span style="color: var(--text-muted);">🌐 Oturum Çerezi (SID):</span>
-                  <span id="google-session-sid-expiry" class="google-session-sid-expiry" style="font-weight: 600; color: #94a3b8;">-</span>
+                  <span id="google-session-sid-expiry" class="google-session-sid-expiry"
+                    style="font-weight: 600; color: #94a3b8;">-</span>
                 </div>
               </div>
               <div style="margin-top: 0.35rem; font-size: 0.7rem; color: var(--text-muted); text-align: right;">
@@ -4295,13 +4396,13 @@
             </div>
             <div class="card-content">
               <p style="color: var(--text-muted); font-size: 0.8125rem; line-height: 1.5;">
-                Depolama sağlayıcıları sayfasındaki tüm butonların görünürlük, aktiflik durumları (disabled/enabled) ve iptal/kaydet yönlendirme adımlarını test eder.
+                Depolama sağlayıcıları sayfasındaki tüm butonların görünürlük, aktiflik durumları (disabled/enabled) ve
+                iptal/kaydet yönlendirme adımlarını test eder.
               </p>
             </div>
             <div class="card-footer">
               <span class="card-meta">storage-ui.spec.ts</span>
-              <button class="btn-run"
-                onclick="runTest('', 'card-storage-ui', 'tests/e2e/ui/storage-ui.spec.ts')">
+              <button class="btn-run" onclick="runTest('', 'card-storage-ui', 'tests/e2e/ui/storage-ui.spec.ts')">
                 <span>Çalıştır</span>
               </button>
             </div>
@@ -4486,9 +4587,9 @@
                   </div>
                 </div>
                 <div class="form-group">
-                  <label for="env_FORGOT_PASSWORD_EMAIL">Şifre Sıfırlama GitSec E-postası (FORGOT_PASSWORD_EMAIL)</label>
-                  <input type="text" id="env_FORGOT_PASSWORD_EMAIL"
-                    placeholder="Boşsa E2E_USER_EMAIL kullanılır">
+                  <label for="env_FORGOT_PASSWORD_EMAIL">Şifre Sıfırlama GitSec E-postası
+                    (FORGOT_PASSWORD_EMAIL)</label>
+                  <input type="text" id="env_FORGOT_PASSWORD_EMAIL" placeholder="Boşsa E2E_USER_EMAIL kullanılır">
                 </div>
                 <div class="form-group">
                   <label for="env_FORGOT_PASSWORD_MAIL_USER">IMAP Oturum E-postası (FORGOT_PASSWORD_MAIL_USER)</label>
@@ -4496,7 +4597,8 @@
                     placeholder="Boşsa şifre sıfırlama e-postası kullanılır">
                 </div>
                 <div class="form-group">
-                  <label for="env_FORGOT_PASSWORD_MAIL_PASSWORD">IMAP Uygulama Şifresi (FORGOT_PASSWORD_MAIL_PASSWORD)</label>
+                  <label for="env_FORGOT_PASSWORD_MAIL_PASSWORD">IMAP Uygulama Şifresi
+                    (FORGOT_PASSWORD_MAIL_PASSWORD)</label>
                   <div class="password-input-wrapper">
                     <input type="password" id="env_FORGOT_PASSWORD_MAIL_PASSWORD"
                       placeholder="Boşsa GITHUB_MAIL_PASSWORD kullanılır">
@@ -4685,7 +4787,9 @@
                   <label for="env_WORKSPACE_ID">Çalışma Alanı Kimliği (WORKSPACE_ID)</label>
                   <input type="text" id="env_WORKSPACE_ID" placeholder="Boşsa Otomatik Algılanır (Örn: 278)"
                     oninput="syncSettingsField('workspaceId', this.value)">
-                  <span class="field-hint" style="color: var(--text-muted); font-size: 0.725rem; margin-top: 0.2rem;">İsteğe bağlıdır. Boş bırakırsanız oturum açan hesabın Workspace ID'si otomatik tespit edilir.</span>
+                  <span class="field-hint"
+                    style="color: var(--text-muted); font-size: 0.725rem; margin-top: 0.2rem;">İsteğe bağlıdır. Boş
+                    bırakırsanız oturum açan hesabın Workspace ID'si otomatik tespit edilir.</span>
                 </div>
                 <div class="form-group">
                   <label for="env_DASHBOARD_BASE_URL">GitSec Kontrol Paneli Adresi (DASHBOARD_BASE_URL)</label>
@@ -4733,8 +4837,7 @@
                   <div class="password-input-wrapper">
                     <input type="password" id="env_AWS_ACCESS_KEY_ID" placeholder="AKIA...">
                     <button type="button" class="password-toggle-btn"
-                      onclick="togglePasswordVisibility('env_AWS_ACCESS_KEY_ID', this)"
-                      title="Şifreyi Göster/Gizle">
+                      onclick="togglePasswordVisibility('env_AWS_ACCESS_KEY_ID', this)" title="Şifreyi Göster/Gizle">
                       <svg class="eye-icon w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
@@ -4969,11 +5072,11 @@
   <div id="toastNotification" class="toast-notification hidden"></div>
 
   <!-- Modern Centered Modal Dialog for Scheduler Settings -->
-  <div id="schedulerModal" class="modal-overlay" onclick="toggleSchedulerDetails()">
+  <div id="schedulerModal" class="modal-overlay" onclick="toggleSchedulerDetails(true)">
     <div class="modal-container" role="dialog" aria-modal="true" onclick="event.stopPropagation()">
       <div class="modal-header">
         <h3>Zamanlayıcı Yapılandırma Ayarları</h3>
-        <button type="button" class="btn-close-modal" onclick="toggleSchedulerDetails()">&times;</button>
+        <button type="button" class="btn-close-modal" onclick="toggleSchedulerDetails(true)">&times;</button>
       </div>
       <div class="modal-body">
         <div id="scheduler-details-panel" class="details-panel">
@@ -5056,7 +5159,7 @@
                 </span>
               </label>
               <label class="day-badge">
-                <input type="checkbox" name="weeklyDayCheckbox" value="Tue"
+                <input type="checkbox" name="weeklyDayCheckbox" value="Tue" checked
                   onchange="updateSchedulerDescription(); saveSettings()">
                 <span class="day-badge-text">
                   <span class="checkbox-box">
@@ -5069,7 +5172,7 @@
                 </span>
               </label>
               <label class="day-badge">
-                <input type="checkbox" name="weeklyDayCheckbox" value="Wed"
+                <input type="checkbox" name="weeklyDayCheckbox" value="Wed" checked
                   onchange="updateSchedulerDescription(); saveSettings()">
                 <span class="day-badge-text">
                   <span class="checkbox-box">
@@ -5082,7 +5185,7 @@
                 </span>
               </label>
               <label class="day-badge">
-                <input type="checkbox" name="weeklyDayCheckbox" value="Thu"
+                <input type="checkbox" name="weeklyDayCheckbox" value="Thu" checked
                   onchange="updateSchedulerDescription(); saveSettings()">
                 <span class="day-badge-text">
                   <span class="checkbox-box">
@@ -5095,7 +5198,7 @@
                 </span>
               </label>
               <label class="day-badge">
-                <input type="checkbox" name="weeklyDayCheckbox" value="Fri"
+                <input type="checkbox" name="weeklyDayCheckbox" value="Fri" checked
                   onchange="updateSchedulerDescription(); saveSettings()">
                 <span class="day-badge-text">
                   <span class="checkbox-box">
@@ -5108,7 +5211,7 @@
                 </span>
               </label>
               <label class="day-badge">
-                <input type="checkbox" name="weeklyDayCheckbox" value="Sat"
+                <input type="checkbox" name="weeklyDayCheckbox" value="Sat" checked
                   onchange="updateSchedulerDescription(); saveSettings()">
                 <span class="day-badge-text">
                   <span class="checkbox-box">
@@ -5265,6 +5368,27 @@
               ve gün koşulları bu zaman dilimi baz alınarak işletilir.</span>
           </div>
 
+          <!-- Hedef Kod Sağlayıcısı (Target Code Provider) -->
+          <div class="card-select-group">
+            <label for="schedulerIncludeProviderSelect" style="font-weight: 600; color: #f4f4f5; margin-bottom: 0.375rem;">
+              Hedef Kod Sağlayıcısı (Repository Provider)
+            </label>
+            <div class="gitsec-select-wrapper no-left-icon">
+              <select id="schedulerIncludeProviderSelect" class="gitsec-select" onchange="onSchedulerProviderChange()">
+                <option value="all" selected>TÜMÜ (GitHub & Bitbucket)</option>
+                <option value="github">Sadece GitHub</option>
+                <option value="bitbucket">Sadece Bitbucket</option>
+              </select>
+              <span class="select-chevron-right">
+                <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+              </span>
+            </div>
+            <span class="field-hint" style="color: #64748b; font-size: 0.8125rem; margin-top: 0.375rem;">Test otomasyonunun hangi kod sağlayıcısına ait repoyu seçeceğini belirler.</span>
+          </div>
+
           <!-- Dahil Edilen Öğeler (Included Items) - Her Zaman Düzenlenebilir -->
           <div id="included-items-panel" class="card-select-group">
             <label style="font-weight: 600; color: #f4f4f5; margin-bottom: 0.375rem;">Yedekleme İçeriği (Yedeklenecek
@@ -5278,7 +5402,7 @@
                     <polyline points="20 6 9 17 4 12"></polyline>
                   </svg>
                 </span>
-                <span>Kaynak Kod & Commitler</span>
+                <span class="card-label-text">Kod & Commitler</span>
               </label>
               <label class="included-item-card checked" id="card-includePr">
                 <input type="checkbox" id="includePr" checked onchange="toggleIncludedItemClass(this)">
@@ -5288,7 +5412,7 @@
                     <polyline points="20 6 9 17 4 12"></polyline>
                   </svg>
                 </span>
-                <span>Pull Request (PR) Kayıtları</span>
+                <span class="card-label-text">Pull Requests (PR)</span>
               </label>
               <label class="included-item-card checked" id="card-includeIssues">
                 <input type="checkbox" id="includeIssues" checked onchange="toggleIncludedItemClass(this)">
@@ -5298,7 +5422,8 @@
                     <polyline points="20 6 9 17 4 12"></polyline>
                   </svg>
                 </span>
-                <span>Sorunlar & Talepler (Issues)</span>
+                <span class="card-label-text">Issues</span>
+                <span class="coming-soon-badge github">GitHub</span>
               </label>
               <label class="included-item-card disabled">
                 <span class="checkbox-box">
@@ -5307,15 +5432,27 @@
                     <polyline points="20 6 9 17 4 12"></polyline>
                   </svg>
                 </span>
-                <span>Wiki Sayfaları</span>
+                <span class="card-label-text">Wiki Sayfaları</span>
                 <span class="coming-soon-badge">Yakında</span>
               </label>
+            </div>
+            <div
+              style="margin-top: 0.75rem; padding: 0.65rem 0.85rem; background: rgba(59, 130, 246, 0.07); border: 1px solid rgba(59, 130, 246, 0.25); border-radius: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+              <svg class="w-4 h-4 shrink-0" style="width: 15px; height: 15px; color: #60a5fa; flex-shrink: 0;"
+                xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="16" x2="12" y2="12"></line>
+                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+              </svg>
+              <span style="color: #94a3b8; font-size: 0.775rem; line-height: 1.4;">"Issues" seçeneği yalnızca GitHub
+                depolarında aktiftir. Bitbucket deposu seçildiğinde test bu seçeneği otomatik olarak pas geçer.</span>
             </div>
           </div>
         </div>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn-modal-cancel" onclick="toggleSchedulerDetails()">İptal Et</button>
+        <button type="button" class="btn-modal-cancel" onclick="toggleSchedulerDetails(true)">İptal Et</button>
         <button type="button" class="btn-modal-save" onclick="saveAndCloseSchedulerModal()">Zamanlayıcıyı
           Kaydet</button>
       </div>
@@ -5326,7 +5463,7 @@
     // ─── Güvenlik: Oturum Tokenı ve Fetch Monkeypatch ─────────────────────────
     let DASHBOARD_TOKEN = '';
     window.originalFetch = window.fetch;
-    window.fetch = async function(resource, options = {}) {
+    window.fetch = async function (resource, options = {}) {
       if (typeof resource === 'string' && resource.endsWith('/api/token')) {
         return window.originalFetch(resource, options);
       }
@@ -5377,7 +5514,7 @@
       'card-storage-api-failures': 'Depolama API Hataları',
       'card-storage-edge-cases': 'Depolama Sınır Durumları',
       'card-google-session': 'Google Oturumu',
-      'card-scheduler': 'Günlük Zamanlayıcı',
+      'card-scheduler': 'Zamanlayıcı',
       'card-scheduler-validation': 'Zamanlayıcı Doğrulaması',
       'card-restore': 'Geri Yükleme',
       'card-restore-validation': 'Geri Yükleme Doğrulaması',
@@ -5398,10 +5535,22 @@
       'card-restore-ui': 'Geri Yükleme Arayüz Testi',
       'card-repositories-ui': 'Depolar Arayüz Testi',
       'card-global-layout': 'Küresel Arayüz Testi',
-      'card-workspace-settings-ui': 'Workspace & Üye Arayüzü'
+      'card-workspace-settings-ui': 'Workspace & Üye Arayüzü',
+      'card-license-change': 'Lisans Değişikliği'
     };
 
     function getCardDisplayName(cardId, englishMode = false) {
+      if (cardId === 'card-scheduler') {
+        const typeSelect = document.getElementById('scheduleTypeSelect');
+        const type = typeSelect ? typeSelect.value : 'daily';
+        if (type === 'weekly') return englishMode ? 'Weekly Scheduler' : 'Haftalık Zamanlayıcı';
+        if (type === 'monthly') return englishMode ? 'Monthly Scheduler' : 'Aylık Zamanlayıcı';
+        if (type === 'cron') return englishMode ? 'Cron Scheduler' : 'Özel Zamanlayıcı (Cron)';
+        return englishMode ? 'Daily Scheduler' : 'Günlük Zamanlayıcı';
+      }
+      if (cardId === 'card-license-change') {
+        return englishMode ? 'License Change' : 'Lisans Değişikliği';
+      }
       if (cardId === 'card-github-include') {
         const providerSelect = document.getElementById('includeProviderSelect');
         const providerName = providerSelect && providerSelect.value === 'bitbucket' ? 'Bitbucket' : 'GitHub';
@@ -5623,16 +5772,65 @@
       updateWorkerStats();
     }
 
+    // 1. Ayarları saklama ve yerel depolamaya (localStorage) kaydetme
+    function saveSettings() {
+      try {
+        const settings = {
+          includeCode: document.getElementById('includeCode') ? document.getElementById('includeCode').checked : true,
+          includePr: document.getElementById('includePr') ? document.getElementById('includePr').checked : true,
+          includeIssues: document.getElementById('includeIssues') ? document.getElementById('includeIssues').checked : true,
+          includeProvider: document.getElementById('schedulerIncludeProviderSelect') ? document.getElementById('schedulerIncludeProviderSelect').value : 'all',
+          schedulerIncludeProvider: document.getElementById('schedulerIncludeProviderSelect') ? document.getElementById('schedulerIncludeProviderSelect').value : 'all',
+          e2eCodeProvider: document.getElementById('e2eCodeProvider') ? document.getElementById('e2eCodeProvider').value : 'github'
+        };
+        localStorage.setItem('gitsec_scheduler_settings', JSON.stringify(settings));
+      } catch (e) {
+        console.error('Error saving settings:', e);
+      }
+    }
+
+    // Modal açılış durum hafızası (İptal edilirse geri yüklenir)
+    let initialModalSettingsSnapshot = null;
+
     // Zamanlayıcı ayarları modalını açma/kapatma fonksiyonu
-    function toggleSchedulerDetails() {
+    function toggleSchedulerDetails(isCancel = false) {
       const modal = document.getElementById('schedulerModal');
       const btn = document.getElementById('btnToggleScheduler');
       const isActive = modal.classList.contains('active');
 
       if (isActive) {
+        if (isCancel && initialModalSettingsSnapshot) {
+          // İptal edildi: İlk durumları geri yükle
+          const providerSelect = document.getElementById('schedulerIncludeProviderSelect');
+          if (providerSelect && initialModalSettingsSnapshot.includeProvider) {
+            providerSelect.value = initialModalSettingsSnapshot.includeProvider;
+          }
+
+          const cbCode = document.getElementById('includeCode');
+          const cbPr = document.getElementById('includePr');
+          const cbIssues = document.getElementById('includeIssues');
+          if (cbCode) cbCode.checked = initialModalSettingsSnapshot.includeCode;
+          if (cbPr) cbPr.checked = initialModalSettingsSnapshot.includePr;
+          if (cbIssues) cbIssues.checked = initialModalSettingsSnapshot.includeIssues;
+
+          if (cbCode) toggleIncludedItemClass(cbCode);
+          if (cbPr) toggleIncludedItemClass(cbPr);
+          if (cbIssues) toggleIncludedItemClass(cbIssues);
+          onSchedulerProviderChange();
+        }
         modal.classList.remove('active');
         btn.classList.remove('active');
       } else {
+        // Modal açılıyor: Sağlayıcı görünümünü senkronize et
+        onSchedulerProviderChange();
+
+        // Mevcut görünümün anlık görüntüsünü sakla
+        initialModalSettingsSnapshot = {
+          includeCode: document.getElementById('includeCode') ? document.getElementById('includeCode').checked : true,
+          includePr: document.getElementById('includePr') ? document.getElementById('includePr').checked : true,
+          includeIssues: document.getElementById('includeIssues') ? document.getElementById('includeIssues').checked : true,
+          includeProvider: document.getElementById('schedulerIncludeProviderSelect') ? document.getElementById('schedulerIncludeProviderSelect').value : 'all'
+        };
         modal.classList.add('active');
         btn.classList.add('active');
       }
@@ -5640,9 +5838,30 @@
 
     // Modal değişikliklerini kaydedip kapatma
     function saveAndCloseSchedulerModal() {
+      onSchedulerProviderChange();
+
+      const includeCode = document.getElementById('includeCode') ? document.getElementById('includeCode').checked : false;
+      const includePr = document.getElementById('includePr') ? document.getElementById('includePr').checked : false;
+      const includeIssues = document.getElementById('includeIssues') ? document.getElementById('includeIssues').checked : false;
+      const includeProvider = document.getElementById('schedulerIncludeProviderSelect') ? document.getElementById('schedulerIncludeProviderSelect').value : 'all';
+
+      // Doğrulama: Bitbucket ise en az 1 tane (Kod veya PR) seçilmelidir
+      if (includeProvider === 'bitbucket') {
+        if (!includeCode && !includePr) {
+          showToast('⚠️ Bitbucket için en az 1 Yedekleme İçeriği (Kod veya PR) seçilmelidir!', true);
+          return;
+        }
+      } else {
+        if (!includeCode && !includePr && !includeIssues) {
+          showToast('⚠️ En az 1 Yedekleme İçeriği (Kod, PR veya Issues) seçilmelidir!', true);
+          return;
+        }
+      }
+
       updateSchedulerDescription();
       saveSettings();
-      toggleSchedulerDetails();
+      initialModalSettingsSnapshot = null;
+      toggleSchedulerDetails(false);
     }
 
     // Toggle included item badge selection border highlighting
@@ -5658,11 +5877,42 @@
       saveSettings();
     }
 
+    function onSchedulerProviderChange() {
+      const providerSelect = document.getElementById('schedulerIncludeProviderSelect');
+      const issuesCard = document.getElementById('card-includeIssues');
+      const issuesCheckbox = document.getElementById('includeIssues');
+
+      if (providerSelect && providerSelect.value === 'bitbucket') {
+        // Bitbucket seçildiğinde Issues seçeneği tamamen gizlenir ve tiki kaldırılır
+        if (issuesCheckbox) {
+          issuesCheckbox.checked = false;
+          issuesCheckbox.disabled = true;
+        }
+        if (issuesCard) {
+          issuesCard.style.display = 'none';
+          issuesCard.classList.remove('checked');
+        }
+      } else {
+        if (issuesCheckbox) {
+          issuesCheckbox.disabled = false;
+        }
+        if (issuesCard) {
+          issuesCard.style.display = '';
+          if (issuesCheckbox && issuesCheckbox.checked) {
+            issuesCard.classList.add('checked');
+          } else {
+            issuesCard.classList.remove('checked');
+          }
+        }
+      }
+      saveSettings();
+    }
+
     function onBackupProviderChange() {
       const select = document.getElementById('backupProviderSelect');
       if (!select) return;
       const provider = select.value;
-      
+
       // Card tag'ini güncelle
       const tagEl = document.querySelector('#card-github-backup .card-tag');
       if (tagEl) {
@@ -5813,11 +6063,11 @@
       const includePr = document.getElementById('includePr').checked;
       const includeIssues = document.getElementById('includeIssues').checked;
 
-      // Haftalık seçilmişse ilk seçili günü alalım
+      // Haftalık seçilmişse seçili TÜM günleri alalım (Varsayılan: Pazar hariç hepsi)
       let weeklyDay = null;
       if (type === 'weekly') {
-        const checkedBox = document.querySelector('input[name="weeklyDayCheckbox"]:checked');
-        weeklyDay = checkedBox ? checkedBox.value : 'Mon';
+        const checkedBoxes = document.querySelectorAll('input[name="weeklyDayCheckbox"]:checked');
+        weeklyDay = Array.from(checkedBoxes).map(cb => cb.value).join(',') || 'Mon,Tue,Wed,Thu,Fri,Sat';
       }
 
       // Aylık seçilmişse
@@ -5840,7 +6090,7 @@
       card.className = 'test-card running';
       const oldBtn = card.querySelector('.btn-view-artifact');
       if (oldBtn) oldBtn.remove();
-      appendConsole(cardId, `[DASHBOARD] Test süreci hazırlanıyor... (Zamanlayıcı Tipi: ${type.toUpperCase()})\n`);
+      appendConsole(cardId, `[DASHBOARD] Test süreci hazırlanıyor... (Zamanlayıcı Tipi: ${type.toUpperCase()})\n[DASHBOARD SEÇİMLERİ] Code & Commits: ${includeCode ? 'İşaretli (✓)' : 'Kaldırılmış (✗)'} | Pull Requests: ${includePr ? 'İşaretli (✓)' : 'Kaldırılmış (✗)'} | Issues: ${includeIssues ? 'İşaretli (✓)' : 'Kaldırılmış (✗)'}\n`);
 
       const workers = document.getElementById('workersCount') ? document.getElementById('workersCount').value : 1;
       try {
@@ -5850,6 +6100,7 @@
           body: JSON.stringify({
             tag, headed, testFile, timezone, workspaceId, baseUrl,
             scheduleName, scheduleTime, includeCode, includePr, includeIssues,
+            includeProvider: document.getElementById('schedulerIncludeProviderSelect') ? document.getElementById('schedulerIncludeProviderSelect').value : 'all',
             scheduleType: type.charAt(0).toUpperCase() + type.slice(1), // 'Daily', 'Weekly', 'Monthly', 'Cron'
             weeklyDay, monthlyDay, cronExpression, workers, cardId,
             schedulerCleanup: document.getElementById('schedulerCleanupSelect') ? document.getElementById('schedulerCleanupSelect').value : 'delete'
@@ -7379,7 +7630,7 @@
       const providerSelect = document.getElementById('e2eCodeProvider');
       if (!providerSelect) return;
       const provider = providerSelect.value;
-      
+
       if (document.getElementById('includeProviderSelect')) {
         document.getElementById('includeProviderSelect').value = provider;
         updateCardUI('card-github-include', 'includeProviderSelect', 'include-desc');
@@ -7407,20 +7658,20 @@
           backupIssuesCard.style.display = '';
         }
       }
-      
+
       // Update Card Tags
       const includeCard = document.getElementById('card-github-include');
       if (includeCard) {
         const tag = includeCard.querySelector('.card-tag');
         if (tag) tag.textContent = provider.toUpperCase();
       }
-      
+
       const excludeCard = document.getElementById('card-github-exclude');
       if (excludeCard) {
         const tag = excludeCard.querySelector('.card-tag');
         if (tag) tag.textContent = provider.toUpperCase();
       }
-      
+
       const backupCard = document.getElementById('card-github-backup');
       if (backupCard) {
         const tag = backupCard.querySelector('.card-tag');
@@ -7465,6 +7716,7 @@
         weeklyDays: Array.from(document.querySelectorAll('input[name="weeklyDayCheckbox"]:checked')).map(cb => cb.value),
         includeMode: document.getElementById('includeModeSelect') ? document.getElementById('includeModeSelect').value : 'one_repo',
         includeProvider: document.getElementById('includeProviderSelect') ? document.getElementById('includeProviderSelect').value : 'github',
+        schedulerIncludeProvider: document.getElementById('schedulerIncludeProviderSelect') ? document.getElementById('schedulerIncludeProviderSelect').value : 'all',
         excludeMode: document.getElementById('excludeModeSelect') ? document.getElementById('excludeModeSelect').value : 'one_repo',
         excludeProvider: document.getElementById('excludeProviderSelect') ? document.getElementById('excludeProviderSelect').value : 'github',
         backupMode: document.getElementById('backupModeSelect') ? document.getElementById('backupModeSelect').value : 'all',
@@ -7585,8 +7837,9 @@
         if (settings.includeMode !== undefined && document.getElementById('includeModeSelect')) {
           document.getElementById('includeModeSelect').value = settings.includeMode;
         }
-        if (settings.includeProvider !== undefined && document.getElementById('includeProviderSelect')) {
-          document.getElementById('includeProviderSelect').value = settings.includeProvider;
+        if (settings.includeProvider !== undefined && document.getElementById('schedulerIncludeProviderSelect')) {
+          document.getElementById('schedulerIncludeProviderSelect').value = settings.includeProvider;
+          onSchedulerProviderChange();
         }
         if (settings.excludeMode !== undefined && document.getElementById('excludeModeSelect')) {
           document.getElementById('excludeModeSelect').value = settings.excludeMode;
@@ -7687,6 +7940,13 @@
           if (document.getElementById('forgotPasswordModeSelect')) updateCardUI('card-auth-forgot-password-real', 'forgotPasswordModeSelect', 'forgotPassword-desc', true);
           if (document.getElementById('storageModeSelect')) updateCardUI('card-storage', 'storageModeSelect', 'storage-desc', true);
           onCodeProviderChange();
+          if (settings.schedulerIncludeProvider !== undefined && document.getElementById('schedulerIncludeProviderSelect')) {
+            document.getElementById('schedulerIncludeProviderSelect').value = settings.schedulerIncludeProvider;
+            onSchedulerProviderChange();
+          } else if (settings.includeProvider !== undefined && document.getElementById('schedulerIncludeProviderSelect')) {
+            document.getElementById('schedulerIncludeProviderSelect').value = settings.includeProvider;
+            onSchedulerProviderChange();
+          }
         }, 50);
       } catch (e) {
         console.error('Ayarlar yüklenirken hata oluştu:', e);
@@ -8099,19 +8359,47 @@
 
       const bufText = (consoleBuffers[targetCardId] || []).join('\n');
       if (!artifacts.screenshot) {
-        const m = bufText.match(/(?:test-results|\.playwright-artifacts)[\\/][^\s\r\n]+\.png/i);
+        const m = bufText.match(/(?:test-results|\.playwright-artifacts)[\\\/][^\s\r\n]+\.png/i);
         if (m) artifacts.screenshot = m[0].trim().replace(/\\/g, '/');
       }
       if (!artifacts.video) {
-        const m = bufText.match(/(?:test-results|\.playwright-artifacts)[\\/][^\s\r\n]+\.webm/i);
+        const m = bufText.match(/(?:test-results|\.playwright-artifacts)[\\\/][^\s\r\n]+\.webm/i);
         if (m) artifacts.video = m[0].trim().replace(/\\/g, '/');
       }
 
       const imgPath = artifacts.screenshot || '';
       const videoPath = artifacts.video || '';
 
+      let cardName = targetCardId;
+      try {
+        const cardNameMap = {
+          'card-storage': 'Storage Provider',
+          'card-storage-validation': 'Storage Validation',
+          'card-storage-api-failures': 'Storage API Failures',
+          'card-storage-edge-cases': 'Storage Edge Cases',
+          'card-google-session': 'Google Session',
+          'card-scheduler': 'Daily Scheduler',
+          'card-scheduler-validation': 'Zamanlayıcı Doğrulama',
+          'card-restore': 'Restore Navigate',
+          'card-restore-validation': 'Restore Doğrulama',
+          'card-github-connect': 'GitHub Connect',
+          'card-bitbucket-connect': 'Bitbucket Connect',
+          'card-code-google-session': 'Google Session',
+          'card-github-include': 'GitHub Include',
+          'card-github-exclude': 'GitHub Exclude',
+          'card-github-backup': 'GitHub Backup',
+          'card-auth-login': 'Login E2E',
+          'card-auth-login-failures': 'Login Failures & Disconnect',
+          'card-auth-register': 'Register E2E',
+          'card-activity-log': 'Activity & Audit Logs',
+          'card-full-flow-auditor': 'Grand Integration Flow',
+          'card-activity-ui': 'Activity UI Logs',
+          'card-storage-ui': 'Storage UI & Buttons'
+        };
+        cardName = cardNameMap[targetCardId] || targetCardId.replace('card-', '').replace(/-/g, ' ');
+      } catch (e) {}
+
       const titleEl = document.getElementById('artifactModalTitle');
-      const cardName = getCardDisplayName(targetCardId);
       if (titleEl) titleEl.innerText = `🎥 ${cardName} - Hata Kanıtı Detay İzleyici`;
 
       const imgEl = document.getElementById('artifactImg');
@@ -8146,6 +8434,9 @@
       }
 
       modal.style.display = 'flex';
+      setTimeout(() => {
+        modal.classList.add('active');
+      }, 10);
     }
 
     function closeArtifactModal() {
@@ -8153,7 +8444,7 @@
       const lightbox = document.getElementById('lightboxOverlay');
       const videoEl = document.getElementById('artifactVideo');
       if (videoEl) {
-        try { videoEl.pause(); } catch(e) {}
+        try { videoEl.pause(); } catch (e) { }
         videoEl.src = '';
       }
       if (modal) modal.style.display = 'none';
@@ -8293,7 +8584,7 @@
         try {
           video.fastSeek(finalTime);
           return;
-        } catch (e) {}
+        } catch (e) { }
       }
       video.currentTime = finalTime;
     }
@@ -8437,7 +8728,7 @@
     style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(4, 6, 14, 0.88); backdrop-filter: blur(20px); display: none; align-items: center; justify-content: center; z-index: 999999;">
     <div class="modal-container" role="dialog" aria-modal="true" onclick="event.stopPropagation()"
       style="max-width: 960px; width: 92%; background: linear-gradient(145deg, rgba(15, 20, 36, 0.98), rgba(9, 12, 24, 0.98)); border: 1px solid rgba(255, 255, 255, 0.12); box-shadow: 0 25px 60px rgba(0, 0, 0, 0.7), 0 0 40px rgba(244, 63, 94, 0.15); backdrop-filter: blur(25px); border-radius: 1.25rem; display: flex; flex-direction: column; overflow: hidden; position: relative;">
-      
+
       <!-- Top Glowing Accent Border -->
       <div style="height: 3px; width: 100%; background: linear-gradient(90deg, #f43f5e, #a855f7, #3b82f6);"></div>
 
@@ -8445,16 +8736,21 @@
       <div class="modal-header"
         style="border-bottom: 1px solid rgba(255,255,255,0.08); padding: 1.25rem 1.5rem; display: flex; justify-content: space-between; align-items: center; background: rgba(244, 63, 94, 0.04);">
         <div style="display: flex; align-items: center; gap: 0.75rem;">
-          <div style="width: 36px; height: 36px; border-radius: 50%; background: rgba(244, 63, 94, 0.15); border: 1px solid rgba(244, 63, 94, 0.35); display: flex; align-items: center; justify-content: center; color: #f43f5e;">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <div
+            style="width: 36px; height: 36px; border-radius: 50%; background: rgba(244, 63, 94, 0.15); border: 1px solid rgba(244, 63, 94, 0.35); display: flex; align-items: center; justify-content: center; color: #f43f5e;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+              stroke-linecap="round" stroke-linejoin="round">
               <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
               <line x1="12" y1="9" x2="12" y2="13"></line>
               <line x1="12" y1="17" x2="12.01" y2="17"></line>
             </svg>
           </div>
           <div>
-            <h3 id="artifactModalTitle" style="margin: 0; font-size: 1.1rem; font-weight: 700; color: #ffffff; font-family: var(--font-sans); letter-spacing: -0.01em;">Hata Kanıtı Detay İzleyici</h3>
-            <span style="font-size: 0.75rem; color: #a1a1aa;">Otomatik yakalanan yüksek çözünürlüklü test görseli ve HD video kaydı</span>
+            <h3 id="artifactModalTitle"
+              style="margin: 0; font-size: 1.1rem; font-weight: 700; color: #ffffff; font-family: var(--font-sans); letter-spacing: -0.01em;">
+              Hata Kanıtı Detay İzleyici</h3>
+            <span style="font-size: 0.75rem; color: #a1a1aa;">Otomatik yakalanan yüksek çözünürlüklü test görseli ve HD
+              video kaydı</span>
           </div>
         </div>
         <button type="button" class="btn-close-modal" onclick="closeArtifactModal()"
@@ -8464,61 +8760,89 @@
       </div>
 
       <!-- Modal Body -->
-      <div class="modal-body" style="padding: 1.25rem; display: flex; flex-direction: column; gap: 1rem; max-height: calc(85vh - 120px); overflow-y: auto;">
+      <div class="modal-body"
+        style="padding: 1.25rem; display: flex; flex-direction: column; gap: 1rem; max-height: calc(85vh - 120px); overflow-y: auto;">
 
         <!-- Segmented Tab Navigation -->
-        <div style="display: flex; background: rgba(5, 7, 15, 0.7); padding: 0.3rem; border-radius: 0.75rem; border: 1px solid rgba(255, 255, 255, 0.1); width: fit-content; align-self: center; gap: 0.35rem; box-shadow: inset 0 2px 6px rgba(0,0,0,0.4);">
+        <div
+          style="display: flex; background: rgba(5, 7, 15, 0.7); padding: 0.3rem; border-radius: 0.75rem; border: 1px solid rgba(255, 255, 255, 0.1); width: fit-content; align-self: center; gap: 0.35rem; box-shadow: inset 0 2px 6px rgba(0,0,0,0.4);">
           <button id="btnArtifactImg" class="terminal-btn active" onclick="switchArtifactTab('img')"
             style="padding: 0.5rem 1.25rem; font-size: 0.8rem; border-radius: 0.5rem; border: none; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; transition: all 0.2s ease;">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+              <circle cx="8.5" cy="8.5" r="1.5" />
+              <polyline points="21 15 16 10 5 21" />
+            </svg>
             <span>Ekran Görüntüsü</span>
           </button>
           <button id="btnArtifactVideo" class="terminal-btn" onclick="switchArtifactTab('video')"
             style="padding: 0.5rem 1.25rem; font-size: 0.8rem; border-radius: 0.5rem; border: none; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; transition: all 0.2s ease;">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="23 7 16 12 23 17 23 7" />
+              <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
+            </svg>
             <span>E2E Video Kaydı</span>
           </button>
         </div>
 
         <!-- Screenshot Content View -->
-        <div id="artifactImgContainer" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.85rem;">
-          <div style="position: relative; width: 100%; border-radius: 0.85rem; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.12); box-shadow: 0 12px 35px rgba(0, 0, 0, 0.6); background: #05070f; display: flex; justify-content: center;">
+        <div id="artifactImgContainer"
+          style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.85rem;">
+          <div
+            style="position: relative; width: 100%; border-radius: 0.85rem; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.12); box-shadow: 0 12px 35px rgba(0, 0, 0, 0.6); background: #05070f; display: flex; justify-content: center;">
             <img id="artifactImg" src="" alt="Test Hata Ekran Görüntüsü"
               style="max-width: 100%; max-height: 38vh; object-fit: contain; cursor: zoom-in; transition: transform 0.2s ease;"
               onclick="showLightbox(this.src, document.getElementById('artifactModalTitle').innerText)"
               onerror="this.src='https://placehold.co/800x450/0d111e/f43f5e?text=Ekran+G%C3%B6r%C3%BCnt%C3%BCs%C3%BC+Y%C3%BCklenemedi'">
           </div>
-          <span style="font-size: 0.75rem; color: #a1a1aa; text-align: center;">Büyütmek ve detaylı incelemek için görselin üzerine tıklayın</span>
+          <span style="font-size: 0.75rem; color: #a1a1aa; text-align: center;">Büyütmek ve detaylı incelemek için
+            görselin üzerine tıklayın</span>
         </div>
 
         <!-- Video Content with Authentic Media Player Controls -->
-        <div id="artifactVideoContainer" style="display: none; flex-direction: column; align-items: center; justify-content: center; gap: 1rem; width: 100%;">
-          
+        <div id="artifactVideoContainer"
+          style="display: none; flex-direction: column; align-items: center; justify-content: center; gap: 1rem; width: 100%;">
+
           <!-- Video Frame with Glowing Border & Glass Overlay -->
-          <div style="position: relative; width: 100%; border-radius: 0.85rem; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.12); box-shadow: 0 12px 40px rgba(0, 0, 0, 0.7); background: #05070f; display: flex; align-items: center; justify-content: center;">
-            <video id="artifactVideo" src="" preload="metadata" style="max-width: 100%; max-height: 36vh; width: 100%; object-fit: contain;" onclick="toggleVideoPlay()"></video>
+          <div
+            style="position: relative; width: 100%; border-radius: 0.85rem; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.12); box-shadow: 0 12px 40px rgba(0, 0, 0, 0.7); background: #05070f; display: flex; align-items: center; justify-content: center;">
+            <video id="artifactVideo" src="" preload="metadata"
+              style="max-width: 100%; max-height: 36vh; width: 100%; object-fit: contain;"
+              onclick="toggleVideoPlay()"></video>
           </div>
 
           <!-- Professional Media Player Control Console -->
-          <div style="width: 100%; background: linear-gradient(180deg, rgba(15, 20, 36, 0.95), rgba(9, 12, 24, 0.98)); border: 1px solid rgba(255, 255, 255, 0.12); padding: 1rem 1.25rem; border-radius: 0.85rem; display: flex; flex-direction: column; gap: 0.85rem; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4); backdrop-filter: blur(16px);">
-            
+          <div
+            style="width: 100%; background: linear-gradient(180deg, rgba(15, 20, 36, 0.95), rgba(9, 12, 24, 0.98)); border: 1px solid rgba(255, 255, 255, 0.12); padding: 1rem 1.25rem; border-radius: 0.85rem; display: flex; flex-direction: column; gap: 0.85rem; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4); backdrop-filter: blur(16px);">
+
             <!-- Timeline Scrubber Bar -->
             <div style="display: flex; align-items: center; gap: 0.85rem; width: 100%;">
-              <span id="videoTimeCurrent" style="font-family: var(--font-mono); font-size: 0.775rem; font-weight: 600; color: #fda4af; min-width: 44px; text-align: right;">00:00</span>
+              <span id="videoTimeCurrent"
+                style="font-family: var(--font-mono); font-size: 0.775rem; font-weight: 600; color: #fda4af; min-width: 44px; text-align: right;">00:00</span>
               <div style="position: relative; flex: 1; display: flex; align-items: center;">
-                <input type="range" id="videoScrubber" class="video-scrubber-input" min="0" max="100" value="0" step="0.1">
+                <input type="range" id="videoScrubber" class="video-scrubber-input" min="0" max="100" value="0"
+                  step="0.1">
               </div>
-              <span id="videoTimeTotal" style="font-family: var(--font-mono); font-size: 0.775rem; font-weight: 600; color: #a1a1aa; min-width: 44px;">00:00</span>
+              <span id="videoTimeTotal"
+                style="font-family: var(--font-mono); font-size: 0.775rem; font-weight: 600; color: #a1a1aa; min-width: 44px;">00:00</span>
             </div>
 
             <!-- Media Player Controls (Speed Left | Centered [-5s] (Play Circle) [+5s] | Fullscreen Right) -->
             <div style="display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; width: 100%;">
-              
+
               <!-- Left: Playback Speed Select -->
               <div style="display: flex; align-items: center; justify-content: flex-start;">
-                <div style="display: flex; align-items: center; gap: 0.4rem; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); padding: 0.3rem 0.65rem; border-radius: 0.55rem;">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#a1a1aa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                  <select id="videoSpeedSelect" onchange="setVideoSpeed(this.value)" style="background: transparent; color: #e4e4e7; border: none; font-size: 0.775rem; font-weight: 600; cursor: pointer; outline: none;">
+                <div
+                  style="display: flex; align-items: center; gap: 0.4rem; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); padding: 0.3rem 0.65rem; border-radius: 0.55rem;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#a1a1aa" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10" />
+                    <polyline points="12 6 12 12 16 14" />
+                  </svg>
+                  <select id="videoSpeedSelect" onchange="setVideoSpeed(this.value)"
+                    style="background: transparent; color: #e4e4e7; border: none; font-size: 0.775rem; font-weight: 600; cursor: pointer; outline: none;">
                     <option value="0.5" style="background:#0d111e;">0.5x Yavaş</option>
                     <option value="1" selected style="background:#0d111e;">1.0x Normal</option>
                     <option value="1.25" style="background:#0d111e;">1.25x Hızlı</option>
@@ -8531,40 +8855,59 @@
               <!-- EXACT CENTER: [-5s] (PLAY/PAUSE CIRCLE) [+5s] -->
               <div style="display: flex; align-items: center; justify-content: center; gap: 0.85rem;">
                 <!-- Rewind -5s with Badge -->
-                <button type="button" class="v-ctrl-btn" onclick="skipVideo(-5)" title="5 Saniye Geri Al" style="padding: 0.4rem 0.75rem; border-radius: 2rem; display: flex; align-items: center; gap: 0.35rem; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 17l-5-5 5-5M18 17l-5-5 5-5"/></svg>
+                <button type="button" class="v-ctrl-btn" onclick="skipVideo(-5)" title="5 Saniye Geri Al"
+                  style="padding: 0.4rem 0.75rem; border-radius: 2rem; display: flex; align-items: center; gap: 0.35rem; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M11 17l-5-5 5-5M18 17l-5-5 5-5" />
+                  </svg>
                   <span style="font-size: 0.75rem; font-weight: 700; color: #e4e4e7;">-5s</span>
                 </button>
 
                 <!-- CENTER PLAY / PAUSE BUTTON (NO TEXT, ONLY ICON) -->
-                <button type="button" id="btnVideoPlay" class="v-ctrl-btn primary-play" onclick="toggleVideoPlay()" title="Oynat / Durdur" style="width: 48px; height: 48px; border-radius: 50%; padding: 0; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #f43f5e, #e11d48); border: 1px solid rgba(244, 63, 94, 0.7); box-shadow: 0 0 20px rgba(244, 63, 94, 0.5);">
-                  <svg id="svgPlayIcon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="margin-left: 2px;"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                <button type="button" id="btnVideoPlay" class="v-ctrl-btn primary-play" onclick="toggleVideoPlay()"
+                  title="Oynat / Durdur"
+                  style="width: 48px; height: 48px; border-radius: 50%; padding: 0; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #f43f5e, #e11d48); border: 1px solid rgba(244, 63, 94, 0.7); box-shadow: 0 0 20px rgba(244, 63, 94, 0.5);">
+                  <svg id="svgPlayIcon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"
+                    style="margin-left: 2px;">
+                    <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                  </svg>
                 </button>
 
                 <!-- Forward +5s with Badge -->
-                <button type="button" class="v-ctrl-btn" onclick="skipVideo(5)" title="5 Saniye İleri Sar" style="padding: 0.4rem 0.75rem; border-radius: 2rem; display: flex; align-items: center; gap: 0.35rem; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);">
+                <button type="button" class="v-ctrl-btn" onclick="skipVideo(5)" title="5 Saniye İleri Sar"
+                  style="padding: 0.4rem 0.75rem; border-radius: 2rem; display: flex; align-items: center; gap: 0.35rem; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);">
                   <span style="font-size: 0.75rem; font-weight: 700; color: #e4e4e7;">+5s</span>
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 17l5-5-5-5M6 17l5-5-5-5"/></svg>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M13 17l5-5-5-5M6 17l5-5-5-5" />
+                  </svg>
                 </button>
               </div>
 
               <!-- Right: Fullscreen Toggle -->
               <div style="display: flex; align-items: center; justify-content: flex-end;">
                 <button type="button" class="v-ctrl-btn" onclick="toggleVideoFullscreen()" title="Tam Ekran Yap">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path
+                      d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" />
+                  </svg>
                 </button>
               </div>
 
             </div>
           </div>
-          <span style="font-size: 0.725rem; color: #a1a1aa; text-align: center;">Tüm E2E test koşusunun Playwright tarafından otomatik kaydedilmiş HD video kaydı</span>
+          <span style="font-size: 0.725rem; color: #a1a1aa; text-align: center;">Tüm E2E test koşusunun Playwright
+            tarafından otomatik kaydedilmiş HD video kaydı</span>
         </div>
 
       </div>
       <div
         style="padding: 1rem 1.5rem; border-top: 1px solid rgba(255,255,255,0.08); display: flex; justify-content: space-between; align-items: center; background: rgba(5,7,15,0.6); border-radius: 0 0 1.25rem 1.25rem;">
         <span id="artifactPathLabel"
-          style="font-family: var(--font-mono); font-size: 0.725rem; color: #a1a1aa; word-break: break-all; max-width: 75%;">Dosya Yolu: Yükleniyor...</span>
+          style="font-family: var(--font-mono); font-size: 0.725rem; color: #a1a1aa; word-break: break-all; max-width: 75%;">Dosya
+          Yolu: Yükleniyor...</span>
         <button type="button" class="v-ctrl-btn" onclick="closeArtifactModal()"
           style="padding: 0.55rem 1.5rem; background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.18); font-weight: 700; color: #ffffff;">Kapat</button>
       </div>
@@ -8574,35 +8917,55 @@
   <!-- Glassmorphic Lightbox Preview & Interactive Zoom/Pan Overlay -->
   <div id="lightboxOverlay" class="lightbox-overlay" onclick="closeLightbox(event)">
     <div class="lightbox-container" onclick="event.stopPropagation()">
-      
+
       <!-- Top Floating Control Header -->
       <div class="lightbox-header">
         <div style="display: flex; align-items: center; gap: 0.75rem;">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f43f5e" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-          <span id="lightboxTitle" style="font-weight: 700; color: #ffffff; font-size: 0.9rem;">Hata Ekran Görüntüsü</span>
-          <span id="lightboxZoomLevel" style="font-family: var(--font-mono); font-size: 0.75rem; color: #f43f5e; background: rgba(244,63,94,0.15); padding: 0.15rem 0.5rem; border-radius: 0.35rem; border: 1px solid rgba(244,63,94,0.3);">100%</span>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f43f5e" stroke-width="2">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+            <circle cx="8.5" cy="8.5" r="1.5" />
+            <polyline points="21 15 16 10 5 21" />
+          </svg>
+          <span id="lightboxTitle" style="font-weight: 700; color: #ffffff; font-size: 0.9rem;">Hata Ekran
+            Görüntüsü</span>
+          <span id="lightboxZoomLevel"
+            style="font-family: var(--font-mono); font-size: 0.75rem; color: #f43f5e; background: rgba(244,63,94,0.15); padding: 0.15rem 0.5rem; border-radius: 0.35rem; border: 1px solid rgba(244,63,94,0.3);">100%</span>
         </div>
 
         <!-- Zoom Control Buttons -->
         <div style="display: flex; align-items: center; gap: 0.5rem;">
           <button type="button" class="v-ctrl-btn" onclick="zoomImage(0.25)" title="Büyüt (+)">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              <line x1="11" y1="8" x2="11" y2="14" />
+              <line x1="8" y1="11" x2="14" y2="11" />
+            </svg>
           </button>
           <button type="button" class="v-ctrl-btn" onclick="zoomImage(-0.25)" title="Küçült (-)">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              <line x1="8" y1="11" x2="14" y2="11" />
+            </svg>
           </button>
           <button type="button" class="v-ctrl-btn" onclick="resetZoomImage()" title="Sıfırla (100%)">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+              <path d="M3 3v5h5" />
+            </svg>
           </button>
-          <button type="button" class="v-ctrl-btn" onclick="closeLightbox(event)" style="background: rgba(244,63,94,0.2); border-color: rgba(244,63,94,0.4); color: #ffffff;" title="Kapat (Esc)">✕</button>
+          <button type="button" class="v-ctrl-btn" onclick="closeLightbox(event)"
+            style="background: rgba(244,63,94,0.2); border-color: rgba(244,63,94,0.4); color: #ffffff;"
+            title="Kapat (Esc)">✕</button>
         </div>
       </div>
 
       <!-- Image Viewport with Mouse Wheel Zoom & Drag Panning -->
       <div id="lightboxViewport" class="lightbox-viewport">
         <img id="lightboxImage" class="lightbox-image-zoom" src="" alt="Kanıt Ekran Görüntüsü" />
+      </div>
     </div>
-  </div>
 </body>
 
 </html>
