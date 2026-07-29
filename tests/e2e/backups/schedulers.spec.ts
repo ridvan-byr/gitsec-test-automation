@@ -58,11 +58,9 @@ async function selectScheduleType(page: Page, typeName: 'Daily' | 'Weekly' | 'Mo
 async function setCheckboxState(page: Page, labelText: string, shouldBeChecked: boolean) {
   console.log(`⏳ [BEKLEME] Checkbox ayarlanıyor. Etiket: "${labelText}", Hedef Durum: ${shouldBeChecked}`);
 
-<<<<<<< Updated upstream
   try {
     const labelRegex = new RegExp(labelText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
-    
-    // Playwright role="checkbox", label, Shadcn button[role="checkbox"], switch veya container bulucu
+
     const checkbox = page.getByRole('checkbox', { name: labelRegex })
       .or(page.getByLabel(labelRegex))
       .or(page.locator('label, div').filter({ hasText: labelRegex }).locator('button[role="checkbox"], input[type="checkbox"], button[role="switch"], [data-slot="checkbox"]').first())
@@ -88,19 +86,6 @@ async function setCheckboxState(page: Page, labelText: string, shouldBeChecked: 
   } catch (err) {
     console.log(`⚠️ [UYARI] "${labelText}" checkbox ayarlanırken hata göz ardı edildi: ${(err as Error).message}`);
   }
-=======
-  const checkbox = page.getByRole('checkbox', { name: labelText })
-    .or(page.getByLabel(labelText))
-    .first();
-
-  const isAvailable = await checkbox.isVisible().catch(() => false);
-  if (!isAvailable) {
-    console.log(`ℹ️ [BİLGİ] "${labelText}" checkbox bu repository/sağlayıcı için mevcut değil, atlanıyor.`);
-    return;
-  }
-
-  await checkbox.setChecked(shouldBeChecked);
->>>>>>> Stashed changes
 }
 
 async function fillBaseSchedulerForm(page: Page): Promise<string> {
