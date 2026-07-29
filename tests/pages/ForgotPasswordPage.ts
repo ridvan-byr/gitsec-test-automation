@@ -9,6 +9,7 @@ export class ForgotPasswordPage {
   readonly confirmPasswordInput: Locator;
   readonly passwordInputs: Locator;
   readonly submitButton: Locator;
+  readonly sendResetLinkButton: Locator;
 
   get dashboardBaseUrl() {
     return requireEnv('DASHBOARD_BASE_URL');
@@ -16,10 +17,10 @@ export class ForgotPasswordPage {
 
   constructor(page: Page) {
     this.page = page;
-    this.emailInput = page
-      .getByRole('textbox', { name: /email/i })
+    this.emailInput = page.locator('input[name="email"]')
       .or(page.getByPlaceholder('name@example.com'))
-      .or(page.locator('input[type="email"], input[name="email"]'))
+      .or(page.getByRole('textbox', { name: /email/i }))
+      .or(page.locator('input[type="email"]'))
       .first();
     this.passwordInput = page.locator('input[name="password"]').first();
     this.confirmPasswordInput = page.locator('input[name="confirmPassword"]').first();
@@ -28,6 +29,30 @@ export class ForgotPasswordPage {
       .getByRole('button', { name: /reset password|update password|change password|set password|save|sıfırla|güncelle|kaydet/i })
       .or(page.locator('button[type="submit"]'))
       .first();
+    this.sendResetLinkButton = page
+      .getByRole('button', { name: /send reset link|send|gönder/i })
+      .or(page.locator('button[type="submit"]'))
+      .first();
+  }
+
+  async openFromLoginLink(): Promise<void> {
+    const forgotPasswordLink = this.page
+      .getByRole('link', { name: /forgot password|şifremi unuttum/i })
+      .first();
+    await expect(forgotPasswordLink).toBeVisible();
+    await forgotPasswordLink.click();
+    await expect(this.page).toHaveURL(/forgot-password|reset-password|forgot/i);
+  }
+
+  async gotoForgotPasswordRequestPage(): Promise<void> {
+    await this.gotoForgotPasswordFromLogin();
+    await this.expectForgotPasswordRequestPage();
+  }
+
+  async expectForgotPasswordRequestPage(): Promise<void> {
+    await expect(this.page).toHaveURL(/forgot-password/i);
+    await expect(this.emailInput).toBeVisible({ timeout: 20_000 });
+    await expect(this.sendResetLinkButton).toBeVisible({ timeout: 20_000 });
   }
 
   async gotoForgotPasswordFromLogin(): Promise<void> {
@@ -55,12 +80,10 @@ export class ForgotPasswordPage {
   async prepareResetForm(resetLink: string, email?: string): Promise<void> {
     await this.openResetLink(resetLink);
 
-    await this.emailInput.click();
-    await this.emailInput.fill('');
     if (email) {
       await this.fillEmail(email);
     } else {
-      await expect(this.emailInput).toHaveValue('');
+      await this.fillTextField(this.emailInput, '');
     }
 
     await this.clearPasswordFields();
@@ -74,12 +97,7 @@ export class ForgotPasswordPage {
 
   async fillEmail(email: string): Promise<void> {
     console.log(`✉️ [POM] Sıfırlama formuna e-posta yazılıyor: ${email}`);
-    await expect(this.emailInput).toBeVisible();
-    await expect(this.emailInput).toBeEditable();
-    await this.emailInput.click();
-    await this.emailInput.fill('');
-    await this.emailInput.fill(email);
-    await expect(this.emailInput).toHaveValue(email);
+    await this.fillTextField(this.emailInput, email);
   }
 
   async fillPasswords(password: string, confirmPassword: string = password): Promise<void> {
@@ -104,10 +122,15 @@ export class ForgotPasswordPage {
 
   async fillLongPasswordForValidation(password: string): Promise<void> {
     console.log('🔑 [POM] Sınır değer testi için uzun şifre yazılıyor...');
-    await this.passwordInput.click();
-    await this.passwordInput.fill(password);
-    await this.confirmPasswordInput.click();
-    await this.confirmPasswordInput.fill(password);
+    await this.fillPasswordField(this.passwordInput, password);
+    await this.fillPasswordField(this.confirmPasswordInput, password);
+  }
+
+  async submitForgotPasswordRequestForm(): Promise<void> {
+    console.log('🔘 [POM] Sıfırlama talebi formu gönderiliyor...');
+    await expect(this.sendResetLinkButton).toBeVisible();
+    await expect(this.sendResetLinkButton).toBeEnabled();
+    await this.sendResetLinkButton.click();
   }
 
   async submitReset(): Promise<void> {
@@ -160,26 +183,40 @@ export class ForgotPasswordPage {
     await this.fillPasswordField(this.confirmPasswordInput, '');
   }
 
-  private async fillPasswordField(field: Locator, value: string): Promise<void> {
+  private async fillTextField(field: Locator, value: string): Promise<void> {
     await expect(field).toBeVisible();
     await expect(field).toBeEditable();
     await field.click();
-    await field.fill(value);
+    await field.fill('');
 
+    await field.fill(value);
     let actual = await field.inputValue().catch(() => '');
-    if (actual !== value && value.length > 0) {
+
+    if (actual !== value) {
       await field.fill('');
-      await field.pressSequentially(value, { delay: 5 });
+      await field.pressSequentially(value, { delay: 15 });
+      actual = await field.inputValue().catch(() => '');
+    }
+
+    if (actual !== value && value.length > 0) {
+      await field.evaluate((el, val) => {
+        const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
+        setter?.call(el, val);
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+        el.dispatchEvent(new Event('change', { bubbles: true }));
+      }, value);
       actual = await field.inputValue().catch(() => '');
     }
 
     if (value.length > 0) {
-      expect(actual.length).toBeGreaterThan(0);
+      await expect.poll(async () => field.inputValue(), { timeout: 8000 }).toBe(value);
     } else {
       await expect(field).toHaveValue('');
     }
+  }
 
-    await this.page.waitForTimeout(100);
+  private async fillPasswordField(field: Locator, value: string): Promise<void> {
+    await this.fillTextField(field, value);
   }
 
   private async waitForResetCompletion(): Promise<void> {

@@ -3216,7 +3216,7 @@
             </div>
             <div class="card-content">
               <p style="color: var(--text-muted); font-size: 0.8125rem; line-height: 1.5;">
-                Tüm sayfalarda ortak olan genel bileşenleri; sol menü daraltma/genişletme (Toggle Sidebar) butonunu, global arama (Search) girdisini, kullanıcı profil dropdown menüsünü ve tema değiştirici (Theme Toggle) dropdown durumunu test eder.
+                Dashboard + Backup Snapshots sayfalarında ortak layout bileşenlerini tek oturumda test eder. @critical
               </p>
             </div>
             <div class="card-footer">
@@ -3238,7 +3238,7 @@
             </div>
             <div class="card-content">
               <p style="color: var(--text-muted); font-size: 0.8125rem; line-height: 1.5;">
-                Ana Dashboard sayfasındaki dinamik lisans butonunu, rehber turunu (Take a Tour), tamamlanan/aktif görevlerin "View All" linklerini ve son aktiviteler listesini test eder.
+                Tek oturumda lisans butonu (billing/dialog zorunlu), Take a Tour, View All yönlendirmeleri ve aktivite listesi/boş durum testleri. @critical
               </p>
             </div>
             <div class="card-footer">
@@ -3260,8 +3260,7 @@
             </div>
             <div class="card-content">
               <p style="color: var(--text-muted); font-size: 0.8125rem; line-height: 1.5; margin-bottom: 0.75rem;">
-                Seçilen hedef plana arayüz üzerinden geçer ve değişikliği gerçek backend lisans cevabıyla doğrular.
-                Hesabın lisansını gerçekten değiştirir; mevcut plandan farklı bir plan seçilmelidir.
+                Mevcut plandan farklı hedef plan otomatik seçilir; ödeme sonrası billing sayfasında plan doğrulanır. Limit dolunca geçici workspace dener. Aynı plan skip edilir.
               </p>
               <div class="card-select-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
                 <div>
@@ -3337,7 +3336,7 @@
             </div>
             <div class="card-content">
               <p style="color: var(--text-muted); font-size: 0.8125rem; line-height: 1.5;">
-                Workspace ayarlarını (General, Members, Repositories sekmeleri), üye davet etme formunu, mevcut üye/davet listelerini ve yeni Workspace oluşturma sihirbazını (Add Workspace Wizard) test eder.
+                Settings erişimi dropdown, sidebar veya URL ile denenir. Staging'de erişilemezse Kısım 2–8 skip. Mutasyon adımları [@destructive] etiketli.
               </p>
             </div>
             <div class="card-footer">
@@ -3347,6 +3346,12 @@
               </button>
             </div>
           </div>
+        </div>
+
+        <div style="margin-top: 0.75rem; display: flex; justify-content: flex-end;">
+          <button class="btn-run" type="button" onclick="runCoreUiSmokeBatch()">
+            <span>4 Çekirdek Testi Sırayla Koş</span>
+          </button>
         </div>
       </div>
 
@@ -4129,9 +4134,9 @@
                 <div class="gitsec-select-wrapper no-left-icon">
                   <select id="forgotPasswordModeSelect" class="gitsec-select" style="padding-left: 0.875rem;"
                     onchange="updateCardUI('card-auth-forgot-password-real', 'forgotPasswordModeSelect', 'forgotPassword-desc'); saveSettings()">
-                    <option value="happy_path">Normal Sıfırlama Akışı (Happy Path)</option>
-                    <option value="failures">Sıfırlama Hataları & Sınır Değerler (Failures)</option>
-                    <option value="all">Tüm Şifre Sıfırlama Testleri (Hepsi)</option>
+                    <option value="happy_path">1 — Happy Path (Uçtan Uca Sıfırlama)</option>
+                    <option value="edge_cases">2 — Uç Durum Testleri (Form + Token/API)</option>
+                    <option value="all">3 — Bütün Testler (Hepsi)</option>
                   </select>
                   <span class="select-chevron-right">
                     <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
@@ -4143,7 +4148,7 @@
               </div>
             </div>
             <div class="card-footer">
-              <span class="card-meta">forgot-password.spec.ts</span>
+              <span class="card-meta" id="forgotPassword-meta">forgot-password.spec.ts</span>
               <button class="btn-run" onclick="runTest('', 'card-auth-forgot-password-real', 'tests/e2e/auth/forgot-password.spec.ts')">
                 <span>Çalıştır</span>
               </button>
@@ -5369,6 +5374,7 @@
     let consoleBuffer = [];
     let lastArtifacts = {}; // cardId -> { screenshot, video }
     let artifactTab = 'img';
+    const pendingRunCards = new Set(); // Çift tıklamayı önler
 
     const cardNameMap = {
       'global': 'Tüm Günlükler',
@@ -5881,8 +5887,54 @@
     document.addEventListener('DOMContentLoaded', toggleInstallmentVisibility);
     setTimeout(toggleInstallmentVisibility, 500);
 
+    function waitForCardTestDone(cardId) {
+      return new Promise((resolve) => {
+        const handler = (e) => {
+          try {
+            const { cardId: doneId } = JSON.parse(e.data);
+            if (doneId === cardId) {
+              eventSource?.removeEventListener('done', handler);
+              resolve();
+            }
+          } catch {
+            // ignore malformed events
+          }
+        };
+        if (!eventSource) {
+          resolve();
+          return;
+        }
+        eventSource.addEventListener('done', handler);
+      });
+    }
+
+    async function runCoreUiSmokeBatch() {
+      const suites = [
+        ['card-global-layout', 'tests/e2e/ui/global-layout.spec.ts'],
+        ['card-dashboard-ui', 'tests/e2e/ui/dashboard-ui.spec.ts'],
+        ['card-license-change', 'tests/e2e/billing/license-change.spec.ts'],
+        ['card-workspace-settings-ui', 'tests/e2e/ui/workspace-settings-ui.spec.ts'],
+      ];
+
+      appendConsole('global', '[DASHBOARD] 4 çekirdek UI testi sırayla başlatılıyor...\n');
+      for (const [cardId, testFile] of suites) {
+        const waitDone = waitForCardTestDone(cardId);
+        await runTest('', cardId, testFile);
+        await waitDone;
+      }
+      appendConsole('global', '[DASHBOARD] Çekirdek UI smoke batch tamamlandı.\n');
+    }
+
     // Genel Test Çalıştırma (Örn: Restore Navigate için)
     async function runTest(tag, cardId, testFile) {
+      if (pendingRunCards.has(cardId)) {
+        return;
+      }
+      const cardEl = document.getElementById(cardId);
+      if (cardEl?.classList.contains('running')) {
+        return;
+      }
+      pendingRunCards.add(cardId);
 
       const headed = document.getElementById('headedToggle').checked;
       const workspaceId = document.getElementById('workspaceId').value;
@@ -5960,10 +6012,12 @@
         }
       } else if (cardId === 'card-auth-forgot-password-real') {
         const forgotPasswordMode = document.getElementById('forgotPasswordModeSelect') ? document.getElementById('forgotPasswordModeSelect').value : 'happy_path';
-        if (forgotPasswordMode === 'failures') {
-          finalTestFile = 'tests/e2e/auth/forgot-password-failures.spec.ts';
+        if (forgotPasswordMode === 'edge_cases') {
+          finalTestFile = 'tests/e2e/auth/forgot-password-edge-cases.spec.ts';
         } else if (forgotPasswordMode === 'all') {
-          finalTestFile = 'tests/e2e/auth/forgot-password.spec.ts tests/e2e/auth/forgot-password-failures.spec.ts';
+          finalTestFile = 'tests/e2e/auth/forgot-password.spec.ts tests/e2e/auth/forgot-password-edge-cases.spec.ts';
+        } else {
+          finalTestFile = 'tests/e2e/auth/forgot-password.spec.ts';
         }
       }
 
@@ -6002,10 +6056,12 @@
         if (!response.ok) {
           appendConsole(cardId, `[HATA] ${result.error}\n`);
           card.className = 'test-card fail';
+          pendingRunCards.delete(cardId);
         }
       } catch (err) {
         appendConsole(cardId, `[HATA] Bağlantı kurulamadı: ${err.message}\n`);
         card.className = 'test-card fail';
+        pendingRunCards.delete(cardId);
       }
     }
 
@@ -6135,6 +6191,7 @@
     // 5. Test Tamamlanma İşlemleri
     function handleTestDone(cardId, success, code) {
       if (!cardId) return;
+      pendingRunCards.delete(cardId);
       testStatuses[cardId] = success ? 'success' : 'fail';
       renderConsoleTabs();
 
@@ -7638,7 +7695,11 @@
           document.getElementById('registerModeSelect').value = settings.registerMode;
         }
         if (settings.forgotPasswordMode !== undefined && document.getElementById('forgotPasswordModeSelect')) {
-          document.getElementById('forgotPasswordModeSelect').value = settings.forgotPasswordMode;
+          const legacyMap = { validation: 'edge_cases', api_failures: 'edge_cases', failures: 'edge_cases' };
+          const mode = legacyMap[settings.forgotPasswordMode] || settings.forgotPasswordMode;
+          if (['happy_path', 'edge_cases', 'all'].includes(mode)) {
+            document.getElementById('forgotPasswordModeSelect').value = mode;
+          }
         }
         if (settings.storageMode !== undefined && document.getElementById('storageModeSelect')) {
           document.getElementById('storageModeSelect').value = settings.storageMode;
@@ -7746,9 +7807,9 @@
         'all': 'Hem başarılı kayıt akışını hem de tüm kayıt hata, sınır değer ve api çökme senaryolarını sırasıyla test eder.'
       },
       'card-auth-forgot-password-real': {
-        'happy_path': 'Gerçek backend\'e sıfırlama talebi gönderir, Gmail\'den gelen linki açar, şifreyi günceller ve yeni şifre ile giriş yaparak akışı doğrular.',
-        'failures': 'Sıfırlama formundaki boş alanlar, eşleşmeyen şifreler, zayıf/uzun şifre sınır değerleri, geçersiz token ve sunucu hata (429/500) senaryolarını test eder; son adımda doğru şifre ile sıfırlama ve giriş yapılır.',
-        'all': 'Hem başarılı şifre sıfırlama akışını hem de tüm sıfırlama hata ve sınır değer senaryolarını sırasıyla test eder.'
+        'happy_path': 'Gerçek staging backend\'e sıfırlama talebi gönderir, Gmail\'den gelen linki açar, yeni şifre belirler ve giriş yaparak akışı uçtan uca doğrular.',
+        'edge_cases': 'Tek oturumda talep formu doğrulama (boş/geçersiz e-posta, 429), reset formu (boş alan, eşleşmeyen/zayıf/uzun şifre) ve token/API hatalarını (401/422/429/500, geçersiz token) test eder; happy path tekrar etmez.',
+        'all': 'Happy path, form doğrulama ve token/API hata senaryolarını sırasıyla test eder.'
       }
     };
 
@@ -7764,7 +7825,17 @@
       if (descEl && cardDescriptions[cardId] && cardDescriptions[cardId][val]) {
         let descText = cardDescriptions[cardId][val];
         let pName = 'GitHub';
-        if (cardId === 'card-github-backup') {
+        if (cardId === 'card-auth-forgot-password-real') {
+          const metaEl = document.getElementById('forgotPassword-meta');
+          if (metaEl) {
+            const metaMap = {
+              happy_path: 'forgot-password.spec.ts',
+              edge_cases: 'forgot-password-edge-cases.spec.ts',
+              all: 'forgot-password + edge-cases'
+            };
+            metaEl.textContent = metaMap[val] || metaMap.happy_path;
+          }
+        } else if (cardId === 'card-github-backup') {
           const pSelect = document.getElementById('backupProviderSelect');
           if (pSelect && pSelect.value === 'bitbucket') pName = 'Bitbucket';
         } else if (cardId === 'card-github-include') {

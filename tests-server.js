@@ -355,13 +355,6 @@ const server = http.createServer((req, res) => {
         if (tag) {
           args.push('--grep', tag);
         }
-        if (headed) {
-          args.push('--headed');
-        }
-        args.push('--workers', '1');
-
-        console.log(`[Server] Başlatılan komut: ${cmd} ${args.join(' ')}`);
-        broadcast('log', { cardId: targetCardId, text: `[DASHBOARD] Komut başlatılıyor: ${cmd} ${args.join(' ')}\n` });
 
         // Ortam değişkenlerini hazırlayalım (Öncelikle .env dosyasındaki güncel değerleri okuyalım)
         const runEnv = { ...process.env, FORCE_COLOR: '1' };
@@ -384,6 +377,16 @@ const server = http.createServer((req, res) => {
         } catch (e) {
           console.error('[Server] .env okunurken hata oluştu:', e.message);
         }
+
+        if (headed) {
+          args.push('--headed');
+          runEnv.PW_HEADED = '1';
+          runEnv.PW_HEADED_SLOW_MO = '350';
+        }
+        args.push('--workers', '1');
+
+        console.log(`[Server] Başlatılan komut: ${cmd} ${args.join(' ')}`);
+        broadcast('log', { cardId: targetCardId, text: `[DASHBOARD] Komut başlatılıyor: ${cmd} ${args.join(' ')}\n` });
 
         if (timezone) runEnv.E2E_TIMEZONE = timezone;
         if (workspaceId) runEnv.WORKSPACE_ID = workspaceId;
@@ -445,6 +448,7 @@ const server = http.createServer((req, res) => {
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ success: true, message: 'Test başlatıldı.' }));
       } catch (err) {
+        console.error('[Server] /api/run-test hatası:', err);
         res.writeHead(500, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ error: err.message }));
       }
