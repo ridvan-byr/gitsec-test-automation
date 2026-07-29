@@ -260,7 +260,7 @@ test.describe('Forgot Password Failures — Şifre Sıfırlama Uç Durumları', 
     console.log('✅ API 500 durumunda UI hata gösterimi doğrulandı.');
   });
 
-  test('Doğru bilgilerle şifre sıfırlanmalı ve yeni şifre ile giriş yapılabilmeli', { tag: ['@manual-interactive', '@critical'] }, async ({ page, loginPage, forgotPasswordPage }) => {
+  test('Doğru bilgilerle şifre sıfırlanmalı ve yeni şifre ile giriş yapılabilmeli', { tag: ['@manual-interactive'] }, async ({ page, loginPage, forgotPasswordPage }) => {
     test.setTimeout(300_000);
     const newPassword = requireEnv('E2E_USER_PASSWORD');
 
