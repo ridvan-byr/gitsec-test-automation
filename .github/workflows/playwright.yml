@@ -70,7 +70,7 @@ jobs:
           if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ inputs.grep }}" ]; then
             npx playwright test --grep "${{ inputs.grep }}"
           else
-            npx playwright test --grep "@smoke|@critical|@daily|@weekly|@monthly|@cron|@regression|@mocked"
+            npx playwright test --grep "@smoke|@critical|@daily|@weekly|@monthly|@cron|@regression|@mocked" --grep-invert "@manual-interactive"
           fi
       - name: Upload artifacts
         if: ${{ !cancelled() }}
