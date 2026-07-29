@@ -134,7 +134,7 @@ export class StoragePage {
 
     if (await storageLink.isVisible().catch(() => false)) {
       console.log('[POM] Sidebar Storage linki bulundu, tıklanıyor...');
-      await storageLink.click();
+      await storageLink.click({ force: true }).catch(() => {});
       const navigated = await this.page.waitForURL(/\/storage(\?|#|$)/, { timeout: 4000 }).then(() => true).catch(() => false);
       if (!navigated) {
         console.log('[POM] Sidebar tıklaması yönlendirmedi. Doğrudan URL ile gidiliyor...');

@@ -85,8 +85,9 @@ export class ProviderPage {
   }
 
   async isGithubAlreadyConnectedOnAddProvider(): Promise<boolean> {
+    if (this.page.isClosed()) return false;
     await this.page.evaluate(() => window.scrollBy({ top: 350, behavior: 'smooth' })).catch(() => {});
-    await this.page.waitForTimeout(1000);
+    await this.page.waitForTimeout(1000).catch(() => {});
 
     // Tablo satırlarının yüklenmesini bekle (yükleme tamamlanana kadar 5s bekle)
     await this.page.locator('main table tbody tr, div[class*="table"] tr').first().waitFor({ state: 'visible', timeout: 5000 }).catch(() => {});

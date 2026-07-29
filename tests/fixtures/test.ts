@@ -27,7 +27,7 @@ interface GitSecFixtures {
 }
 
 export const test = base.extend<GitSecFixtures>({
-  page: async ({ page }, use) => {
+  page: async ({ page }, use, testInfo) => {
     const gitSecPage = page as GitSecPage;
     const errors: DetectedError[] = [];
     const expectedErrors: DetectedError[] = [];
@@ -141,9 +141,19 @@ export const test = base.extend<GitSecFixtures>({
     });
 
     // 4. Çöken API yanıtlarını dinle (HTTP Status >= 400 - 3. parti takipçiler hariç)
-    page.on('response', (response) => {
+    page.on('response', async (response) => {
       const status = response.status();
       const url = response.url();
+
+      if ((status === 401 || status === 403) && url.includes('gitsec')) {
+        const bodyText = await response.text().catch(() => '');
+        console.log(`\n🚨 [SESSION EXPIRED / 401-403 APİ TETİKLENMESİ TESPİT EDİLDİ!] 🚨`);
+        console.log(`   🌐 Endpoint URL : ${url}`);
+        console.log(`   🔴 HTTP Status  : ${status} (${response.statusText()})`);
+        console.log(`   📄 Yanıt Gövdesi: ${bodyText.substring(0, 400)}`);
+        console.log(`======================================================================\n`);
+      }
+
       if (status >= 400 && !isThirdPartyTrackerOrCsp('', url)) {
         const statusMsg = `HTTP Status ${status} - ${response.statusText()}`;
         const errObj: DetectedError = {
@@ -159,6 +169,8 @@ export const test = base.extend<GitSecFixtures>({
       }
     });
 
+
+
     // Test onboarding skip script'ini kur (Shadcn ve localStorage onboarding bypass) ve toast pointer-events engellemesini yap
     const currentAppEmail = process.env.E2E_USER_EMAIL || 'gitsectest+1@gmail.com';
     await page.addInitScript((appEmail) => {
@@ -167,17 +179,65 @@ export const test = base.extend<GitSecFixtures>({
           'gs-tour',
           JSON.stringify({ state: { completedTours: { onboarding: 5 } }, version: 0 })
         );
+
+
+
+        const existingAuth = window.localStorage.getItem('gs-auth');
+        let currentToken = '';
+
+        // Çerezlerden gs_token bul
+        const match = document.cookie.match(/(?:^|;\s*)gs_token=([^;]*)/);
+        if (match && match[1]) {
+          currentToken = decodeURIComponent(match[1]);
+        }
+
+        let decodedUserId = 261;
+        let decodedTenantId = 237;
+        let decodedName = "Gitsec";
+        let decodedSurname = "Test";
+
+        if (currentToken) {
+          try {
+            const parts = currentToken.split('.');
+            if (parts[1]) {
+              const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+              if (payload.id || payload.sub) decodedUserId = Number(payload.id || payload.sub);
+              if (payload.tenant_id) decodedTenantId = Number(payload.tenant_id);
+              if (payload.name) decodedName = payload.name;
+              if (payload.family_name) decodedSurname = payload.family_name;
+            }
+          } catch { }
+        }
+
+        if (existingAuth) {
+          try {
+            const parsed = JSON.parse(existingAuth);
+            if (parsed?.state?.auth?.user) {
+              if (currentToken) {
+                parsed.state.auth.user.token = currentToken;
+                parsed.state.auth.user.refreshToken = currentToken;
+                parsed.state.auth.user.userId = decodedUserId;
+                parsed.state.auth.user.tenantId = decodedTenantId;
+                if (decodedName) parsed.state.auth.user.name = decodedName;
+                if (decodedSurname) parsed.state.auth.user.surName = decodedSurname;
+              }
+              window.localStorage.setItem('gs-auth', JSON.stringify(parsed));
+              return;
+            }
+          } catch { }
+        }
+
         const gsAuthValue = JSON.stringify({
           state: {
             auth: {
               user: {
-                userId: 797,
-                tenantId: 720,
-                name: "Gitsec",
-                surName: "Test",
+                userId: decodedUserId,
+                tenantId: decodedTenantId,
+                name: decodedName,
+                surName: decodedSurname,
                 email: appEmail,
-                token: "",
-                refreshToken: "",
+                token: currentToken,
+                refreshToken: currentToken,
                 uniqueKey: null,
                 otpAuthenticationType: null
               }
@@ -191,6 +251,8 @@ export const test = base.extend<GitSecFixtures>({
       }
     }, currentAppEmail).catch(() => { });
 
+
+
     try {
       // Testi koştur
       await use(gitSecPage);
@@ -200,7 +262,7 @@ export const test = base.extend<GitSecFixtures>({
 
       if (isFailed) {
         // Video tamponunun (WebM buffer) 0. saniyeden son saniyeye kadar tam yazılması için 500ms flush beklemesi
-        await page.waitForTimeout(500).catch(() => {});
+        await page.waitForTimeout(500).catch(() => { });
       }
 
       // Test sonlandıktan sonra detaylı Raporlama yap (Log)
@@ -282,7 +344,9 @@ export const test = base.extend<GitSecFixtures>({
           titleLower.includes('401') ||
           titleLower.includes('geçersiz') ||
           titleLower.includes('yetkisiz') ||
-          titleLower.includes('hata') ||
+          titleLower.includes('hata bildir') ||
+          titleLower.includes('hata göster') ||
+          titleLower.includes('hata vermeli') ||
           fileLower.includes('auth.setup') ||
           fileLower.includes('provider.setup') ||
           fileLower.includes('failures') ||
