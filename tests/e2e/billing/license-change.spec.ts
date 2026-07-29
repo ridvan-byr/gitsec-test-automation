@@ -9,6 +9,11 @@ import path from 'path';
  * .env dosyasındaki WORKSPACE_ID değerini otomatik ve dinamik olarak günceller.
  */
 function updateEnvWorkspaceId(newWorkspaceId: string): void {
+  process.env.WORKSPACE_ID = newWorkspaceId;
+  if (process.env.E2E_UPDATE_ENV !== 'true') {
+    console.log(`ℹ️ [ENV] WORKSPACE_ID runtime=${newWorkspaceId} (.env dosyası güncellenmedi; E2E_UPDATE_ENV=true ile kalıcı yazılır)`);
+    return;
+  }
   try {
     const envPath = path.join(process.cwd(), '.env');
     if (fs.existsSync(envPath)) {
@@ -29,6 +34,30 @@ function updateEnvWorkspaceId(newWorkspaceId: string): void {
 
 
 type SupportedPlan = 'Freemium' | 'Startup' | 'Premium' | 'Premium+';
+
+const PLAN_ORDER: SupportedPlan[] = ['Freemium', 'Startup', 'Premium', 'Premium+'];
+
+function normalizePlanName(plan: string): SupportedPlan | null {
+  const match = PLAN_ORDER.find(p => p.toLowerCase() === plan.trim().toLowerCase());
+  return match ?? null;
+}
+
+function resolveEffectiveTargetPlan(currentPlan: string, requestedPlan: SupportedPlan): SupportedPlan {
+  const current = normalizePlanName(currentPlan);
+  if (!current || current.toLowerCase() !== requestedPlan.toLowerCase()) {
+    return requestedPlan;
+  }
+  const alternate = PLAN_ORDER.find(plan => plan.toLowerCase() !== current.toLowerCase());
+  console.log(`ℹ️ [LICENSE] Hedef plan mevcut planla aynı (${current}); alternatif plan denenecek: ${alternate}`);
+  return alternate ?? requestedPlan;
+}
+
+async function verifyActivePlanOnBillingPage(page: Page, expectedPlan: SupportedPlan): Promise<void> {
+  await expect(page.getByText(/^Plan Comparison$/i).first()).toBeVisible({ timeout: 15000 });
+  const detected = await detectActivePlan(page);
+  expect(detected.toLowerCase()).toBe(expectedPlan.toLowerCase());
+  console.log(`✅ [LICENSE] Billing sayfasında aktif plan "${expectedPlan}" doğrulandı.`);
+}
 
 export type IyzicoTestCard = {
   holder: string;
@@ -1212,11 +1241,13 @@ async function runSingleCardLicenseTest(
   const dashboardBaseUrl = requireEnv('DASHBOARD_BASE_URL');
   const apiBaseUrl = requireEnv('API_BASE_URL');
 
-  // .env üzerindeki kullanıcının aktif workspace'ini otomatik doğrula/al
-  const activeWorkspaceId = await resolveWorkspaceId(page, request, apiBaseUrl, dashboardBaseUrl);
+  let activeWorkspaceId = await resolveWorkspaceId(page, request, apiBaseUrl, dashboardBaseUrl);
+  let tempWorkspaceId = '';
+  const authCookie = (await page.context().cookies()).find(c => c.name === 'gs_token');
+  const authToken = authCookie?.value || '';
 
   const userTargetPlan = process.env.E2E_LICENSE_TARGET_PLAN?.trim();
-  const targetPlan: SupportedPlan = (userTargetPlan as SupportedPlan) || 'Startup';
+  const requestedPlan: SupportedPlan = (userTargetPlan as SupportedPlan) || 'Startup';
 
   const configuredTargetInterval = (
     process.env.E2E_LICENSE_TARGET_INTERVAL ||
@@ -1240,15 +1271,16 @@ async function runSingleCardLicenseTest(
 
   // ─── ADIM 1: Billing & Plans Sayfasına Git ───
   await page.goto(`${dashboardBaseUrl}/${activeWorkspaceId}/billing-and-plans`, { waitUntil: 'domcontentloaded' });
-  await page.waitForLoadState('networkidle').catch(() => {});
   await expect(page.getByText(/Plan Comparison|Billing|Plans/i).first()).toBeVisible({ timeout: 30_000 });
 
   // ─── AKTİF PLAN VE HEDEF PLAN LOGU ───
   const currentActivePlan = await detectActivePlan(page);
+  let targetPlan = resolveEffectiveTargetPlan(currentActivePlan, requestedPlan);
   console.log(`\n📊 ═══════════════════════════════════════════════════════`);
   console.log(`📊 [PLAN KARŞILAŞTIRMASI]`);
   console.log(`📊   Mevcut Plan : ${currentActivePlan}`);
-  console.log(`📊   Hedef Plan  : ${targetPlan} (${targetInterval.toUpperCase()})`);
+  console.log(`📊   İstenen Plan: ${requestedPlan}`);
+  console.log(`📊   Etkin Hedef : ${targetPlan} (${targetInterval.toUpperCase()})`);
   console.log(`📊 ═══════════════════════════════════════════════════════\n`);
 
   // ─── ADIM 1.5: Fatura Periyodunu Seç (Aylık / Yıllık) ───
@@ -1256,22 +1288,41 @@ async function runSingleCardLicenseTest(
 
   // ─── ADIM 2: Target Plan Kartına Tıkla ───
   let planSelectionResult = await selectTargetPlanCardButton(page, targetPlan);
+  if (planSelectionResult === 'limit-reached' && authToken) {
+    tempWorkspaceId = await createTempWorkspaceViaApi(request, apiBaseUrl, authToken, cardKey);
+    if (tempWorkspaceId) {
+      activeWorkspaceId = tempWorkspaceId;
+      await page.goto(`${dashboardBaseUrl}/${activeWorkspaceId}/billing-and-plans`, { waitUntil: 'domcontentloaded' });
+      await selectBillingInterval(page, targetInterval);
+      targetPlan = resolveEffectiveTargetPlan(await detectActivePlan(page), requestedPlan);
+      planSelectionResult = await selectTargetPlanCardButton(page, targetPlan);
+    }
+  }
+
   if (planSelectionResult === 'already-active') {
-    console.log(`ℹ️ [LICENSE PLAN] "${targetPlan}" (${targetInterval.toUpperCase()}) planı zaten mevcut aktif planınız durumunda. İşlem başarıyla tespit edildi ve test tamamlandı.`);
-    return;
+    const alternatePlan = resolveEffectiveTargetPlan(targetPlan, requestedPlan);
+    if (alternatePlan.toLowerCase() === targetPlan.toLowerCase()) {
+      test.skip(true, `"${targetPlan}" zaten aktif ve alternatif plan bulunamadı; gerçek plan değişikliği yapılamadı.`);
+    }
+    console.log(`ℹ️ [LICENSE PLAN] "${targetPlan}" zaten aktif; alternatif plan deneniyor: ${alternatePlan}`);
+    targetPlan = alternatePlan;
+    planSelectionResult = await selectTargetPlanCardButton(page, targetPlan);
+  }
+
+  if (planSelectionResult === 'already-active') {
+    test.skip(true, `Hedef plan "${targetPlan}" hâlâ mevcut aktif plan; lisans değişikliği gerçekleştirilemedi.`);
   }
   if (planSelectionResult === 'limit-reached') {
-    console.log(`⚠️ [LICENSE LIMIT] Fatura dönemi lisans değiştirme limiti (2 değişiklik hakkı) dolduğu için işlem tespit edildi ve test tamamlandı.`);
-    return;
+    test.skip(true, 'Fatura dönemi lisans değiştirme limiti (2 hak) doldu; geçici workspace ile de devam edilemedi.');
   }
 
   if (planSelectionResult === 'plan-unavailable') {
-    console.log(`⚠️ [LICENSE PLAN] "${targetPlan}" planı Staging backend servisinde pasif duruyor (Selected plan is not available). Alternatif plan "Startup" deneniyor...`);
+    console.log(`⚠️ [LICENSE PLAN] "${targetPlan}" planı Staging backend servisinde pasif duruyor. Alternatif plan deneniyor...`);
     const fallbackPlan = targetPlan === 'Startup' ? 'Premium' : 'Startup';
-    planSelectionResult = await selectTargetPlanCardButton(page, fallbackPlan);
+    targetPlan = fallbackPlan;
+    planSelectionResult = await selectTargetPlanCardButton(page, targetPlan);
     if (planSelectionResult === 'limit-reached' || planSelectionResult === 'already-active' || planSelectionResult === 'plan-unavailable') {
-      console.log(`ℹ️ [LICENSE PLAN] Alternatif plan (${fallbackPlan}) sonucu: ${planSelectionResult}. İşlem kaydedildi ve test tamamlandı.`);
-      return;
+      test.skip(true, `Alternatif plan (${fallbackPlan}) sonucu: ${planSelectionResult}`);
     }
   }
 
@@ -1300,7 +1351,12 @@ async function runSingleCardLicenseTest(
   // ─── ADIM 5.5: Pro-Rata Kredi / Otomatik Tamamlanma Kontrolü ───
   const autoCompleted = await checkIfPaymentCompletedOrSkipped(page);
   if (autoCompleted) {
-    console.log('🎉 [LICENSE] Yıllık → Aylık geçişi veya pro-rata kredi nedeniyle kart ödeme adımı gerekmedi. Test başarıyla tamamlandı!');
+    await page.goto(`${dashboardBaseUrl}/${activeWorkspaceId}/billing-and-plans`, { waitUntil: 'domcontentloaded' });
+    await verifyActivePlanOnBillingPage(page, targetPlan);
+    console.log('🎉 [LICENSE] Pro-rata / otomatik tamamlanma sonrası plan doğrulandı.');
+    if (tempWorkspaceId && authToken) {
+      await deleteTempWorkspaceViaApi(request, apiBaseUrl, authToken, tempWorkspaceId);
+    }
     return;
   }
 
@@ -1317,7 +1373,13 @@ async function runSingleCardLicenseTest(
     // Başarılı kartlarda 3D Secure SMS onayını ver ve sonuç ekranını doğrula
     await handleIyzico3DSecureSms(page);
     await verifyPaymentResultScreen(page, card);
-    console.log(`🎉 [LICENSE] "${card.name}" kart testi ve sonuç ekranı doğrulaması tamamlandı!`);
+    await page.goto(`${dashboardBaseUrl}/${activeWorkspaceId}/billing-and-plans`, { waitUntil: 'domcontentloaded' });
+    await verifyActivePlanOnBillingPage(page, targetPlan);
+    console.log(`🎉 [LICENSE] "${card.name}" kart testi, ödeme sonucu ve plan doğrulaması tamamlandı!`);
+  }
+
+  if (tempWorkspaceId && authToken) {
+    await deleteTempWorkspaceViaApi(request, apiBaseUrl, authToken, tempWorkspaceId);
   }
 }
 
