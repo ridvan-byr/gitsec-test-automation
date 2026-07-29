@@ -135,7 +135,9 @@ async function verifyDashboardConnection(providerPage: ProviderPage) {
     if (attempt < maxAttempts) {
       console.log(`⏳ [BEKLEME] (Deneme ${attempt}/${maxAttempts}) GitHub sağlayıcısı henüz aktifleşmedi, sayfa yenileniyor...`);
       await providerPage.goToAddProviderPage().catch(() => {});
-      await providerPage.page.waitForTimeout(2000);
+      if (!providerPage.page.isClosed()) {
+        await providerPage.page.waitForTimeout(2000).catch(() => {});
+      }
     }
   }
 
@@ -153,6 +155,12 @@ test.describe('Provider Entegrasyonları', () => {
     console.log('🚀 [GİRİŞ] Doğrudan "Add Provider" sayfasına gidiliyor...');
     await providerPage.goToAddProviderPage();
 
+    const isAlreadyActive = await providerPage.isGithubAlreadyConnectedOnAddProvider().catch(() => false);
+    if (isAlreadyActive) {
+      console.log('🎉 [BAŞARILI] GitHub sağlayıcısı zaten AKTİF durumda. Entegrasyon doğrulaması başarıyla tamamlandı.');
+      return;
+    }
+
     console.log('👆 [TIKLAMA] 3. "GitHub" seçeneğine tıklanıyor ve popup penceresi açılması bekleniyor...');
     const popupPromise = page.waitForEvent('popup', { timeout: 15000 }).catch(() => null);
     await providerPage.selectGithub();
@@ -164,6 +172,11 @@ test.describe('Provider Entegrasyonları', () => {
         popup = pages[pages.length - 1];
         console.log('ℹ️ [POPUP] Açık popup penceresi doğrudan yakalandı.');
       } else {
+        const isNowConnected = await providerPage.isGithubAlreadyConnectedOnAddProvider().catch(() => false);
+        if (isNowConnected) {
+          console.log('🎉 [BAŞARILI] GitHub sağlayıcısı kart tıklaması sonrası AKTİF durumda. Entegrasyon başarılı.');
+          return;
+        }
         console.log('🔄 [RETRY] Popup açılmadı, GitHub kartına tekrar basılıyor...');
         const popupPromise2 = page.waitForEvent('popup', { timeout: 10000 }).catch(() => null);
         await providerPage.selectGithub();
@@ -171,7 +184,14 @@ test.describe('Provider Entegrasyonları', () => {
         if (!popup) {
           const pages2 = page.context().pages();
           if (pages2.length > 1) popup = pages2[pages2.length - 1];
-          else popup = page;
+          else {
+            const isFinallyConnected = await providerPage.isGithubAlreadyConnectedOnAddProvider().catch(() => false);
+            if (isFinallyConnected) {
+              console.log('🎉 [BAŞARILI] GitHub sağlayıcısı paneli üzerinde AKTİF olarak doğrulandı.');
+              return;
+            }
+            popup = page;
+          }
         }
       }
     }

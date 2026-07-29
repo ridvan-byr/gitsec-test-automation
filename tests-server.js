@@ -262,7 +262,7 @@ const server = http.createServer((req, res) => {
           }
         }
 
-        if (includeProvider && !['github', 'bitbucket'].includes(includeProvider.toLowerCase())) {
+        if (includeProvider && !['github', 'bitbucket', 'all'].includes(includeProvider.toLowerCase())) {
           res.writeHead(400, { 'Content-Type': 'application/json' });
           res.end(JSON.stringify({ error: `Geçersiz sağlayıcı: ${includeProvider}` }));
           return;

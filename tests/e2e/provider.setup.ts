@@ -24,13 +24,15 @@ setup('connect provider if needed', async ({ request, page }) => {
   console.log(`[PROVIDER SETUP] 🎯 Hedef Kod Sağlayıcısı (E2E_CODE_PROVIDER): "${codeProviderEnv || 'TÜMÜ (GitHub & Bitbucket)'}" -> İşlenecek Tip: ${targetProvider}`);
 
   // 1. Kayıtlı Google/GitHub/Atlassian Oturum Çerezlerini Enjekte Et (Sign In Sayfasını Atlamak İçin)
+  // DİKKAT: gitsec.io domainli gs_token çerezleri filtrelenir ki auth.setup'tan gelen taze token ezilmesin!
   if (fs.existsSync(googleSessionPath)) {
     try {
       const sessionData = JSON.parse(fs.readFileSync(googleSessionPath, 'utf8'));
-      const cookies = sessionData.cookies || [];
-      if (cookies.length > 0) {
-        await page.context().addCookies(cookies);
-        console.log(`[PROVIDER SETUP] 🔑 Kayıtlı Google/GitHub/Atlassian çerezleri enjekte edildi (${cookies.length} adet çerez). Sign in adımı atlanacak.`);
+      const rawCookies = sessionData.cookies || [];
+      const externalCookies = rawCookies.filter((c: any) => c.name !== 'gs_token' && !c.domain.includes('gitsec.io'));
+      if (externalCookies.length > 0) {
+        await page.context().addCookies(externalCookies);
+        console.log(`[PROVIDER SETUP] 🔑 Kayıtlı harici Google/GitHub/Atlassian çerezleri enjekte edildi (${externalCookies.length} adet çerez).`);
       }
     } catch (e: any) {
       console.warn(`[PROVIDER SETUP] ⚠️ Oturum çerezleri okunamadı: ${e?.message || e}`);
