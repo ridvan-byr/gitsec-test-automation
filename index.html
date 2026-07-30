@@ -3258,51 +3258,30 @@
           </div>
         </div>
 
-        <!-- Global Layout & Dashboard Components Cards -->
-        <div style="margin-top: 1.25rem; display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; width: 100%;">
-          <div id="card-global-layout" class="test-card" style="width: 100%; margin-top: 0;">
+        <!-- Dashboard & Layout Birleşik Test Kartı -->
+        <div style="margin-top: 1.25rem; display: grid; grid-template-columns: 1fr; gap: 1.25rem; width: 100%;">
+          <div id="card-dashboard-layout-ui" class="test-card" style="width: 100%; margin-top: 0;">
             <div class="card-header">
               <div class="card-title-group">
                 <span class="card-tag">Arayüz Doğrulaması</span>
-                <h3 class="card-title">Ortak Arayüz & Navigasyon Bileşenleri</h3>
+                <h3 class="card-title">Dashboard & Ortak Layout — Birleşik UI Testi</h3>
               </div>
               <div class="card-status-dot"></div>
             </div>
             <div class="card-content">
               <p style="color: var(--text-muted); font-size: 0.8125rem; line-height: 1.5;">
-                Dashboard + Backup Snapshots sayfalarında ortak layout bileşenlerini tek oturumda test eder. @critical
+                Tek oturumda dashboard özet kartları, sidebar toggle, arama, Premium+ billing, Heads up turu, tema, profil menüsü, View All yönlendirmeleri, Backup Snapshots ve Billing & Plans sayfalarını test eder. @manual-interactive
               </p>
             </div>
             <div class="card-footer">
-              <span class="card-meta">global-layout.spec.ts</span>
-              <button class="btn-run" onclick="runTest('', 'card-global-layout', 'tests/e2e/ui/global-layout.spec.ts')">
+              <span class="card-meta">dashboard-layout-ui.spec.ts</span>
+              <button class="btn-run" onclick="runTest('', 'card-dashboard-layout-ui', 'tests/e2e/ui/dashboard-layout-ui.spec.ts')">
                 <span>Çalıştır</span>
               </button>
             </div>
           </div>
 
-          <!-- Dashboard UI Verification Card -->
-          <div id="card-dashboard-ui" class="test-card" style="width: 100%; margin-top: 0;">
-            <div class="card-header">
-              <div class="card-title-group">
-                <span class="card-tag">Arayüz Doğrulaması</span>
-                <h3 class="card-title">Dashboard Arayüzü & Butonlar</h3>
-              </div>
-              <div class="card-status-dot"></div>
-            </div>
-            <div class="card-content">
-              <p style="color: var(--text-muted); font-size: 0.8125rem; line-height: 1.5;">
-                Tek oturumda lisans butonu (billing/dialog zorunlu), Take a Tour, View All yönlendirmeleri ve aktivite listesi/boş durum testleri. @critical
-              </p>
-            </div>
-            <div class="card-footer">
-              <span class="card-meta">dashboard-ui.spec.ts</span>
-              <button class="btn-run" onclick="runTest('', 'card-dashboard-ui', 'tests/e2e/ui/dashboard-ui.spec.ts')">
-                <span>Çalıştır</span>
-              </button>
-            </div>
-          </div>
-
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; width: 100%;">
           <!-- Real License Change Card -->
           <div id="card-license-change" class="test-card" style="width: 100%; margin-top: 0;">
             <div class="card-header">
@@ -3416,7 +3395,7 @@
 
         <div style="margin-top: 0.75rem; display: flex; justify-content: flex-end;">
           <button class="btn-run" type="button" onclick="runCoreUiSmokeBatch()">
-            <span>4 Çekirdek Testi Sırayla Koş</span>
+            <span>3 Çekirdek Testi Sırayla Koş</span>
           </button>
         </div>
       </div>
@@ -5535,7 +5514,7 @@
       'card-scheduler-ui': 'Zamanlayıcı Arayüz Testi',
       'card-restore-ui': 'Geri Yükleme Arayüz Testi',
       'card-repositories-ui': 'Depolar Arayüz Testi',
-      'card-global-layout': 'Küresel Arayüz Testi',
+      'card-dashboard-layout-ui': 'Dashboard & Layout UI Testi',
       'card-workspace-settings-ui': 'Workspace & Üye Arayüzü',
       'card-license-change': 'Lisans Değişikliği'
     };
@@ -5592,7 +5571,7 @@
           'card-scheduler-ui': 'Scheduler UI & Buttons',
           'card-restore-ui': 'Restore UI & Buttons',
           'card-repositories-ui': 'Repositories UI & Buttons',
-          'card-global-layout': 'Global Layout & Navigation',
+          'card-dashboard-layout-ui': 'Dashboard & Layout UI',
           'card-workspace-settings-ui': 'Workspace & Member UI'
         };
         return engMap[cardId] || cardId;
@@ -6156,13 +6135,12 @@
 
     async function runCoreUiSmokeBatch() {
       const suites = [
-        ['card-global-layout', 'tests/e2e/ui/global-layout.spec.ts'],
-        ['card-dashboard-ui', 'tests/e2e/ui/dashboard-ui.spec.ts'],
+        ['card-dashboard-layout-ui', 'tests/e2e/ui/dashboard-layout-ui.spec.ts'],
         ['card-license-change', 'tests/e2e/billing/license-change.spec.ts'],
         ['card-workspace-settings-ui', 'tests/e2e/ui/workspace-settings-ui.spec.ts'],
       ];
 
-      appendConsole('global', '[DASHBOARD] 4 çekirdek UI testi sırayla başlatılıyor...\n');
+      appendConsole('global', '[DASHBOARD] 3 çekirdek UI testi sırayla başlatılıyor...\n');
       for (const [cardId, testFile] of suites) {
         const waitDone = waitForCardTestDone(cardId);
         await runTest('', cardId, testFile);

@@ -24,6 +24,14 @@ async function waitForDashboardReady(page: Page) {
   }
 }
 
+export function isDashboardPage(page: Page, workspaceId?: string) {
+  const path = new URL(page.url()).pathname;
+  if (workspaceId) {
+    return new RegExp(`/${workspaceId}/dashboard/?$`).test(path);
+  }
+  return /\/dashboard\/?$/.test(path);
+}
+
 export function getDashboardUrl(dashboardBaseUrl: string, workspaceId: string) {
   return `${dashboardBaseUrl}/${workspaceId}/dashboard`;
 }
@@ -44,7 +52,7 @@ export async function ensureDashboard(page: Page, targetUrl: string) {
   configureDashboardPageErrors(page);
   await page.keyboard.press('Escape').catch(() => {});
 
-  if (page.url().includes('/dashboard')) {
+  if (isDashboardPage(page)) {
     return;
   }
 
@@ -70,7 +78,7 @@ export async function prepareDashboardSession(
   workspaceId: string,
 ) {
   const dashboardUrl = getDashboardUrl(dashboardBaseUrl, workspaceId);
-  const onDashboard = page.url().includes('/dashboard');
+  const onDashboard = isDashboardPage(page, workspaceId);
 
   if (!session.opened || !onDashboard) {
     await openDashboard(page, dashboardBaseUrl, workspaceId);

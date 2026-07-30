@@ -1,7 +1,7 @@
 import { expect, Page, Locator } from '@playwright/test';
 
 export function getHeaderSidebarToggle(page: Page) {
-  return page.locator('header [data-slot="sidebar-trigger"]');
+  return page.locator('header').getByRole('button', { name: /Toggle Sidebar/i }).first();
 }
 
 export function getThemeToggle(page: Page) {
@@ -144,7 +144,11 @@ export async function assertThemeMenuAndRevert(page: Page) {
 }
 
 export async function navigateViaSidebarLink(page: Page, linkName: RegExp, urlPattern: RegExp) {
-  const link = page.getByRole('link', { name: linkName }).first();
+  await page.keyboard.press('Escape').catch(() => {});
+
+  const sidebar = page.locator('[data-slot="sidebar"]').first();
+  const link = sidebar.getByRole('link', { name: linkName }).first();
+  await link.scrollIntoViewIfNeeded();
   await expect(link).toBeVisible({ timeout: 15000 });
   await link.click();
   await expect(page).toHaveURL(urlPattern, { timeout: 15000 });
