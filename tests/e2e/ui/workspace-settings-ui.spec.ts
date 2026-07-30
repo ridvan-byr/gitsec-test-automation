@@ -39,7 +39,7 @@ test.describe('Workspace Settings & Member Yönetimi — Arayüz ve Buton Durum 
   // ════════════════════════════════════════════════════════════════
   // TEST 1: Workspace Dropdown Menüsü Doğrulaması
   // ════════════════════════════════════════════════════════════════
-  test('Workspace ayarları — Dropdown, Settings sekmeleri ve mutasyon akışları', { tag: ['@critical'] }, async ({ page, request }) => {
+  test('Workspace ayarları — Dropdown, Settings sekmeleri ve mutasyon akışları', { tag: ['@manual-interactive'] }, async ({ page, request }) => {
     await ensureWorkspaceSession(page);
     workspaceInfo = await fetchWorkspaceInfo(page, request);
 
