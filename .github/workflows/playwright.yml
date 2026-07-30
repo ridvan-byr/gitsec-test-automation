@@ -27,6 +27,8 @@ jobs:
       API_BASE_URL: ${{ secrets.API_BASE_URL || 'https://staging.api.gitsec.io' }}
       E2E_USER_EMAIL: ${{ secrets.E2E_USER_EMAIL }}
       E2E_USER_PASSWORD: ${{ secrets.E2E_USER_PASSWORD }}
+      E2E_BASIC_AUTH_USER: ${{ secrets.E2E_BASIC_AUTH_USER }}
+      E2E_BASIC_AUTH_PASS: ${{ secrets.E2E_BASIC_AUTH_PASS }}
       GITHUB_TEST_USER: ${{ secrets.GITHUB_TEST_USER }}
       GITHUB_TEST_PASSWORD: ${{ secrets.GITHUB_TEST_PASSWORD }}
       AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET }}
@@ -92,6 +94,8 @@ jobs:
       API_BASE_URL: ${{ secrets.API_BASE_URL }}
       E2E_USER_EMAIL: ${{ secrets.E2E_USER_EMAIL }}
       E2E_USER_PASSWORD: ${{ secrets.E2E_USER_PASSWORD }}
+      E2E_BASIC_AUTH_USER: ${{ secrets.E2E_BASIC_AUTH_USER }}
+      E2E_BASIC_AUTH_PASS: ${{ secrets.E2E_BASIC_AUTH_PASS }}
       GITHUB_TEST_USER: ${{ secrets.GITHUB_TEST_USER }}
       GITHUB_TEST_PASSWORD: ${{ secrets.GITHUB_TEST_PASSWORD }}
       AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET }}
