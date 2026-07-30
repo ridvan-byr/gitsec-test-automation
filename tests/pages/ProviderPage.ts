@@ -56,7 +56,7 @@ export class ProviderPage {
     let wsId = await this.getActiveWorkspaceId();
     let addUrl = `${this.dashboardBaseUrl}/${wsId}/repositories/add`;
 
-    await this.page.goto(addUrl, { waitUntil: 'domcontentloaded' }).catch(() => {});
+    await this.page.goto(addUrl, { waitUntil: 'domcontentloaded' }).catch(() => { });
 
     // Sayfa doğrudan yüklendi mi kontrol et
     let isNavigated = await this.page.waitForURL(/\/repositories\/add/, { timeout: 5000 }).then(() => true).catch(() => false);
@@ -75,22 +75,22 @@ export class ProviderPage {
       // 3. Arayüzdeki menü veya "Add" butonuna tıklayarak istemci yönlendirmesi tetikle
       const addRepoBtn = this.page.locator('a[href*="/repositories/add"], button:has-text("Add Provider"), button:has-text("Add Repository")').first();
       if (await addRepoBtn.isVisible().catch(() => false)) {
-        await addRepoBtn.click({ force: true }).catch(() => {});
+        await addRepoBtn.click({ force: true }).catch(() => { });
       }
       await expect(this.page).toHaveURL(/\/repositories\/add/, { timeout: 15000 });
     }
 
-    await this.page.waitForLoadState('load').catch(() => {});
+    await this.page.waitForLoadState('load').catch(() => { });
     await this.page.waitForTimeout(2000);
   }
 
   async isGithubAlreadyConnectedOnAddProvider(): Promise<boolean> {
     if (this.page.isClosed()) return false;
-    await this.page.evaluate(() => window.scrollBy({ top: 350, behavior: 'smooth' })).catch(() => {});
-    await this.page.waitForTimeout(1000).catch(() => {});
+    await this.page.evaluate(() => window.scrollBy({ top: 350, behavior: 'smooth' })).catch(() => { });
+    await this.page.waitForTimeout(1000).catch(() => { });
 
     // Tablo satırlarının yüklenmesini bekle (yükleme tamamlanana kadar 5s bekle)
-    await this.page.locator('main table tbody tr, div[class*="table"] tr').first().waitFor({ state: 'visible', timeout: 5000 }).catch(() => {});
+    await this.page.locator('main table tbody tr, div[class*="table"] tr').first().waitFor({ state: 'visible', timeout: 5000 }).catch(() => { });
 
     const checkElement = async (): Promise<boolean> => {
       const tableRows = this.page.locator('main table tbody tr, div[class*="table"] tr, [role="row"]')
@@ -99,7 +99,7 @@ export class ProviderPage {
 
       for (let i = 0; i < count; i++) {
         const row = tableRows.nth(i);
-        await row.scrollIntoViewIfNeeded().catch(() => {});
+        await row.scrollIntoViewIfNeeded().catch(() => { });
 
         const textContent = (await row.textContent().catch(() => '')) || '';
         const innerText = (await row.innerText().catch(() => '')) || '';
@@ -141,7 +141,7 @@ export class ProviderPage {
       if (!isNextEnabled) break;
 
       console.log(`🔍 [PROVIDER CHECK] ${pageNum}. sayfaya geçilerek Aktif GitHub sağlayıcısı aranıyor...`);
-      await nextBtn.click({ force: true }).catch(() => {});
+      await nextBtn.click({ force: true }).catch(() => { });
       await this.page.waitForTimeout(1200);
 
       if (await checkElement()) return true;
@@ -165,11 +165,11 @@ export class ProviderPage {
       return false;
     }
 
-    await statusBtn.scrollIntoViewIfNeeded().catch(() => {});
+    await statusBtn.scrollIntoViewIfNeeded().catch(() => { });
     await this.page.waitForTimeout(500);
 
     console.log('🔍 [FILTER] "Status" filtresine tıklanıyor...');
-    await statusBtn.click({ force: true }).catch(() => {});
+    await statusBtn.click({ force: true }).catch(() => { });
 
     const activeOption = this.page.getByRole('option', { name: /Active/i })
       .or(this.page.locator('[data-value="Active"]'))
@@ -179,21 +179,21 @@ export class ProviderPage {
     const isOptionVisible = await activeOption.waitFor({ state: 'visible', timeout: 3000 }).then(() => true).catch(() => false);
     if (isOptionVisible) {
       console.log('🎯 [FILTER] "Active" durum seçeneği işaretlendi.');
-      await activeOption.click({ force: true }).catch(() => {});
+      await activeOption.click({ force: true }).catch(() => { });
       await this.page.waitForTimeout(1500);
       return true;
     }
 
-    await this.page.keyboard.press('Escape').catch(() => {});
+    await this.page.keyboard.press('Escape').catch(() => { });
     return false;
   }
 
   async isBitbucketAlreadyConnectedOnAddProvider(): Promise<boolean> {
-    await this.page.evaluate(() => window.scrollBy({ top: 350, behavior: 'smooth' })).catch(() => {});
+    await this.page.evaluate(() => window.scrollBy({ top: 350, behavior: 'smooth' })).catch(() => { });
     await this.page.waitForTimeout(1000);
 
     // Tablo satırlarının yüklenmesini bekle
-    await this.page.locator('main table tbody tr, div[class*="table"] tr').first().waitFor({ state: 'visible', timeout: 5000 }).catch(() => {});
+    await this.page.locator('main table tbody tr, div[class*="table"] tr').first().waitFor({ state: 'visible', timeout: 5000 }).catch(() => { });
 
     const checkElement = async (): Promise<boolean> => {
       const tableRows = this.page.locator('main table tbody tr, div[class*="table"] tr, [role="row"]')
@@ -202,7 +202,7 @@ export class ProviderPage {
       const count = await tableRows.count().catch(() => 0);
       for (let i = 0; i < count; i++) {
         const row = tableRows.nth(i);
-        await row.scrollIntoViewIfNeeded().catch(() => {});
+        await row.scrollIntoViewIfNeeded().catch(() => { });
         const text = ((await row.innerText().catch(() => '')) || (await row.textContent().catch(() => '')) || '').trim().replace(/\s+/g, ' ');
 
         console.log(`🔍 [PROVIDER CHECK] Bitbucket arayüz satırı okundu: "${text}"`);
@@ -237,7 +237,7 @@ export class ProviderPage {
       if (!isNextEnabled) break;
 
       console.log(`🔍 [PROVIDER CHECK] ${pageNum}. sayfaya geçilerek Aktif Bitbucket sağlayıcısı aranıyor...`);
-      await nextBtn.click({ force: true }).catch(() => {});
+      await nextBtn.click({ force: true }).catch(() => { });
       await this.page.waitForTimeout(1200);
 
       if (await checkElement()) return true;
@@ -261,9 +261,9 @@ export class ProviderPage {
       return;
     }
 
-    await cardNode.scrollIntoViewIfNeeded().catch(() => {});
+    await cardNode.scrollIntoViewIfNeeded().catch(() => { });
     await this.page.waitForTimeout(200);
-    await cardNode.click({ force: true }).catch(() => {});
+    await cardNode.click({ force: true }).catch(() => { });
   }
 
   async selectBitbucket(): Promise<void> {
@@ -280,14 +280,14 @@ export class ProviderPage {
       return;
     }
 
-    await bitbucketCard.scrollIntoViewIfNeeded().catch(() => {});
+    await bitbucketCard.scrollIntoViewIfNeeded().catch(() => { });
     await this.page.waitForTimeout(300);
 
-    await bitbucketCard.click({ force: true }).catch(() => {});
+    await bitbucketCard.click({ force: true }).catch(() => { });
 
     const parentCard = bitbucketCard.locator('xpath=ancestor-or-self::div[contains(@class, "grid") or contains(@class, "card") or contains(@class, "border") or contains(@class, "cursor")][1]').first();
     if (await parentCard.isVisible().catch(() => false)) {
-      await parentCard.click({ force: true }).catch(() => {});
+      await parentCard.click({ force: true }).catch(() => { });
     }
   }
 
@@ -300,7 +300,7 @@ export class ProviderPage {
 
     if (!this.page.url().includes('/repositories/github')) {
       console.warn('⚠️ [NAVİGASYON RECOVERY] Yönlendirme /dashboard üzerinde takıldı, GitHub depoları sayfasına tekrar gidiliyor...');
-      await this.page.goto(targetUrl, { waitUntil: 'domcontentloaded' }).catch(() => {});
+      await this.page.goto(targetUrl, { waitUntil: 'domcontentloaded' }).catch(() => { });
     }
 
     await expect(this.page).toHaveURL(/\/repositories\/github\b/, { timeout: 15000 });
@@ -317,11 +317,11 @@ export class ProviderPage {
     if (isError) {
       console.warn('⚠️ [NEXT.JS SUNUCU HATASI] Frontend "Something went wrong" (ChunkLoadError) verdi. "Retry" / Sayfa yenileme ile otomatik kurtarılıyor...');
       if (await retryBtn.isVisible().catch(() => false)) {
-        await retryBtn.click().catch(() => {});
+        await retryBtn.click().catch(() => { });
       } else {
-        await this.page.reload({ waitUntil: 'domcontentloaded' }).catch(() => {});
+        await this.page.reload({ waitUntil: 'domcontentloaded' }).catch(() => { });
       }
-      await this.page.waitForLoadState('domcontentloaded').catch(() => {});
+      await this.page.waitForLoadState('domcontentloaded').catch(() => { });
       return true;
     }
     return false;
@@ -341,7 +341,7 @@ export class ProviderPage {
 
     if (!this.page.url().includes('/repositories/bitbucket')) {
       console.warn('⚠️ [NAVİGASYON RECOVERY] Yönlendirme /dashboard üzerinde takıldı, Bitbucket depoları sayfasına tekrar gidiliyor...');
-      await this.page.goto(targetUrl, { waitUntil: 'domcontentloaded' }).catch(() => {});
+      await this.page.goto(targetUrl, { waitUntil: 'domcontentloaded' }).catch(() => { });
     }
 
     await expect(this.page).toHaveURL(/\/repositories\/bitbucket\b/, { timeout: 15000 });
@@ -404,7 +404,7 @@ export class ProviderPage {
   async openGithubOAuthPopupFromDialog(): Promise<Page> {
     const githubCard = this.githubProviderCardLocator();
     await githubCard.waitFor({ state: 'visible', timeout: 25_000 });
-    await githubCard.scrollIntoViewIfNeeded().catch(() => {});
+    await githubCard.scrollIntoViewIfNeeded().catch(() => { });
 
     const context = this.page.context();
     const pagesBefore = new Set(context.pages());
@@ -435,7 +435,7 @@ export class ProviderPage {
 
     const clickCard = async (): Promise<void> => {
       await this.page.waitForTimeout(1500); // Animasyon ve hydration'ın oturması için bekle
-      
+
       const deadline = Date.now() + 15000;
       while (Date.now() < deadline) {
         try {
@@ -443,9 +443,9 @@ export class ProviderPage {
         } catch (e) {
           // Geçici tıklama hatalarını yoksay
         }
-        
+
         await this.page.waitForTimeout(1000);
-        
+
         // Popup veya yönlendirme başladıysa tıklama döngüsünden çık
         const anyGithubPage = this.page.context().pages().some(p => /github\.com/i.test(p.url()));
         const mainNavigating = /github\.com/i.test(this.page.url());
@@ -456,9 +456,34 @@ export class ProviderPage {
     };
 
     const githubPage = await Promise.all([waitForGithubPage(), clickCard()]).then(([p]) => p);
-    await githubPage.waitForLoadState('domcontentloaded').catch(() => {});
+    await githubPage.waitForLoadState('domcontentloaded').catch(() => { });
     console.log('[provider] GitHub OAuth sayfası:', githubPage.url());
     return githubPage;
+  }
+
+  bitbucketProviderCardLocator(): Locator {
+    return this.page.locator([
+      'button:has-text("Setup your Bitbucket integration")',
+      'button:has-text("Bitbucket")',
+      '[role="button"]:has-text("Bitbucket")'
+    ].join(', ')).first();
+  }
+
+  async openBitbucketOAuthPopupFromDialog(): Promise<Page> {
+    const bitbucketCard = this.bitbucketProviderCardLocator();
+    await bitbucketCard.waitFor({ state: 'visible', timeout: 25_000 });
+    await bitbucketCard.scrollIntoViewIfNeeded().catch(() => { });
+
+    const [popup] = await Promise.all([
+      this.page.waitForEvent('popup', { timeout: 30000 }).catch(() => null),
+      bitbucketCard.click({ force: true }).catch(() => { })
+    ]);
+
+    if (popup) {
+      await popup.waitForLoadState('domcontentloaded').catch(() => { });
+      return popup;
+    }
+    return this.page;
   }
 
   /**
@@ -471,7 +496,7 @@ export class ProviderPage {
       await this.page
         .waitForURL(/gitsec\.io/i, { timeout: 20_000 })
         .catch(async () => {
-          await this.page.goBack({ waitUntil: 'domcontentloaded' }).catch(() => {});
+          await this.page.goBack({ waitUntil: 'domcontentloaded' }).catch(() => { });
         });
       return;
     }
@@ -482,7 +507,7 @@ export class ProviderPage {
     }
 
     await this.page.bringToFront();
-    await this.page.waitForLoadState('domcontentloaded').catch(() => {});
+    await this.page.waitForLoadState('domcontentloaded').catch(() => { });
   }
 
   /** Kenar çubuğu: Backups. */
@@ -502,7 +527,7 @@ export class ProviderPage {
         .then(() => true)
         .catch(() => false);
       if (hrefOk) {
-        await byWorkspaceHref.scrollIntoViewIfNeeded().catch(() => {});
+        await byWorkspaceHref.scrollIntoViewIfNeeded().catch(() => { });
         await byWorkspaceHref.click();
         return;
       }
@@ -516,7 +541,7 @@ export class ProviderPage {
       }
 
       await backupsLink.waitFor({ state: 'visible', timeout: 15000 });
-      await backupsLink.scrollIntoViewIfNeeded().catch(() => {});
+      await backupsLink.scrollIntoViewIfNeeded().catch(() => { });
       try {
         await backupsLink.click({ timeout: 8000 });
       } catch {
@@ -542,7 +567,7 @@ export class ProviderPage {
     if (hasError) {
       console.log('🔄 [RECOVERY] Chunk load error detected! Reloading page...');
       await this.page.reload({ waitUntil: 'domcontentloaded' });
-      await expect(this.page.locator('main').first()).toBeVisible({ timeout: 20000 }).catch(() => {});
+      await expect(this.page.locator('main').first()).toBeVisible({ timeout: 20000 }).catch(() => { });
     }
   }
 
@@ -557,7 +582,7 @@ export class ProviderPage {
       .first();
 
     if (await syncBtn.isVisible().catch(() => false)) {
-      await syncBtn.click({ force: true }).catch(() => {});
+      await syncBtn.click({ force: true }).catch(() => { });
       console.log('✅ [GITSEC UI] Sync/Refresh butonuna tıklandı.');
       await this.page.waitForTimeout(2000);
     } else {

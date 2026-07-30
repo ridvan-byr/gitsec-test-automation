@@ -59,7 +59,7 @@ setup('connect provider if needed', async ({ request, page }) => {
           }
         }
       }
-    } catch {}
+    } catch { }
   }
   if (!workspaceId) workspaceId = '345';
 
@@ -104,7 +104,7 @@ setup('connect provider if needed', async ({ request, page }) => {
         }
 
         if (popup) {
-          await popup.waitForLoadState('domcontentloaded').catch(() => {});
+          await popup.waitForLoadState('domcontentloaded').catch(() => { });
           let ghLogin = new GithubLoginPage(popup);
 
           // 1. İlk yüklemede pop-up ana sayfaya/callback'e düştüyse ERKEN ÇIKIŞ yap
@@ -120,12 +120,12 @@ setup('connect provider if needed', async ({ request, page }) => {
               const loginOk = await ghLogin.loginAndHandleTwoFactor(githubUser, githubPass);
               if (!loginOk) throw new Error('❌ GitHub login veya 2FA otomasyonla geçilemedi.');
             } else {
-              await ghLogin.handleTwoFactorAuthentication().catch(() => {});
+              await ghLogin.handleTwoFactorAuthentication().catch(() => { });
             }
 
             // Cihaz doğrulama (sessions/verified-device / E-posta OTP) denetimi (Sadece Sudo UI varsa)
             if (await ghLogin.isSudoUiVisible()) {
-              await ghLogin.handlePostLoginEmailChallenge({ waitForSudoMs: 1000 }).catch(() => {});
+              await ghLogin.handlePostLoginEmailChallenge({ waitForSudoMs: 1000 }).catch(() => { });
             }
 
             // 3. Giriş yapıldıktan sonra pop-up ana sayfaya düşmüşse ERKEN ÇIKIŞ yap
@@ -133,10 +133,10 @@ setup('connect provider if needed', async ({ request, page }) => {
               await verifyDashboardConnection(providerPage);
             } else {
               console.log('📦 [PROVIDER SETUP / GİTHUB] İzinler ve Kurulum (Install & Authorize) akışı tamamlanıyor...');
-              await ghLogin.completePermissionsInstallFlow().catch(() => {});
+              await ghLogin.completePermissionsInstallFlow().catch(() => { });
 
               if (!popup.isClosed()) {
-                await checkIfOnGithubMainPageAndClose(popup).catch(() => {});
+                await checkIfOnGithubMainPageAndClose(popup).catch(() => { });
               }
               await verifyDashboardConnection(providerPage);
             }
@@ -167,7 +167,7 @@ setup('connect provider if needed', async ({ request, page }) => {
           if (await installBtn.isVisible().catch(() => false)) {
             console.log('[PROVIDER SETUP / BITBUCKET] 👆 Kurulum modalındaki "Install" butonuna basılıyor ve OAuth penceresi bekleniyor...');
             const popupPromise = page.waitForEvent('popup', { timeout: 30000 }).catch(() => null);
-            await installBtn.click({ force: true }).catch(() => {});
+            await installBtn.click({ force: true }).catch(() => { });
             popup = await popupPromise;
           }
         } else {
@@ -177,9 +177,9 @@ setup('connect provider if needed', async ({ request, page }) => {
         }
 
         if (popup) {
-          await handleBitbucketAuthPopup(popup).catch(() => {});
+          await handleBitbucketAuthPopup(popup).catch(() => { });
           if (!popup.isClosed()) {
-            await popup.close().catch(() => {});
+            await popup.close().catch(() => { });
           }
         }
       } catch (e: any) {

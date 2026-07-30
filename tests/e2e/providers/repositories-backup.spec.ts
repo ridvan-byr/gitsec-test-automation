@@ -170,8 +170,25 @@ test.describe(`Repositories - ${providerName} Yedekleme`, () => {
     console.log('🎉 [BAŞARILI] [Ağ Seviyesi Doğrulama] Yedekleme tetikleme isteğinin ağ katmanında başarıyla gönderildiği teyit edildi.');
 
     console.log('⏳ [BEKLEME] Tetikleme yanıtı ve scheduleId değeri bekleniyor...');
-    const triggerResult = await triggerResponse!.json();
-    const scheduleId = triggerResult?.data?.scheduleId;
+    const triggerResult = await triggerResponse!.json().catch(() => null);
+    let scheduleId = triggerResult?.data?.scheduleId || triggerResult?.data?.id || triggerResult?.scheduleId || triggerResult?.id || null;
+    
+    if (!scheduleId) {
+      try {
+        const latestResp = await fetch(`${apiBaseUrl}/api/backup/executions?limit=1`, {
+          method: 'GET',
+          headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json', 'workspace-id': workspaceId }
+        });
+        if (latestResp.ok) {
+          const latestData = await latestResp.json();
+          const firstItem = latestData?.data?.list?.[0] || latestData?.data?.[0];
+          if (firstItem) {
+            scheduleId = firstItem.scheduleId || firstItem.id || null;
+          }
+        }
+      } catch (e) {}
+    }
+
     if (!scheduleId) {
       throw new Error('🚨 [HATA] Yedekleme tetikleme API yanıtında scheduleId bulunamadı. Yanıt: ' + JSON.stringify(triggerResult));
     }

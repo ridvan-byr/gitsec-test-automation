@@ -3498,6 +3498,25 @@
                 kullanıcı yönlendirmelerini doğrular.
               </p>
 
+              <div class="card-select-group" style="margin-top: 0.5rem; margin-bottom: 0.5rem;">
+                <label for="restoreProviderSelect"
+                  style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Kod
+                  Sağlayıcı (Provider)</label>
+                <div class="gitsec-select-wrapper no-left-icon">
+                  <select id="restoreProviderSelect" class="gitsec-select" style="padding-left: 0.875rem;"
+                    onchange="onCardProviderChange('restoreProviderSelect'); saveSettings()">
+                    <option value="github">GitHub</option>
+                    <option value="bitbucket">Bitbucket</option>
+                  </select>
+                  <span class="select-chevron-right">
+                    <svg class="w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <polyline points="6 9 12 15 18 9"></polyline>
+                    </svg>
+                  </span>
+                </div>
+              </div>
+
               <div class="card-select-group" style="margin-top: 0.75rem;">
                 <label for="restoreModeSelect"
                   style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em;">Restore
@@ -5876,17 +5895,24 @@
       } else {
         if (issuesCheckbox) {
           issuesCheckbox.disabled = false;
+          issuesCheckbox.checked = true;
         }
         if (issuesCard) {
           issuesCard.style.display = '';
-          if (issuesCheckbox && issuesCheckbox.checked) {
-            issuesCard.classList.add('checked');
-          } else {
-            issuesCard.classList.remove('checked');
-          }
+          issuesCard.classList.add('checked');
         }
       }
       saveSettings();
+    }
+
+    function onCardProviderChange(selectId) {
+      if (selectId === 'backupProviderSelect') {
+        onBackupProviderChange();
+      } else if (selectId === 'schedulerIncludeProviderSelect') {
+        onSchedulerProviderChange();
+      } else if (selectId === 'restoreProviderSelect') {
+        saveSettings();
+      }
     }
 
     function onBackupProviderChange() {
@@ -5910,6 +5936,8 @@
           issuesCard.classList.remove('checked');
         } else {
           issuesCard.style.display = '';
+          issuesInput.checked = true;
+          issuesCard.classList.add('checked');
         }
       }
       saveSettings();
@@ -6110,8 +6138,14 @@
         installmentContainer.style.display = 'none';
       }
     }
-    document.addEventListener('DOMContentLoaded', toggleInstallmentVisibility);
-    setTimeout(toggleInstallmentVisibility, 500);
+    document.addEventListener('DOMContentLoaded', () => {
+      toggleInstallmentVisibility();
+      onBackupProviderChange();
+    });
+    setTimeout(() => {
+      toggleInstallmentVisibility();
+      onBackupProviderChange();
+    }, 500);
 
     function waitForCardTestDone(cardId) {
       return new Promise((resolve) => {
@@ -6175,6 +6209,8 @@
         codeProvider = excludeProvider;
       } else if (cardId === 'card-github-backup') {
         codeProvider = document.getElementById('backupProviderSelect') ? document.getElementById('backupProviderSelect').value : 'github';
+      } else if (cardId === 'card-restore') {
+        codeProvider = document.getElementById('restoreProviderSelect') ? document.getElementById('restoreProviderSelect').value : 'github';
       }
       const workers = document.getElementById('workersCount') ? document.getElementById('workersCount').value : 1;
       const licenseTargetPlan = cardId === 'card-license-change'
@@ -7687,6 +7723,11 @@
           }
         } else {
           backupIssuesCard.style.display = '';
+          const issuesCb = document.getElementById('backupIncludeIssues');
+          if (issuesCb) {
+            issuesCb.checked = true;
+            toggleIncludedItemClass(issuesCb);
+          }
         }
       }
 

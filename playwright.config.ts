@@ -80,7 +80,7 @@ export default defineConfig({
         /tests\/e2e\/providers\/(github|bitbucket)-connect\.spec\.ts/,
         /tests\/e2e\/billing\/license-change\.spec\.ts/
       ],
-      use: { 
+      use: {
         ...devices['Desktop Chrome'],
         storageState: 'playwright/.auth/user.json',
         channel: process.env.CI ? undefined : 'chrome',
@@ -95,7 +95,7 @@ export default defineConfig({
         /tests\/e2e\/providers\/(github|bitbucket)-connect\.spec\.ts/,
         /tests\/e2e\/billing\/license-change\.spec\.ts/
       ],
-      use: { 
+      use: {
         ...devices['Desktop Chrome'],
         storageState: 'playwright/.auth/user-with-provider.json',
         channel: process.env.CI ? undefined : 'chrome',
