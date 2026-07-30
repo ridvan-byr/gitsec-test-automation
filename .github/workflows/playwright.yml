@@ -67,6 +67,8 @@ jobs:
       - name: Install Playwright OS dependencies
         if: steps.playwright-cache.outputs.cache-hit == 'true'
         run: npx playwright install-deps
+      - name: Verify staging Basic Auth access
+        run: node scripts/ci-verify-staging-access.mjs
       - name: Run tagged smoke and regression suite
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ inputs.grep }}" ]; then
@@ -134,6 +136,8 @@ jobs:
       - name: Install Playwright OS dependencies
         if: steps.playwright-cache.outputs.cache-hit == 'true'
         run: npx playwright install-deps
+      - name: Verify staging Basic Auth access
+        run: node scripts/ci-verify-staging-access.mjs
       - name: Run full suite
         run: npx playwright test --grep-invert "@manual-interactive"
       - name: Upload artifacts
