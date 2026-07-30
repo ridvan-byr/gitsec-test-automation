@@ -166,8 +166,8 @@ export class GithubLoginPage {
         return this.installFlowHandler.handlePostLoginEmailChallenge(opts);
     }
 
-    async completePermissionsInstallFlow(): Promise<boolean> {
-        return this.installFlowHandler.completePermissionsInstallFlow();
+    async completePermissionsInstallFlow(initialUrl?: string): Promise<boolean> {
+        return this.installFlowHandler.completePermissionsInstallFlow(initialUrl);
     }
 
     async clickInstallAndAuthorize(): Promise<boolean> {

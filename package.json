@@ -10,6 +10,7 @@
     "test:monthly": "playwright test --grep @monthly",
     "test:cron": "playwright test --grep @cron",
     "test:manual-ui": "playwright test --grep @manual-interactive --headed",
+    "test:restore:headed": "playwright test tests/e2e/backups/restore.spec.ts --project=chromium --headed --workers=1 --reporter=line",
     "report": "playwright show-report",
     "mail:github-otp": "tsx scripts/peek-github-otp.ts",
     "mail:check": "tsx scripts/check-github-mail.ts",
@@ -18,7 +19,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "@playwright/test": "^1.59.1",
+    "@playwright/test": "^1.62.0",
     "@types/node": "^25.6.0",
     "dotenv": "^16.6.1",
     "eslint": "^10.7.0",

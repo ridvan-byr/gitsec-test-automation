@@ -142,10 +142,28 @@ export class GithubInstallFlowHandler {
         return true;
     }
 
-    async completePermissionsInstallFlow(): Promise<boolean> {
+    async completePermissionsInstallFlow(initialPopupUrl?: string): Promise<boolean> {
         const url = this.page.url();
         if (/settings\/installations\/\d+/i.test(url)) {
             console.log(`[github] ⚠️ Uygulama zaten kurulu (URL: ${url}). Anında aşağı ve sağa kaydırılarak Uninstall yapılıyor...`);
+
+            // Target URL'i dinamik olarak belirle (OAuth return_to veya gitsec-restore-staging / backup-staging tespiti)
+            let targetReinstallUrl = '';
+            const searchUrl = initialPopupUrl || url;
+            if (searchUrl.includes('return_to=')) {
+                const match = searchUrl.match(/return_to=([^&]+)/);
+                if (match && match[1]) {
+                    const decoded = decodeURIComponent(match[1]);
+                    targetReinstallUrl = decoded.startsWith('http') ? decoded : `https://github.com${decoded}`;
+                }
+            }
+            if (!targetReinstallUrl) {
+                if (/restore/i.test(searchUrl)) {
+                    targetReinstallUrl = 'https://github.com/apps/gitsec-restore-staging/installations/new';
+                } else {
+                    targetReinstallUrl = 'https://github.com/apps/gitsec-backup-staging/installations/new';
+                }
+            }
 
             // 0. Native browser confirm popup'ları için otomatik ACCEPT dinleyicisi ekle
             this.page.once('dialog', async dialog => {
@@ -155,37 +173,41 @@ export class GithubInstallFlowHandler {
 
             await this.page.waitForLoadState('domcontentloaded').catch(() => {});
 
-            // 1. Hem DİKEY hem YATAY kaydırarak Uninstall input butonunu görünür kıl
+            // 1. Hem DİKEY hem YATAY hem de TÜM KAPSAYICI ELEMENTLERİ en aşağı kaydırıp görünür kıl
             await this.page.evaluate(() => {
-                window.scrollTo(99999, 99999);
-                if (document.documentElement) {
-                    document.documentElement.scrollTop = 99999;
-                    document.documentElement.scrollLeft = 99999;
-                }
-                if (document.body) {
-                    document.body.scrollTop = 99999;
-                    document.body.scrollLeft = 99999;
-                }
+                window.scrollTo(0, document.body.scrollHeight || 99999);
+                if (document.documentElement) document.documentElement.scrollTop = 99999;
+                if (document.body) document.body.scrollTop = 99999;
+                const divs = document.querySelectorAll('div, main, section, form, details');
+                divs.forEach((el: any) => {
+                    if (el.scrollHeight > el.clientHeight) {
+                        el.scrollTop = el.scrollHeight;
+                    }
+                    if (el.tagName && el.tagName.toLowerCase() === 'details') {
+                        el.open = true;
+                    }
+                });
             }).catch(() => {});
 
-            // 2. Tam HTML eşleşmesi: input[type="submit"][value="Uninstall"] veya input[data-confirm]
-            const uninstallInput = this.page.locator('input[type="submit"][value="Uninstall"], input.btn-danger[value="Uninstall"], input[data-confirm*="uninstall"], button.btn-danger')
+            // 2. Tam HTML eşleşmesi: input[type="submit"][value="Uninstall"] veya button
+            const uninstallInput = this.page.locator('input[type="submit"][value="Uninstall"], input.btn-danger[value="Uninstall"], input[data-confirm*="uninstall"], button.btn-danger, button[data-show-dialog-id*="uninstall"]')
                 .filter({ hasText: /Uninstall|Kaldır/i })
                 .or(this.page.locator('input[type="submit"][value="Uninstall"]'))
+                .or(this.page.locator('button:has-text("Uninstall")'))
                 .first();
 
             const isInputVisible = await uninstallInput.waitFor({ state: 'visible', timeout: 4000 }).then(() => true).catch(() => false);
 
             if (isInputVisible) {
                 await uninstallInput.scrollIntoViewIfNeeded().catch(() => {});
-                console.log('[github] 👆 [TIKLAMA] "<input type=\\"submit\\" value=\\"Uninstall\\">" butonuna tıklandı...');
+                console.log('[github] 👆 [TIKLAMA] Uninstall butonuna tıklandı...');
                 await uninstallInput.click({ force: true }).catch(async () => {
                     await uninstallInput.evaluate((el: any) => el.click()).catch(() => {});
                 });
                 await this.safePause(1000);
             }
 
-            // 3. Her durumda garanti olması için JS ile direct form.submit() at (data-confirm uyarısını ve CSRF'i doğrudan aşar)
+            // 3. Her durumda garanti olması için JS ile direct form.submit() at
             console.log('[github] 💥 [KARSILIKSIZ SILME] Silme formu doğrudan form.submit() ile gönderiliyor...');
             await this.page.evaluate(() => {
                 const input = document.querySelector('input[value="Uninstall"], input.btn-danger[value="Uninstall"], input[data-confirm*="uninstall"]');
@@ -208,10 +230,10 @@ export class GithubInstallFlowHandler {
             }).catch(() => {});
 
             await this.safePause(2500);
-            console.log('[github] 🎉 [BAŞARILI] GitHub uygulaması Uninstall adımı tamamlandı. Taze kurulum sayfasına gidiliyor...');
+            console.log(`[github] 🎉 [BAŞARILI] GitHub uygulaması Uninstall adımı tamamlandı. Taze kurulum sayfasına gidiliyor: ${targetReinstallUrl}`);
 
-            // 4. Silme işleminden sonra taze kurulum sayfasına yönlen
-            await this.page.goto('https://github.com/apps/gitsec-backup-staging/installations/new', { waitUntil: 'domcontentloaded' }).catch(() => {});
+            // 4. Silme işleminden sonra Orijinal OAuth State parametreli taze kurulum sayfasına yönlen
+            await this.page.goto(targetReinstallUrl, { waitUntil: 'domcontentloaded' }).catch(() => {});
             await this.safePause(600);
         }
 
