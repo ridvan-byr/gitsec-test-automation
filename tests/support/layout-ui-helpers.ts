@@ -1,4 +1,4 @@
-import { expect, Page, Locator } from '@playwright/test';
+import { expect, Page } from '@playwright/test';
 
 export function getHeaderSidebarToggle(page: Page) {
   return page.locator('header').getByRole('button', { name: /Toggle Sidebar/i }).first();

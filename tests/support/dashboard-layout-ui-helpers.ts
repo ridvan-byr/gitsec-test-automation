@@ -1,15 +1,8 @@
 import { expect, Page } from '@playwright/test';
-import {
-  openDashboard,
-  ensureDashboard,
-  getDashboardUrl,
-  isDashboardPage,
-} from './dashboard-ui-helpers';
+import { ensureDashboard } from './dashboard-ui-helpers';
 import {
   assertSidebarToggleInteractive,
   assertGlobalSearchInput,
-  assertUserProfileMenu,
-  assertThemeMenuAndRevert,
   navigateViaSidebarLink,
   getUserMenuTrigger,
 } from './layout-ui-helpers';
