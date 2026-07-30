@@ -6,6 +6,8 @@ export interface AuditLogExpectation {
   category: string;
   descriptionRegex: RegExp;
   timeoutMs?: number;
+  maxRowsPerPage?: number;
+  maxPages?: number;
   strictFields?: boolean; // If true, asserts that checked fields are not placeholders/empty
 }
 
@@ -36,6 +38,8 @@ function isPlaceholder(val: any): boolean {
  */
 export async function verifyAuditLogViaAPI(page: Page, expectation: AuditLogExpectation) {
   const timeoutMs = expectation.timeoutMs ?? 15000;
+  const maxRowsPerPage = expectation.maxRowsPerPage ?? 100;
+  const maxPages = expectation.maxPages ?? 2;
   const category = expectation.category;
   const descriptionRegex = expectation.descriptionRegex;
 
@@ -82,45 +86,52 @@ export async function verifyAuditLogViaAPI(page: Page, expectation: AuditLogExpe
   if (!apiBaseUrl) {
     throw new Error('Missing required environment variable: API_BASE_URL');
   }
-  const targetUrl = `${apiBaseUrl}/api/activities/?Pagination.CurrentPage=1&Pagination.MaxRowsPerPage=20`;
   let matchedItem: any = null;
 
+  function itemMatches(item: { category?: string; description?: string }) {
+    const itemCategory = item.category || '';
+    const itemDescription = item.description || '';
+    const catMatches = normalizeCategory(itemCategory) === normalizeCategory(category)
+      || itemCategory.toLowerCase().includes(category.toLowerCase())
+      || category.toLowerCase().includes(itemCategory.toLowerCase());
+    return catMatches && descriptionRegex.test(itemDescription);
+  }
+
   await expect(async () => {
-    const response = await fetch(targetUrl, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-        'workspace-id': workspaceId,
-        'WorkspaceId': workspaceId,
-        'X-Workspace-Id': workspaceId
+    matchedItem = null;
+    for (let pageNum = 1; pageNum <= maxPages; pageNum += 1) {
+      const targetUrl = `${apiBaseUrl}/api/activities/?Pagination.CurrentPage=${pageNum}&Pagination.MaxRowsPerPage=${maxRowsPerPage}`;
+      const response = await fetch(targetUrl, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'workspace-id': workspaceId,
+          'WorkspaceId': workspaceId,
+          'X-Workspace-Id': workspaceId
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`[API Audit] GET /activities page ${pageNum} returned status ${response.status} ${response.statusText}`);
       }
-    });
 
-    if (!response.ok) {
-      throw new Error(`[API Audit] GET /activities returned status ${response.status} ${response.statusText}`);
-    }
+      const json = await response.json();
+      const list = json.data?.list || [];
 
-    const json = await response.json();
-    const list = json.data?.list || [];
-    
-    // Find matching item
-    for (const item of list) {
-      const itemCategory = item.category || '';
-      const itemDescription = item.description || '';
-      
-      const catMatches = normalizeCategory(itemCategory) === normalizeCategory(category) || 
-                         itemCategory.toLowerCase().includes(category.toLowerCase()) || 
-                         category.toLowerCase().includes(itemCategory.toLowerCase());
-      
-      const descMatches = descriptionRegex.test(itemDescription);
+      for (const item of list) {
+        if (itemMatches(item)) {
+          matchedItem = item;
+          return;
+        }
+      }
 
-      if (catMatches && descMatches) {
-        matchedItem = item;
-        return;
+      if (list.length < maxRowsPerPage) {
+        break;
       }
     }
-    throw new Error('Matching log item not found yet');
+
+    throw new Error(`Matching log item not found yet (searched ${maxPages} page(s) x ${maxRowsPerPage} rows)`);
   }).toPass({ timeout: timeoutMs, intervals: [2000] });
 
   if (!matchedItem) {

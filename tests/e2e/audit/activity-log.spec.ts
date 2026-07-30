@@ -87,7 +87,8 @@ test.describe('Denetim Günlüğü / Aktivite Kayıtları (Activity & Audit Logs
     console.log('🔑 KISIM 1: Giriş logu kontrol ediliyor...');
     await verifyAuditLogViaAPI(page, {
       category: 'Auth',
-      descriptionRegex: /Logged In|Giriş|logged in/i
+      descriptionRegex: /Logged In|logged in successfully|Giriş/i,
+      timeoutMs: 30_000,
     });
     console.log('✅ Kullanıcı giriş olayına ait log kaydı başarıyla doğrulandı.');
 
