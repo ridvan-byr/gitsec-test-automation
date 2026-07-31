@@ -385,4 +385,5 @@ export const test = base.extend<GitSecFixtures>({
   }
 });
 
-export { expect };
+export { expect, Page };
+

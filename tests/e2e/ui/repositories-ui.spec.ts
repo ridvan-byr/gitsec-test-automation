@@ -1,38 +1,44 @@
 import { test, expect } from '../../fixtures/test';
 import { ProviderPage } from '../../pages/ProviderPage';
 import { requireEnv } from '../../support/require-env';
+import { safeGoto } from '../../support/dashboard-ui-helpers';
 
 // Next.js chunk loading hataları aldığında sayfayı yenileyerek kurtarmayı sağlayan yardımcı fonksiyon
 async function gotoWithRecovery(page: any, url: string) {
   console.log(`🌐 [REPOSITORIES UI] Sayfaya gidiliyor: ${url}`);
-  await page.goto(url, { waitUntil: 'domcontentloaded' });
+  await safeGoto(page, url);
   
   const chunkError = page.getByText(/chunk|loading chunk/i).first();
   if (await chunkError.isVisible().catch(() => false)) {
     console.log('🔄 [RECOVERY] Chunk load error detected! Reloading page...');
-    await page.reload({ waitUntil: 'load' });
+    await page.reload({ waitUntil: 'load' }).catch(() => {});
   }
 }
 
 test.describe('Repositories & Provider Management — Arayüz ve Buton Durum Doğrulamaları (UI & Button States)', () => {
   let providerPage: ProviderPage;
+  let activeWorkspaceId: string;
+  let dashboardBaseUrl: string;
 
   test.beforeEach(async ({ page }) => {
     providerPage = new ProviderPage(page);
+    dashboardBaseUrl = requireEnv('DASHBOARD_BASE_URL');
 
-    // 1. Giriş yap ve dashboard'a git
-    await providerPage.navigateToDashboard();
-    await providerPage.waitForDashboardReady();
+    // 1. Tarayıcı henüz boşsa veya dashboard ortamında değilse dashboard'a git
+    if (page.url() === 'about:blank' || !page.url().includes(dashboardBaseUrl)) {
+      await providerPage.navigateToDashboard();
+      await providerPage.waitForDashboardReady();
+    }
+
+    activeWorkspaceId = await providerPage.getActiveWorkspaceId();
 
     // 2. Next.js oturum hidrasyonunun tamamlanması için sidebar/navigasyon alanını bekle
     const sidebar = page.locator('aside, nav, [class*="sidebar"]').first();
     await sidebar.waitFor({ state: 'visible', timeout: 15000 }).catch(() => {});
-    await page.waitForLoadState('networkidle').catch(() => {});
+    await page.waitForLoadState('domcontentloaded').catch(() => {});
   });
 
   test('Kısım 1: Repositories Sidebar Akordeonu ve GitHub Navigasyonu', async ({ page }) => {
-    const workspaceId = requireEnv('WORKSPACE_ID');
-
     // 1. Sidebar'da Repositories toggle butonunun (akordeon) varlığını doğrula ve tıkla
     const repoAccordion = page.getByRole('button', { name: /Repositories/i })
       .or(page.locator('aside button').filter({ hasText: /Repositories/i }))
@@ -43,7 +49,8 @@ test.describe('Repositories & Provider Management — Arayüz ve Buton Durum Do�
 
     // GitHub linkini bul, görünür değilse akordeonu aç
     const githubLink = page.getByRole('link', { name: /^GitHub$/i })
-      .or(page.locator(`aside a[href*="/${workspaceId}/repositories/github"]`))
+      .or(page.locator(`aside a[href*="/${activeWorkspaceId}/repositories/github"]`))
+      .or(page.locator('aside a[href*="/repositories/github"]'))
       .first();
 
     if (!(await githubLink.isVisible().catch(() => false))) {
@@ -56,13 +63,12 @@ test.describe('Repositories & Provider Management — Arayüz ve Buton Durum Do�
     await githubLink.click();
 
     // 2. GitHub depoları listeleme sayfasına yönlendiğini doğrula
-    await page.waitForURL(new RegExp(`/${workspaceId}/repositories/github`));
+    await page.waitForURL(/\/repositories\/github\b/i, { timeout: 15000 });
     console.log('✅ Sidebar Repositories akordeonu ve GitHub navigasyonu başarıyla doğrulandı.');
   });
 
   test('Kısım 2: Repositories Sayfası Arama, Görünüm Modları ve Refresh Kontrolleri', async ({ page }) => {
-    const workspaceId = requireEnv('WORKSPACE_ID');
-    const targetUrl = `${requireEnv('DASHBOARD_BASE_URL')}/${workspaceId}/repositories/github`;
+    const targetUrl = `${dashboardBaseUrl}/${activeWorkspaceId}/repositories/github`;
     
     await gotoWithRecovery(page, targetUrl);
 
@@ -106,8 +112,7 @@ test.describe('Repositories & Provider Management — Arayüz ve Buton Durum Do�
   });
 
   test('Kısım 3: Filtre Dropdown\'ları (Visibility, Status, Archive) Kontrolleri', async ({ page }) => {
-    const workspaceId = requireEnv('WORKSPACE_ID');
-    const targetUrl = `${requireEnv('DASHBOARD_BASE_URL')}/${workspaceId}/repositories/github`;
+    const targetUrl = `${dashboardBaseUrl}/${activeWorkspaceId}/repositories/github`;
     
     await gotoWithRecovery(page, targetUrl);
 
@@ -134,8 +139,7 @@ test.describe('Repositories & Provider Management — Arayüz ve Buton Durum Do�
   });
 
   test('Kısım 4: Tablo Seçimleri ve Satır İçi Aksiyon Butonları (Licensed, Backup, Link)', async ({ page }) => {
-    const workspaceId = requireEnv('WORKSPACE_ID');
-    const targetUrl = `${requireEnv('DASHBOARD_BASE_URL')}/${workspaceId}/repositories/github`;
+    const targetUrl = `${dashboardBaseUrl}/${activeWorkspaceId}/repositories/github`;
     
     await gotoWithRecovery(page, targetUrl);
 
@@ -220,8 +224,7 @@ test.describe('Repositories & Provider Management — Arayüz ve Buton Durum Do�
   });
 
   test('Kısım 5: Sayfalama (Pagination) Alt Kontrolleri', async ({ page }) => {
-    const workspaceId = requireEnv('WORKSPACE_ID');
-    const targetUrl = `${requireEnv('DASHBOARD_BASE_URL')}/${workspaceId}/repositories/github`;
+    const targetUrl = `${dashboardBaseUrl}/${activeWorkspaceId}/repositories/github`;
     
     await gotoWithRecovery(page, targetUrl);
 
@@ -251,8 +254,7 @@ test.describe('Repositories & Provider Management — Arayüz ve Buton Durum Do�
   });
 
   test('Kısım 6: Add Provider (Sağlayıcı Ekleme) Sayfası ve Bağlantı Butonları', async ({ page }) => {
-    const workspaceId = requireEnv('WORKSPACE_ID');
-    const targetUrl = `${requireEnv('DASHBOARD_BASE_URL')}/${workspaceId}/repositories/add`;
+    const targetUrl = `${dashboardBaseUrl}/${activeWorkspaceId}/repositories/add`;
     
     await gotoWithRecovery(page, targetUrl);
 

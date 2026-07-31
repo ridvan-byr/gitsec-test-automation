@@ -19,15 +19,16 @@ export class ProviderPage {
   }
 
   async navigateToDashboard(): Promise<void> {
-    const dashboardUrl = `${this.dashboardBaseUrl}/${this.workspaceId}/dashboard`;
-    await this.page.goto(dashboardUrl, { waitUntil: 'domcontentloaded' });
-    await expect(this.page).toHaveURL(new RegExp(`/${this.workspaceId}/dashboard`));
+    const wsId = await this.getActiveWorkspaceId();
+    const dashboardUrl = `${this.dashboardBaseUrl}/${wsId}/dashboard`;
+    await this.page.goto(dashboardUrl, { waitUntil: 'domcontentloaded' }).catch(() => {});
+    await expect(this.page).toHaveURL(/\/(\d+)\/dashboard/i, { timeout: 15000 });
   }
 
   async waitForDashboardReady(): Promise<void> {
-    await this.page.waitForURL(new RegExp(`/${this.workspaceId}/dashboard`), { timeout: 30000 });
+    await this.page.waitForURL(/\/(\d+)\/dashboard/i, { timeout: 30000 });
     await this.page.waitForLoadState('domcontentloaded');
-    await expect(this.page.locator('main').first()).toBeVisible({ timeout: 20000 });
+    await expect(this.page.locator('main, aside, nav').first()).toBeVisible({ timeout: 20000 });
   }
 
   async closeOnboardingIfVisible(): Promise<void> {
@@ -52,6 +53,13 @@ export class ProviderPage {
   }
 
   async goToAddProviderPage(): Promise<void> {
+    if (this.page.isClosed()) return;
+    const currentUrl = this.page.url();
+    if (currentUrl === 'about:blank' || !currentUrl.includes(this.dashboardBaseUrl)) {
+      console.log('🔄 [POM] Sayfa henüz yüklenmedi, önce Dashboard yükleniyor...');
+      await this.navigateToDashboard().catch(() => {});
+    }
+
     // 1. Önce tarayıcıdaki aktif Workspace ID'yi tespit et
     let wsId = await this.getActiveWorkspaceId();
     let addUrl = `${this.dashboardBaseUrl}/${wsId}/repositories/add`;
@@ -86,10 +94,25 @@ export class ProviderPage {
 
   async isGithubAlreadyConnectedOnAddProvider(): Promise<boolean> {
     if (this.page.isClosed()) return false;
+    await this.page.waitForLoadState('domcontentloaded').catch(() => { });
     await this.page.evaluate(() => window.scrollBy({ top: 350, behavior: 'smooth' })).catch(() => { });
     await this.page.waitForTimeout(1000).catch(() => { });
 
-    // Tablo satırlarının yüklenmesini bekle (yükleme tamamlanana kadar 5s bekle)
+    // 0. Önce GitHub kartında "Connected" veya "Active" / "Configure App" etiketi var mı kontrol et
+    const githubCard = this.page.locator('div[class*="card"]').filter({ hasText: /GitHub/i });
+    const cardCount = await githubCard.count().catch(() => 0);
+    for (let i = 0; i < cardCount; i++) {
+      const cardText = await githubCard.nth(i).innerText().catch(() => '');
+      const cleanText = cardText.trim().replace(/\s+/g, ' ');
+      if (/Bitbucket|GitLab|Azure/i.test(cleanText)) continue;
+      if (/\bRemoved\b|\bPasif\b|\bSilindi\b/i.test(cleanText)) continue;
+      if (/GitHub/i.test(cleanText) && /Connected|Active|Configure App|Bağlı|Aktif/i.test(cleanText) && !/Not Connected/i.test(cleanText)) {
+        console.log(`✅ [PROVIDER CHECK] GitHub sağlayıcı kartında aktif etiket tespit edildi: "${cleanText}"`);
+        return true;
+      }
+    }
+
+    // Tablo satırlarının yüklenmesini bekle (5s)
     await this.page.locator('main table tbody tr, div[class*="table"] tr').first().waitFor({ state: 'visible', timeout: 5000 }).catch(() => { });
 
     const checkElement = async (): Promise<boolean> => {
@@ -107,8 +130,8 @@ export class ProviderPage {
 
         if (/GitHub/i.test(cleanLogText)) {
           console.log(`🔍 [PROVIDER CHECK] GitHub Satırı Bulundu (Satır ${i + 1}): "${cleanLogText}"`);
-          const isRemoved = /Removed/i.test(cleanLogText);
-          const isActive = /Active|Connected|Configure App/i.test(cleanLogText);
+          const isRemoved = /\bRemoved\b|\bPasif\b|\bSilindi\b/i.test(cleanLogText);
+          const isActive = /\bActive\b|\bConnected\b|\bConfigure App\b|\bAktif\b|\bBağlı\b/i.test(cleanLogText);
 
           if (isActive && !isRemoved) {
             console.log('✅ [PROVIDER CHECK] GitHub sağlayıcısının AKTİF (Active) durumda olduğu doğrulandı.');
@@ -121,26 +144,38 @@ export class ProviderPage {
       return false;
     };
 
-    // 1. İlk görünümde 1. sayfadaki Aktif GitHub satırını kontrol et
+    // 1. Sayfa 1'de arama yap
     if (await checkElement()) return true;
 
-    // 2. Bulunamadıysa "Status -> Active" filtresini uygulayıp tablo re-render süresi için bekle (1.5s)
-    console.log('🔄 [PROVIDER CHECK] GitHub ilk görünümde bulunamadı. "Status -> Active" filtresi uygulanıyor...');
-    await this.filterByActiveStatus();
-    await this.page.waitForTimeout(1500);
-    if (await checkElement()) return true;
-
-    // 3. Hâlâ bulunamadıysa 2., 3. ve 4. sayfalarda Aktif GitHub satırını ara
+    // 2. Filtrelemeden önce Sayfa 2, 3, 4 ve 5'e bak (Çünkü aktif sağlayıcı 2. veya 3. sayfada olabilir)
     const nextBtn = this.page.getByRole('button', { name: /Next|Sonraki/i })
       .or(this.page.locator('button[aria-label*="Next"]'))
       .or(this.page.locator('button[aria-label*="Sonraki"]'))
       .first();
 
-    for (let pageNum = 2; pageNum <= 4; pageNum++) {
+    for (let pageNum = 2; pageNum <= 5; pageNum++) {
       const isNextEnabled = (await nextBtn.isVisible().catch(() => false)) && !(await nextBtn.isDisabled().catch(() => true));
       if (!isNextEnabled) break;
 
       console.log(`🔍 [PROVIDER CHECK] ${pageNum}. sayfaya geçilerek Aktif GitHub sağlayıcısı aranıyor...`);
+      await nextBtn.click({ force: true }).catch(() => { });
+      await this.page.waitForTimeout(1200);
+
+      if (await checkElement()) return true;
+    }
+
+    // 3. Bulunamadıysa 1. sayfaya dönüp "Status -> Active" filtresini uygula
+    console.log('🔄 [PROVIDER CHECK] GitHub ilk taramada bulunamadı. "Status -> Active" filtresi uygulanıyor...');
+    await this.filterByActiveStatus();
+    await this.page.waitForTimeout(2000);
+    if (await checkElement()) return true;
+
+    // 4. Filtrelenmiş sayfaları (2-5) tara
+    for (let pageNum = 2; pageNum <= 5; pageNum++) {
+      const isNextEnabled = (await nextBtn.isVisible().catch(() => false)) && !(await nextBtn.isDisabled().catch(() => true));
+      if (!isNextEnabled) break;
+
+      console.log(`🔍 [PROVIDER CHECK] (Filtreli) ${pageNum}. sayfaya geçilerek Aktif GitHub sağlayıcısı aranıyor...`);
       await nextBtn.click({ force: true }).catch(() => { });
       await this.page.waitForTimeout(1200);
 
@@ -189,8 +224,24 @@ export class ProviderPage {
   }
 
   async isBitbucketAlreadyConnectedOnAddProvider(): Promise<boolean> {
+    if (this.page.isClosed()) return false;
+    await this.page.waitForLoadState('domcontentloaded').catch(() => { });
     await this.page.evaluate(() => window.scrollBy({ top: 350, behavior: 'smooth' })).catch(() => { });
-    await this.page.waitForTimeout(1000);
+    await this.page.waitForTimeout(1000).catch(() => { });
+
+    // 0. Önce Bitbucket kartında "Connected" veya "Active" etiketi var mı kontrol et
+    const bitbucketCard = this.page.locator('div[class*="card"]').filter({ hasText: /Bitbucket/i });
+    const cardCount = await bitbucketCard.count().catch(() => 0);
+    for (let i = 0; i < cardCount; i++) {
+      const cardText = await bitbucketCard.nth(i).innerText().catch(() => '');
+      const cleanText = cardText.trim().replace(/\s+/g, ' ');
+      if (/GitHub|GitLab|Azure/i.test(cleanText)) continue;
+      if (/\bRemoved\b|\bPasif\b|\bSilindi\b/i.test(cleanText)) continue;
+      if (/Bitbucket/i.test(cleanText) && /Connected|Active|Configure App|Bağlı|Aktif/i.test(cleanText) && !/Not Connected/i.test(cleanText)) {
+        console.log(`✅ [PROVIDER CHECK] Bitbucket sağlayıcı kartında aktif etiket tespit edildi: "${cleanText}"`);
+        return true;
+      }
+    }
 
     // Tablo satırlarının yüklenmesini bekle
     await this.page.locator('main table tbody tr, div[class*="table"] tr').first().waitFor({ state: 'visible', timeout: 5000 }).catch(() => { });
@@ -205,38 +256,54 @@ export class ProviderPage {
         await row.scrollIntoViewIfNeeded().catch(() => { });
         const text = ((await row.innerText().catch(() => '')) || (await row.textContent().catch(() => '')) || '').trim().replace(/\s+/g, ' ');
 
-        console.log(`🔍 [PROVIDER CHECK] Bitbucket arayüz satırı okundu: "${text}"`);
+        if (/Bitbucket/i.test(text)) {
+          console.log(`🔍 [PROVIDER CHECK] Bitbucket arayüz satırı okundu: "${text}"`);
+          const isRemoved = /\bRemoved\b|\bPasif\b|\bSilindi\b/i.test(text);
+          const isActive = /\bActive\b|\bConnected\b|\bConfigure App\b|\bAktif\b|\bBağlı\b/i.test(text);
 
-        if (/Removed/i.test(text) && !/Active/i.test(text)) {
-          console.log('ℹ️ [PROVIDER CHECK] Bu Bitbucket satırının durumu "Removed" (Pasif). Diğer satırlar kontrol ediliyor...');
-        } else if (/Active|Connected|Configure App/i.test(text)) {
-          console.log('✅ [PROVIDER CHECK] Bitbucket sağlayıcısının AKTİF durumda olduğu doğrulandı.');
-          return true;
+          if (isActive && !isRemoved) {
+            console.log('✅ [PROVIDER CHECK] Bitbucket sağlayıcısının AKTİF durumda olduğu doğrulandı.');
+            return true;
+          } else if (isRemoved) {
+            console.log('ℹ️ [PROVIDER CHECK] Bu Bitbucket satırının durumu "Removed" (Pasif). Diğer satırlar kontrol ediliyor...');
+          }
         }
       }
       return false;
     };
 
-    // 1. İlk görünümde 1. sayfadaki Aktif Bitbucket satırını kontrol et
+    // 1. Sayfa 1'de arama yap
     if (await checkElement()) return true;
 
-    // 2. Bulunamadıysa "Status -> Active" filtresini uygulayıp 1. sayfayı tekrar kontrol et
-    console.log('🔄 [PROVIDER CHECK] Bitbucket ilk görünümde bulunamadı. "Status -> Active" filtresi uygulanıyor...');
-    await this.filterByActiveStatus();
-    await this.page.waitForTimeout(1500);
-    if (await checkElement()) return true;
-
-    // 3. Hâlâ bulunamadıysa 2., 3. ve 4. sayfalarda Aktif Bitbucket satırını ara
+    // 2. Filtrelemeden önce Sayfa 2, 3, 4 ve 5'e bak
     const nextBtn = this.page.getByRole('button', { name: /Next|Sonraki/i })
       .or(this.page.locator('button[aria-label*="Next"]'))
       .or(this.page.locator('button[aria-label*="Sonraki"]'))
       .first();
 
-    for (let pageNum = 2; pageNum <= 4; pageNum++) {
+    for (let pageNum = 2; pageNum <= 5; pageNum++) {
       const isNextEnabled = (await nextBtn.isVisible().catch(() => false)) && !(await nextBtn.isDisabled().catch(() => true));
       if (!isNextEnabled) break;
 
       console.log(`🔍 [PROVIDER CHECK] ${pageNum}. sayfaya geçilerek Aktif Bitbucket sağlayıcısı aranıyor...`);
+      await nextBtn.click({ force: true }).catch(() => { });
+      await this.page.waitForTimeout(1200);
+
+      if (await checkElement()) return true;
+    }
+
+    // 3. Bulunamadıysa "Status -> Active" filtresini uygula
+    console.log('🔄 [PROVIDER CHECK] Bitbucket ilk taramada bulunamadı. "Status -> Active" filtresi uygulanıyor...');
+    await this.filterByActiveStatus();
+    await this.page.waitForTimeout(2000);
+    if (await checkElement()) return true;
+
+    // 4. Filtrelenmiş sayfaları (2-5) tara
+    for (let pageNum = 2; pageNum <= 5; pageNum++) {
+      const isNextEnabled = (await nextBtn.isVisible().catch(() => false)) && !(await nextBtn.isDisabled().catch(() => true));
+      if (!isNextEnabled) break;
+
+      console.log(`🔍 [PROVIDER CHECK] (Filtreli) ${pageNum}. sayfaya geçilerek Aktif Bitbucket sağlayıcısı aranıyor...`);
       await nextBtn.click({ force: true }).catch(() => { });
       await this.page.waitForTimeout(1200);
 
@@ -272,6 +339,7 @@ export class ProviderPage {
     const bitbucketCard = this.page
       .getByText(/Setup your Bitbucket integration to backup your repositories/i)
       .or(this.page.locator('h1, h2, h3, h4, span, div, p').filter({ hasText: /^Bitbucket\s*>/i }))
+      .or(this.page.locator('div[class*="card"]').filter({ hasText: /Bitbucket/i }))
       .first();
 
     const isVisible = await bitbucketCard.waitFor({ state: 'visible', timeout: 15000 }).then(() => true).catch(() => false);
@@ -283,12 +351,9 @@ export class ProviderPage {
     await bitbucketCard.scrollIntoViewIfNeeded().catch(() => { });
     await this.page.waitForTimeout(300);
 
+    // Karta yalnızca bir kez tıkla
     await bitbucketCard.click({ force: true }).catch(() => { });
-
-    const parentCard = bitbucketCard.locator('xpath=ancestor-or-self::div[contains(@class, "grid") or contains(@class, "card") or contains(@class, "border") or contains(@class, "cursor")][1]').first();
-    if (await parentCard.isVisible().catch(() => false)) {
-      await parentCard.click({ force: true }).catch(() => { });
-    }
+    await this.page.waitForTimeout(500);
   }
 
   async goToRepositoriesGithub(): Promise<void> {

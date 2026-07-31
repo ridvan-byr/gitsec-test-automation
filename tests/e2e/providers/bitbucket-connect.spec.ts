@@ -22,7 +22,9 @@ async function verifyDashboardBitbucketConnection(providerPage: ProviderPage, ma
     if (attempt < maxAttempts) {
       console.log(`⏳ [BEKLEME] (Deneme ${attempt}/${maxAttempts}) Bitbucket sağlayıcısı henüz aktifleşmedi, sayfa yenileniyor...`);
       await providerPage.goToAddProviderPage().catch(() => {});
-      await providerPage.page.waitForTimeout(2000);
+      if (!providerPage.page.isClosed()) {
+        await providerPage.page.waitForTimeout(2000).catch(() => {});
+      }
     }
   }
 
@@ -47,68 +49,70 @@ test.describe('Bitbucket Provider Entegrasyon Testleri', () => {
     console.log('🚀 [POM] Bitbucket entegrasyonu için "Add Provider" sayfasına gidiliyor...');
     await providerPage.goToAddProviderPage();
 
-    // 2. Bitbucket Kartını bul ve tıkla
+    // 2. Bitbucket Sağlayıcı Kartına tıkla
+    console.log('👆 [TIKLAMA] "Bitbucket" sağlayıcı kartı tıklanıyor...');
     await providerPage.selectBitbucket();
-    console.log('👆 Bitbucket sağlayıcı kartına tıklandı.');
 
-    // 4. Bitbucket Kurulum Modalı veya doğrudan yetkilendirme akışını kontrol et
+    // 3. Modalı ve Install butonunu bekle
     let modal = page.locator('[role="dialog"], [data-slot="dialog-content"], div[class*="modal"]').first();
     let isModalVisible = await modal
-      .waitFor({ state: 'visible', timeout: 5000 })
+      .waitFor({ state: 'visible', timeout: 6000 })
       .then(() => true)
       .catch(() => false);
 
-    const isAlreadyConnected = await providerPage.isBitbucketAlreadyConnectedOnAddProvider().catch(() => false);
-    if (isAlreadyConnected) {
-      console.log('✅ Bitbucket sağlayıcısı zaten bağlı/aktif durumda. Entegrasyon doğrulaması başarılı.');
-      return;
-    }
-
     if (!isModalVisible) {
-      console.log('[bitbucket-modal] Bitbucket modalı açılmadı, sayfa yenilenip tekrar deneniyor...');
-      await providerPage.goToAddProviderPage().catch(() => {});
+      console.log('[bitbucket-modal] Bitbucket modalı açılmadı, kart tekrar tıklanıyor...');
       await providerPage.selectBitbucket().catch(() => {});
       modal = page.locator('[role="dialog"], [data-slot="dialog-content"], div[class*="modal"]').first();
-      isModalVisible = await modal.waitFor({ state: 'visible', timeout: 5000 }).then(() => true).catch(() => false);
+      await modal.waitFor({ state: 'visible', timeout: 8000 }).catch(() => {});
     }
 
-    const installBtn = modal.getByRole('button', { name: /Install|Yükle|Configure|Grant|Grant Access/i }).first();
+    await expect(modal).toBeVisible({ timeout: 10000 });
+    console.log('✅ Bitbucket kurulum modalı başarıyla görüntülendi.');
 
-    if (isModalVisible) {
-      await expect(modal).toBeVisible({ timeout: 5000 }).catch(() => {});
-      console.log('✅ Bitbucket kurulum modalı başarıyla görüntülendi.');
-    } else {
-      console.log('ℹ️ [Bitbucket] Kurulum modalı olmadan doğrudan yetkilendirme akışı veya aktif durumu tespit edildi.');
-    }
+    // 4. Modaldaki "Install" / "Grant Access" / "Connect" butonunu bul
+    const installBtn = modal.locator('button, a, [role="button"]')
+      .filter({ hasText: /Install|Yükle|Configure|Grant|Connect|Ekle|Kur/i })
+      .or(modal.locator('button:not(:has-text("Cancel")):not(:has-text("Close")):not(:has-text("İptal")):not(:has-text("Kapat"))'))
+      .or(page.getByRole('button', { name: /Install|Yükle|Configure|Grant|Grant Access|Connect/i }))
+      .first();
 
-    // 5. "Grant Access" (Yetkilendir) butonuna basarak Atlassian OAuth Popup penceresini aç
-    console.log('👆 "Grant Access" butonuna tıklanıyor ve Atlassian OAuth penceresi bekleniyor...');
-    if (await installBtn.isVisible().catch(() => false)) {
-      await expect(installBtn).toBeEnabled();
-      const [popup] = await Promise.all([
-        page.waitForEvent('popup', { timeout: 30000 }).catch(() => null),
-        installBtn.click({ force: true }).catch(() => {})
-      ]);
-      if (popup) {
-        await popup.waitForLoadState('domcontentloaded').catch(() => {});
-        const popupUrl = popup.url();
-        console.log(`ℹ️ Açılan Popup URL: ${popupUrl}`);
-        expect(popupUrl).toMatch(/atlassian\.com|bitbucket\.org/i);
-        console.log('✅ Atlassian/Bitbucket OAuth popup yönlendirmesi doğrulandı.');
+    console.log('👆 Modaldaki "Install" / "Grant Access" butonuna tıklanıyor ve Atlassian OAuth penceresi bekleniyor...');
+    await installBtn.scrollIntoViewIfNeeded().catch(() => {});
+    await expect(installBtn).toBeVisible({ timeout: 10000 });
+    await expect(installBtn).toBeEnabled({ timeout: 10000 });
 
-        // Google SSO Oturumu, Atlassian Girişi ve "Grant Access" Buton Onayı
-        await handleBitbucketAuthPopup(popup).catch(() => {});
+    // 5. OAuth Popup dinleyicisini başlat ve Install butonuna tıklamayı gerçekleştir
+    const popupPromise = page.waitForEvent('popup', { timeout: 30000 }).catch(() => null);
 
-        if (!popup.isClosed()) {
-          await popup.close().catch(() => {});
-        }
+    await installBtn.click({ force: true }).catch(async (err) => {
+      console.log(`⚡ [FALLBACK] Modaldaki Install butonuna JS click() ile tıklanıyor (${err?.message || err})...`);
+      await installBtn.evaluate((el: any) => el.click()).catch(() => {});
+    });
+
+    const popup = await popupPromise;
+
+    if (popup) {
+      await popup.waitForLoadState('domcontentloaded').catch(() => {});
+      const popupUrl = popup.url();
+      console.log(`ℹ️ Açılan OAuth Popup URL: ${popupUrl}`);
+      expect(popupUrl).toMatch(/atlassian\.com|bitbucket\.org/i);
+      console.log('✅ Atlassian/Bitbucket OAuth popup yönlendirmesi doğrulandı.');
+
+      // Google SSO Oturumu, Atlassian Girişi ve "Grant Access" Buton Onayı
+      await handleBitbucketAuthPopup(popup).catch(() => {});
+
+      if (!popup.isClosed()) {
+        await popup.close().catch(() => {});
       }
+    } else {
+      console.log('ℹ️ OAuth Popup tetiklenmedi veya doğrudan yetkilendirme akışı tamamlandı.');
     }
 
-    // 7. Doğrudan "Add Provider" sayfasında Bitbucket'ın Active olduğunu doğrula
+    // 6. Doğrudan "Add Provider" sayfasında Bitbucket'ın Active olduğunu doğrula
     await verifyDashboardBitbucketConnection(providerPage);
 
-    // 8. Bitbucket Repositories sayfasına git ve repository listesini doğrula
+    // 7. Bitbucket Repositories sayfasına git ve repository listesini doğrula
     console.log('🧭 [POM] Bitbucket Repositories sayfasına gidiliyor...');
     await providerPage.goToRepositoriesBitbucket();
 

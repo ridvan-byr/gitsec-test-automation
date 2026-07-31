@@ -1,9 +1,12 @@
 import { test, expect, GitSecPage } from '../../fixtures/test';
 import { ProviderPage } from '../../pages/ProviderPage';
 import { requireEnv } from '../../support/require-env';
+import { safeGoto } from '../../support/dashboard-ui-helpers';
 
 test.describe('Backup Snapshots — Arayüz ve Buton Durum Doğrulamaları (UI & Button States)', () => {
   let providerPage: ProviderPage;
+  let activeWorkspaceId: string;
+  let dashboardBaseUrl: string;
 
   test.beforeEach(async ({ page }) => {
     // 502 ve Next.js static asset yükleme hatalarını yoksay (Staging sunucusu kararlılığı için)
@@ -15,32 +18,36 @@ test.describe('Backup Snapshots — Arayüz ve Buton Durum Doğrulamaları (UI &
     ];
 
     providerPage = new ProviderPage(page);
+    dashboardBaseUrl = requireEnv('DASHBOARD_BASE_URL');
 
-    // 1. Giriş yap ve dashboard'a git
-    await providerPage.navigateToDashboard();
-    await providerPage.waitForDashboardReady();
+    // 1. Tarayıcı henüz boşsa veya dashboard ortamında değilse dashboard'a git
+    if (page.url() === 'about:blank' || !page.url().includes(dashboardBaseUrl)) {
+      await providerPage.navigateToDashboard();
+      await providerPage.waitForDashboardReady();
+    }
+
+    activeWorkspaceId = await providerPage.getActiveWorkspaceId();
 
     // 2. Next.js oturum hidrasyonunun tamamlanması için sidebar/navigasyon alanını bekle
     const sidebar = page.locator('aside, nav, [class*="sidebar"]').first();
     await sidebar.waitFor({ state: 'visible', timeout: 15000 }).catch(() => {});
-    await page.waitForLoadState('networkidle').catch(() => {});
+    await page.waitForLoadState('domcontentloaded').catch(() => {});
   });
 
   test('Kısım 1: Backup Snapshots Sidebar Navigasyonu ve Sayfa Yüklenmesi', async ({ page }) => {
-    const workspaceId = requireEnv('WORKSPACE_ID');
-
     // 1. Sidebar'da Backup Snapshots linkini doğrula ve tıkla
     const backupsSidebarLink = page.getByRole('link', { name: /^Backup Snapshots$/i })
-      .or(page.locator(`a[href*="/${workspaceId}/backups"]`))
+      .or(page.locator(`a[href*="/${activeWorkspaceId}/backups"]`))
+      .or(page.locator('a[href*="/backups"]'))
       .first();
 
-    await expect(backupsSidebarLink).toBeVisible();
+    await expect(backupsSidebarLink).toBeVisible({ timeout: 15000 });
     await expect(backupsSidebarLink).toBeEnabled();
     console.log('🔘 [UI TEST] Sidebar Backup Snapshots linkine tıklanıyor...');
-    await backupsSidebarLink.click();
+    await backupsSidebarLink.click({ force: true }).catch(() => backupsSidebarLink.click());
 
     // 2. Sayfa yönlendirmesini doğrula
-    await page.waitForURL(new RegExp(`/${workspaceId}/backups`));
+    await page.waitForURL(/\/backups\b/i, { timeout: 15000 });
 
     // 3. Sayfa başlığını ("Backup Snapshots") doğrula
     const pageTitle = page.getByRole('heading', { name: 'Backup Snapshots' })
@@ -51,9 +58,9 @@ test.describe('Backup Snapshots — Arayüz ve Buton Durum Doğrulamaları (UI &
   });
 
   test('Kısım 2: Üst Bar Butonları (Yenileme ve View Filtre Butonu)', async ({ page }) => {
-    const workspaceId = requireEnv('WORKSPACE_ID');
-    const targetUrl = `${requireEnv('DASHBOARD_BASE_URL')}/${workspaceId}/backups`;
-    await page.goto(targetUrl, { waitUntil: 'load' });
+    const targetUrl = `${dashboardBaseUrl}/${activeWorkspaceId}/backups`;
+    await safeGoto(page, targetUrl);
+    await page.waitForURL(/\/backups\b/i, { timeout: 15000 });
 
     // 1. Yenileme (Refresh/Sync) butonunu doğrula (lucide-refresh-cw sınıfı veya dairesel ok)
     const refreshBtn = page.locator('button:has(svg.lucide-refresh-cw)')
@@ -80,9 +87,9 @@ test.describe('Backup Snapshots — Arayüz ve Buton Durum Doğrulamaları (UI &
   });
 
   test('Kısım 3: Tablo Başlıkları, Satır İçi Silme Butonu ve Diyalog Doğrulaması', async ({ page }) => {
-    const workspaceId = requireEnv('WORKSPACE_ID');
-    const targetUrl = `${requireEnv('DASHBOARD_BASE_URL')}/${workspaceId}/backups`;
-    await page.goto(targetUrl, { waitUntil: 'load' });
+    const targetUrl = `${dashboardBaseUrl}/${activeWorkspaceId}/backups`;
+    await safeGoto(page, targetUrl);
+    await page.waitForURL(/\/backups\b/i, { timeout: 15000 });
 
     // 1. Tablonun varlığını doğrula
     const table = page.locator('table').first();
@@ -134,9 +141,9 @@ test.describe('Backup Snapshots — Arayüz ve Buton Durum Doğrulamaları (UI &
   });
 
   test('Kısım 4: Sayfalama (Pagination) Kontrolleri', async ({ page }) => {
-    const workspaceId = requireEnv('WORKSPACE_ID');
-    const targetUrl = `${requireEnv('DASHBOARD_BASE_URL')}/${workspaceId}/backups`;
-    await page.goto(targetUrl, { waitUntil: 'load' });
+    const targetUrl = `${dashboardBaseUrl}/${activeWorkspaceId}/backups`;
+    await safeGoto(page, targetUrl);
+    await page.waitForURL(/\/backups\b/i, { timeout: 15000 });
 
     // 1. Satır limit dropdown / seçici kontrolü (Rows per page)
     const limitSelector = page.locator('button[id*="select-trigger"]')

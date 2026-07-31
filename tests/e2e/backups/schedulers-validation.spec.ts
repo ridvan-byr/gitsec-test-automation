@@ -174,8 +174,12 @@ async function fillBaseSchedulerForm(page: Page, nameVal: string): Promise<strin
     return '';
   }
 
-  await page.keyboard.press('Escape');
-  await page.locator('[role="listbox"]').first().waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {});
+  const listbox = page.locator('[role="listbox"], [data-slot="select-content"]').first();
+  if (await listbox.isVisible().catch(() => false)) {
+    await listbox.waitFor({ state: 'hidden', timeout: 3000 }).catch(async () => {
+      await page.keyboard.press('Escape').catch(() => {});
+    });
+  }
 
   const nameInput = page.getByPlaceholder('e.g. Nightly Full Backup')
     .or(page.locator('input[name="name"]'))
@@ -274,8 +278,6 @@ test.describe('Backup Schedulers - Form ve Sınır Doğrulama (Validation)', () 
     // Rate Limit (HTTP 429) koruması: Testler arasında sunucuya 400ms nefes alma es'i ver
     await page.waitForTimeout(400);
 
-    workspaceId = requireEnv('WORKSPACE_ID');
-    dashboardBaseUrl = requireEnv('DASHBOARD_BASE_URL');
     (page as GitSecPage).ignoredErrors = [
       /status of 502/,
       /status of 500/,
@@ -288,16 +290,27 @@ test.describe('Backup Schedulers - Form ve Sınır Doğrulama (Validation)', () 
     await providerPage.waitForDashboardReady();
     await providerPage.closeOnboardingIfVisible();
 
+    const activeWs = await providerPage.getActiveWorkspaceId();
+    workspaceId = activeWs;
+    dashboardBaseUrl = requireEnv('DASHBOARD_BASE_URL');
+
     console.log('🌐 [NAVİGASYON] Sidebar üzerinden Schedulers sayfasına gidiliyor...');
-    const schedulersLink = page.getByRole('link', { name: /^Schedulers$/i }).or(page.locator(`a[href*="/${workspaceId}/schedulers"]`)).first();
+    const schedulersLink = page.getByRole('link', { name: /^Schedulers$/i })
+      .or(page.locator(`a[href*="/${workspaceId}/schedulers"]`))
+      .or(page.locator('a[href*="/schedulers"]'))
+      .first();
     
     try {
-      await schedulersLink.waitFor({ state: 'visible', timeout: 15000 });
-      await schedulersLink.click();
-      await page.waitForURL(/\/schedulers\b/, { timeout: 8000 });
+      if (await schedulersLink.isVisible({ timeout: 5000 }).catch(() => false)) {
+        await schedulersLink.scrollIntoViewIfNeeded().catch(() => {});
+        await schedulersLink.click({ force: true }).catch(() => schedulersLink.click());
+      } else {
+        await page.goto(`${dashboardBaseUrl}/${workspaceId}/schedulers`, { waitUntil: 'domcontentloaded' });
+      }
+      await page.waitForURL(/\/schedulers\b/, { timeout: 15000 });
     } catch (err) {
       console.log('⚠️ [UYARI] Schedulers sayfasına sidebar ile geçilemedi, doğrudan URL ile deneniyor...');
-      await page.goto(`${dashboardBaseUrl}/${workspaceId}/schedulers`);
+      await page.goto(`${dashboardBaseUrl}/${workspaceId}/schedulers`, { waitUntil: 'domcontentloaded' });
       await page.waitForURL(/\/schedulers\b/, { timeout: 15000 });
     }
 
