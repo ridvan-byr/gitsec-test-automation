@@ -233,7 +233,7 @@
       width: 300px;
     }
 
-    /* === EXACT THEME TOGGLE BUTTON MATCHING INDEX.HTML === */
+    /* === EXACT MATCHING THEME TOGGLE BUTTON FROM INDEX.HTML === */
     .theme-dropdown-trigger {
       display: flex;
       align-items: center;
@@ -825,23 +825,23 @@
         </button>
         <button class="docs-nav-item" onclick="scrollToDocSection('doc-module-providers')">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
-          GitHub & Bitbucket Entegrasyonu
+          Kod Sağlayıcıları (GitHub & Bitbucket)
         </button>
         <button class="docs-nav-item" onclick="scrollToDocSection('doc-module-storage')">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>
-          Bulut Depolama (BYOS)
+          Bulut Depolama Sağlayıcıları (BYOS)
         </button>
         <button class="docs-nav-item" onclick="scrollToDocSection('doc-module-schedulers')">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-          Zamanlayıcılar (Schedulers)
+          Yedekleme Zamanlayıcıları (Schedulers)
         </button>
         <button class="docs-nav-item" onclick="scrollToDocSection('doc-module-restore')">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
-          Geri Yükleme (Restore Wizard)
+          Geri Yükleme Sihirbazı (Restore)
         </button>
         <button class="docs-nav-item" onclick="scrollToDocSection('doc-module-billing')">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-          Lisans & iyzico Ödeme
+          Lisans Değişimi & iyzico Ödeme
         </button>
         <button class="docs-nav-item" onclick="scrollToDocSection('doc-module-audit')">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
@@ -1072,46 +1072,120 @@ test('Dinamik Yönlendirme Testi', async ({ page }) => {
 
       <hr>
 
-      <!-- Section 7: Providers Module -->
+      <!-- Section 7: Detailed Providers Module -->
       <section id="doc-module-providers">
-        <span class="card-tag">KOD SAĞLAYICILARI</span>
-        <h2>GitHub & Bitbucket Entegrasyonları</h2>
+        <span class="card-tag">KOD SAĞLAYICILARI (DEPO ENTEGRASYONU)</span>
+        <h2>Kod Sağlayıcıları (GitHub & Bitbucket Entegrasyonları)</h2>
         <p>
-          Kod depolarının yetkilendirilmesi ve kapsama alınması adımları:
+          Kod sağlayıcıları modülü, organizasyonel ve kişisel kod depolarının GitSec platformuna bağlanması, yetkilendirme izinlerinin yönetilmesi, depo bazlı yedekleme politikalarının (Include/Exclude) uygulanması ve canlı senkronizasyon adımlarını kapsar.
+        </p>
+
+        <h3>1. GitHub Entegrasyon Mimarisi (`github-connect.spec.ts`, `github-sync.spec.ts`)</h3>
+        <p>
+          GitHub App entegrasyonu, pop-up pencereleri ve ikincil doğrulama (2FA/TOTP) gerektiren karmaşık bir akıştır:
         </p>
         <ul class="docs-list">
-          <li class="docs-list-item"><strong>OAuth Popup Handling:</strong> Atlassian ve GitHub yetkilendirme pencereleri otomatik yakalanır, çerezler enjekte edilerek izinler onaylanır.</li>
-          <li class="docs-list-item"><strong>Include & Exclude Politikaları:</strong> Depoların yedekleme kapsamına dahil edilmesi veya çıkarılması test edilir. Lisans limiti aşıldığında 403 engeli doğrulanır.</li>
+          <li class="docs-list-item"><strong>Otomatik App Kurulum & Kaldırma (`handleUninstallIfAlreadyInstalled`):</strong> Eğer GitHub hesabı üzerinde GitSec App önceden kurulmuşsa, test pop-up penceresinde GitHub App ayarlarına (`/settings/installations/{id}`) giderek <span class="docs-tag">form.submit()</span> ve <span class="docs-tag">window.scrollTo</span> otomasyonu ile var olan uygulamayı anında kaldırır (Uninstall) ve taze izin ekranı açar.</li>
+          <li class="docs-list-item"><strong>2FA / TOTP Otomatik Çözümleyicisi (`Github2FaHandler.ts`):</strong> GitHub hesabı iki aşamalı doğrulamaya (2FA) takıldığında, <span class="docs-tag">otplib</span> kütüphanesi kullanılarak `.env` dosyasındaki secret key'den 6 haneli zamana dayalı OTP kodu üretilir ve saniyeler içinde forma girilir.</li>
+          <li class="docs-list-item"><strong>Depo Canlı Senkronizasyonu (`github-sync.spec.ts`):</strong> GitHub organizasyonlarında veya depolarında yapılan son commit, branch veya PR güncellemelerinin GitSec arayüzünde anlık belirmesi doğrulanır.</li>
+        </ul>
+
+        <h3>2. Bitbucket Entegrasyon Mimarisi (`bitbucket-connect.spec.ts`)</h3>
+        <p>
+          Atlassian altyapısı üzerindeki Bitbucket entegrasyon doğrulamaları:
+        </p>
+        <ul class="docs-list">
+          <li class="docs-list-item"><strong>Atlassian OAuth Pop-up ve Çerez Enjeksiyonu (`bitbucket-auth-helper.ts`):</strong> Pop-up penceresi açıldığında <span class="docs-tag">provider.setup.ts</span> üzerinden önceden yakalanan 58+ adet kayıtlı Atlassian oturum çerezi pop-up tarayıcı bağlamına enjekte edilir. Böylece şifre ekranı atlanarak "Grant Access" butonuna tıklanır.</li>
+          <li class="docs-list-item"><strong>Atlassian Email OTP Dinleyici (`atlassian-email-otp.ts`):</strong> Atlassian güvenlik kontrolü yeni cihaz şüphesiyle e-postaya 6 haneli OTP kodu gönderirse, e-posta kutusundan canlı kod çekilip forma basılır.</li>
+        </ul>
+
+        <h3>3. Depo Kapsam Kuralları (Include & Exclude Policies)</h3>
+        <ul class="docs-list">
+          <li class="docs-list-item"><strong>Dahil Etme (Include):</strong> Seçilen veya yeni eklenen depoların tekil ya da toplu halde otomatik yedekleme kapsamına alınması.</li>
+          <li class="docs-list-item"><strong>Hariç Tutma (Exclude):</strong> Yedeklenmesi istenmeyen depoların pasife çekilerek yedekleme kuyruğundan çıkarılması.</li>
+          <li class="docs-list-item"><strong>Lisans Kotası Engeli (403 Quota Check):</strong> Kullanıcının lisans planındaki aktif depo sınırı aşıldığında UI'da beliren 403 engeli ve uyarı toast bildirimlerinin doğrulanması.</li>
         </ul>
       </section>
 
       <hr>
 
-      <!-- Section 8: Storage Module -->
+      <!-- Section 8: Detailed Storage Module -->
       <section id="doc-module-storage">
-        <span class="card-tag">BULUT DEPOLAMA</span>
-        <h2>Bulut Depolama Entegrasyonu (BYOS)</h2>
+        <span class="card-tag">BULUT DEPOLAMA (BYOS)</span>
+        <h2>Bulut Depolama Sağlayıcıları (BYOS - Bring Your Own Storage)</h2>
         <p>
-          AWS S3, Google Drive, OneDrive, Azure Blob ve Huawei OBS sağlayıcıları için form doldurma, bağlantı sınama ve silme testleri yürütülür.
+          GitSec, kullanıcıların kendi bulut depolama alanlarını (BYOS) yedekleme hedefi olarak tanımlamalarına olanak tanır. Depolama modülü 5 temel sağlayıcıyı ve 15+ form doğrulama kuralını test eder.
         </p>
-        <div class="callout callout-warning">
-          <div class="callout-icon">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-          </div>
-          <div class="callout-content">
-            <strong>Zod Validation Toleransı:</strong> Depolama sağlayıcısı silinirken ön yüzün `DELETE 200 OK` yanıtındaki `boolean` veriyi Zod hatasıyla yutması durumunda, test otomatik olarak sayfayı yenileyip (`reload`) silinmeyi doğrular.
-          </div>
-        </div>
+
+        <h3>1. Desteklenen 5 Bulut Depolama Sağlayıcısı Mimarisi</h3>
+        <table class="docs-table">
+          <thead>
+            <tr>
+              <th>Sağlayıcı</th>
+              <th>Kimlik Doğrulama & Parametreler</th>
+              <th>Doğrulama & Test Kapsamı</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>AWS S3</strong></td>
+              <td>Connection Name, Bucket Name, Access Key ID, Secret Access Key, AWS Region</td>
+              <td>IAM Key doğrulaması, S3 Bucket erişim izinleri ve varsayılan kova seçimi.</td>
+            </tr>
+            <tr>
+              <td><strong>Azure Blob Storage</strong></td>
+              <td>Connection Name, Storage Account Name, Connection String, Container / Folder Path</td>
+              <td>Azure Blob connection string formatı, SAS token ve container varlık kontrolü.</td>
+            </tr>
+            <tr>
+              <td><strong>Huawei OBS</strong></td>
+              <td>Connection Name, Bucket Name, Access Key, Secret Key, Region (`tr-west-1`)</td>
+              <td>Object Storage Service Endpoint bağlantısı ve özel bölge (region) eşlemesi.</td>
+            </tr>
+            <tr>
+              <td><strong>Google Drive</strong></td>
+              <td>OAuth 2.0 SSO, Google App Auth, Refresh Token, Target Backup Folder</td>
+              <td>Google SSO yetkilendirme penceresi, drive klasör okuma/yazma izinleri.</td>
+            </tr>
+            <tr>
+              <td><strong>OneDrive</strong></td>
+              <td>Microsoft Azure AD OAuth, Tenant ID, Client Secret, Backup Directory Path</td>
+              <td>Microsoft Graph API token doğrulaması ve OneDrive klasör eşitlemesi.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>2. Gelişmiş Form Doğrulama Matrisi (`storage-validation.spec.ts`)</h3>
+        <ul class="docs-list">
+          <li class="docs-list-item"><strong>Dinamik Hata Yakalayıcı (`getVisibleErrorMessage`):</strong> Arayüzdeki hata mesajlarını `[role="alert"]`, `.toast`, `.text-destructive` ve genel sayfa metinlerinde regex ile dinamik arayan motor.</li>
+          <li class="docs-list-item"><strong>Tekrarlanan İsim (Duplicate Connection Name) Engeli:</strong> Zaten var olan bir bağlantı adı tekrar girildiğinde sistemin sunduğu benzersizlik hatası.</li>
+          <li class="docs-list-item"><strong>Geçersiz IAM / Secret Key Biçim Kontrolü:</strong> Hatalı veya eksik karakterli anahtarlarda "Test Connection" butonunun verdiği hata yanıtı.</li>
+          <li class="docs-list-item"><strong>Ağ Gecikmesi & Çift Tıklama Koruması:</strong> Form gönderilirken "Save" veya "Test Connection" butonuna çift tıklandığında çift kayıt oluşmasını önleyen UI kilit mekanizması.</li>
+          <li class="docs-list-item"><strong>Next.js Zod Schema Recovery:</strong> Backend `DELETE 200 OK` yanıtındaki boolean tipi Zod hatasına takıldığında testin otomatik `page.reload()` ile DOM güncellemesini doğrulaması.</li>
+        </ul>
       </section>
 
       <hr>
 
-      <!-- Section 9: Schedulers Module -->
+      <!-- Section 9: Detailed Schedulers Module -->
       <section id="doc-module-schedulers">
         <span class="card-tag">ZAMANLAYICILAR</span>
-        <h2>Planlayıcılar (Schedulers)</h2>
+        <h2>Yedekleme Zamanlayıcıları (Schedulers & Automation)</h2>
         <p>
-          Günlük (Daily), Haftalık (Weekly), Aylık (Monthly) ve Cron formatında otomatik yedekleme kuralları oluşturulur ve silinir.
+          Planlayıcı modülü, depoların otomatik periyodik yedeklenmesini sağlayan kuralların oluşturulmasını, güncellenmesini, çakışma kontrollerini ve silinmesini doğrular.
+        </p>
+
+        <h3>1. 4 Farklı Zamanlama Tipi ve Konfigürasyonu (`schedulers.spec.ts`)</h3>
+        <ul class="docs-list">
+          <li class="docs-list-item"><strong>Günlük (Daily):</strong> Her gün belirlenen saat ve dakikada (Örn: `03:00`) otomatik yedekleme tetikleme.</li>
+          <li class="docs-list-item"><strong>Haftalık (Weekly):</strong> Haftanın belirli günleri (Pazartesi, Çarşamba, Cuma vb.) ve saat diliminde çalıştırma.</li>
+          <li class="docs-list-item"><strong>Aylık (Monthly):</strong> Ayın belirli günlerinde (1-31 veya Ayın Son Günü) yedekleme başlatma.</li>
+          <li class="docs-list-item"><strong>Özel Cron İfadesi (Custom Cron):</strong> Gelişmiş 5 alanlı standart Cron formatı (Örn: `0 2 * * 1-5` - Hafta içi her gece 02:00).</li>
+        </ul>
+
+        <h3>2. Akıllı Checkbox ve Kapsam Seçim Motoru (`setCheckboxState`)</h3>
+        <p>
+          Zamanlayıcı modal dialog'larında depoların seçilmesi için özel geliştirilmiş <span class="docs-tag">setCheckboxState</span> fonksiyonu; DOM içindeki <span class="docs-tag">data-state</span>, <span class="docs-tag">aria-checked</span> ve SVG <span class="docs-tag">lucide-check</span> durumlarını analiz ederek hatalı tıklamaların önüne geçer.
         </p>
       </section>
 
@@ -1122,19 +1196,70 @@ test('Dinamik Yönlendirme Testi', async ({ page }) => {
         <span class="card-tag">GERİ YÜKLEME</span>
         <h2>Geri Yükleme Sihirbazı (Restore Wizard)</h2>
         <p>
-          Yedeklenmiş depoların hedef ortama geri yüklenmesi test edilir. Kapsam seçimleri (Code & Commits, PRs, Issues) doğrulanır.
+          Yedeklenmiş depoların hedef ortama veya yeni bir depoya geri yüklenmesi test edilir.
         </p>
+        <ul class="docs-list">
+          <li class="docs-list-item"><strong>Code & Commits:</strong> Kaynak kodların ve tüm git commit geçmişinin eksiksiz geri yüklenmesi.</li>
+          <li class="docs-list-item"><strong>Pull Requests (PRs) & Discussions:</strong> Açık ve kapalı PR'ların, yorumların ve tartışma başlıklarının restorasyonu.</li>
+          <li class="docs-list-item"><strong>Issues:</strong> Proje görevlerinin ve etiketlerinin hedef depoya aktarılması.</li>
+        </ul>
       </section>
 
       <hr>
 
-      <!-- Section 11: Billing & iyzico Module -->
+      <!-- Section 11: Detailed Billing & iyzico Module -->
       <section id="doc-module-billing">
         <span class="card-tag">LİSANS & ÖDEME</span>
-        <h2>Lisans Değişimi & iyzico Ödeme Akışı</h2>
+        <h2>Lisans Değişimi & iyzico Ödeme Akışı (`license-change.spec.ts`)</h2>
         <p>
-          Free, Pro ve Enterprise paketleri arasındaki geçişler ve iyzico SMS OTP ödeme altyapı simülasyonu test edilir.
+          Lisans ve ödeme modülü, GitSec platformundaki abonelik planlarının (Freemium, Startup, Premium, Premium+ / Enterprise), ödeme altyapısı entegrasyonunun (iyzico) ve 3D Secure SMS OTP doğrulamalarının eksiksiz test edilmesini sağlar.
         </p>
+
+        <h3>1. Abonelik Planları & KOTA Yönetimi</h3>
+        <table class="docs-table">
+          <thead>
+            <tr>
+              <th>Abonelik Planı</th>
+              <th>Depo & Depolama Limitleri</th>
+              <th>Özellik Kapsamı & Kısıtlar</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Freemium</strong></td>
+              <td>Sınırlı Depo, Temel Depolama</td>
+              <td>Temel yedekleme, manuel tetikleme, BYOS kilitli.</td>
+            </tr>
+            <tr>
+              <td><strong>Startup</strong></td>
+              <td>10 Depo, 50 GB Depolama</td>
+              <td>Günlük/Haftalık zamanlayıcılar, e-posta bildirimleri.</td>
+            </tr>
+            <tr>
+              <td><strong>Premium</strong></td>
+              <td>50 Depo, 500 GB Depolama</td>
+              <td>Cron zamanlayıcılar, gelişmiş restore seçenekleri.</td>
+            </tr>
+            <tr>
+              <td><strong>Premium+ / Enterprise</strong></td>
+              <td>Sınırsız Depo, Özel BYOS</td>
+              <td>Tüm bulut depolama sağlayıcıları (S3, Azure, OBS vb.) ve sınırsız restore.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>2. iyzico Test Kartları Matrisi & 3D Secure SMS OTP (`IYZICO_CARD_DEFINITIONS`)</h3>
+        <p>
+          Ödeme testlerinde iyzico sanal POS ortamı üzerinde aşağıdaki test kartı senaryoları otomatik simüle edilir:
+        </p>
+        <ul class="docs-list">
+          <li class="docs-list-item"><strong>Mastercard Debit (`mastercard_debit`):</strong> Akbank Mastercard Banka Kartı (`5890040000000016`).</li>
+          <li class="docs-list-item"><strong>Visa Credit (`visa_credit`):</strong> Denizbank Visa Kredi Kartı (`4603450000000000`).</li>
+          <li class="docs-list-item"><strong>Troy Credit (`troy_credit`):</strong> Akbank Troy Kredi Kartı (`9792072000017956`).</li>
+          <li class="docs-list-item"><strong>Yabancı Kredi Kartı (`foreign_credit`):</strong> Uluslararası kart ödemeleri (`5400010000000004`).</li>
+          <li class="docs-list-item"><strong>Taksitli Ödeme Testleri (`isbank_installment`, `yapikredi_installment`):</strong> İş Bankası ve Yapı Kredi taksitli ödeme seçenekleri.</li>
+          <li class="docs-list-item"><strong>Ödeme Hata Matrisi:</strong> Yetersiz Bakiye (`error_insufficient_funds`), Son Kullanma Tarihi Geçmiş Kart (`error_expired_card`), Hatalı CVC (`error_invalid_cvc`), Banka Reddi (`error_declined`).</li>
+        </ul>
       </section>
 
       <hr>
@@ -1142,7 +1267,7 @@ test('Dinamik Yönlendirme Testi', async ({ page }) => {
       <!-- Section 12: Audit Monitoring -->
       <section id="doc-module-audit">
         <span class="card-tag">GÜVENLİK DENETİMİ</span>
-        <h2>Audit Monitoring & Arka Plan Ağ Denetimi</h2>
+        <h2>Audit Monitoring & Arka Plan Ağ Denetimi (`audit-helper.ts`)</h2>
         <p>
           `audit-helper.ts` fixture'ı, test çalışırken arka planda oluşan tüm konsol hatalarını, yutulan JS hatalarını ve 4xx/5xx API çökmelerini otomatik raporlar.
         </p>
@@ -1319,7 +1444,6 @@ test('Dinamik Yönlendirme Testi', async ({ page }) => {
 
         sections.forEach(section => {
           const sectionTop = section.getBoundingClientRect().top - contentTop;
-          // Trigger when top of section is near the upper viewport of content area
           if (sectionTop <= 180) {
             currentSectionId = section.getAttribute('id');
           }
@@ -1331,7 +1455,6 @@ test('Dinamik Yönlendirme Testi', async ({ page }) => {
             if (btnOnClick.includes(currentSectionId)) {
               if (!btn.classList.contains('active')) {
                 btn.classList.add('active');
-                // Auto-scroll sidebar if active item is out of view
                 btn.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
               }
             } else {
@@ -1341,7 +1464,6 @@ test('Dinamik Yönlendirme Testi', async ({ page }) => {
         }
       });
 
-      // Disable scroll spy during smooth scroll on button click
       navItems.forEach(btn => {
         btn.addEventListener('click', () => {
           isManualClicking = true;
