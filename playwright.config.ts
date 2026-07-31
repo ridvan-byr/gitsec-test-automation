@@ -78,7 +78,9 @@ export default defineConfig({
       dependencies: ['setup'],
       testMatch: [
         /tests\/e2e\/providers\/(github|bitbucket)-connect\.spec\.ts/,
-        /tests\/e2e\/billing\/license-change\.spec\.ts/
+        /tests\/e2e\/billing\/license-change\.spec\.ts/,
+        /tests\/e2e\/ui\/dashboard-layout-ui\.spec\.ts/,
+        /tests\/e2e\/ui\/workspace-settings-ui\.spec\.ts/
       ],
       use: {
         ...devices['Desktop Chrome'],
@@ -93,7 +95,9 @@ export default defineConfig({
       testIgnore: [
         /tests\/e2e\/auth\/(api-login-smoke|forgot-password(?:-edge-cases|-mocked)?|login(?:-failures|-mocked)?|register(?:-failures)?)\.spec\.ts/,
         /tests\/e2e\/providers\/(github|bitbucket)-connect\.spec\.ts/,
-        /tests\/e2e\/billing\/license-change\.spec\.ts/
+        /tests\/e2e\/billing\/license-change\.spec\.ts/,
+        /tests\/e2e\/ui\/dashboard-layout-ui\.spec\.ts/,
+        /tests\/e2e\/ui\/workspace-settings-ui\.spec\.ts/
       ],
       use: {
         ...devices['Desktop Chrome'],

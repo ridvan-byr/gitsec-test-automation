@@ -126,7 +126,7 @@ async function tryOpenSettingsViaDirectUrl(page: Page, workspaceId: string): Pro
   ];
 
   for (const url of candidates) {
-    await page.goto(url, { waitUntil: 'domcontentloaded' });
+    await page.goto(url, { waitUntil: 'domcontentloaded' }).catch(() => {});
     if (await findSettingsSurface(page)) {
       console.log(`✅ [WORKSPACE] Settings sayfası URL ile açıldı: ${url}`);
       return true;

@@ -3,6 +3,7 @@ import type { Page, Locator } from '@playwright/test';
 import fs from 'fs';
 import path from 'path';
 import { requireEnv } from '../../support/require-env';
+import { ProviderPage } from '../../pages/ProviderPage';
 
 let workspaceId: string;
 let dashboardBaseUrl: string;
@@ -107,7 +108,10 @@ test.describe('Activity UI Logs Verification (Aktivite Paneli E2E)', () => {
   test.setTimeout(120000);
 
   test.beforeEach(async ({ page }) => {
-    workspaceId = requireEnv('WORKSPACE_ID');
+    const providerPage = new ProviderPage(page);
+    await providerPage.navigateToDashboard().catch(() => {});
+    await providerPage.waitForDashboardReady().catch(() => {});
+    workspaceId = await providerPage.getActiveWorkspaceId();
     dashboardBaseUrl = requireEnv('DASHBOARD_BASE_URL');
     page.on('request', request => {
       const url = request.url();

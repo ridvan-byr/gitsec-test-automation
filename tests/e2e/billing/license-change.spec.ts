@@ -1102,10 +1102,12 @@ async function verifyPaymentResultScreen(page: Page, card: ExtendedIyzicoTestCar
 }
 
 /**
- * Sayfa üzerindeki mevcut aktif plan adını (Freemium, Startup, Premium, Premium+) dinamik olarak tespit eder.
+ * Sayfa üzerindeki mevcut aktif plan adını (Freemium, Startup, Premium, Premium+) ve periyodunu dinamik olarak tespit eder.
  */
 async function detectActivePlan(page: Page): Promise<string> {
   const plans: SupportedPlan[] = ['Freemium', 'Startup', 'Premium', 'Premium+'];
+  let foundPlan: SupportedPlan | null = null;
+  let activeCard: Locator | null = null;
 
   for (const planName of plans) {
     const cardTitle = page.getByText(new RegExp(`^${planName.replace('+', '\\+')}$`, 'i')).first();
@@ -1126,29 +1128,94 @@ async function detectActivePlan(page: Page): Promise<string> {
           .filter({ hasText: /^(Current Plan|Current|Mevcut Plan)$/i })
           .first();
         if (await badge.isVisible().catch(() => false)) {
-          console.log(`📋 [LICENSE] Mevcut aktif plan tespit edildi: "${planName}"`);
-          return planName;
+          foundPlan = planName;
+          activeCard = card;
+          break;
         }
       }
     }
   }
 
-  const headerPlanBadge = page.locator('header, nav, [role="banner"]')
-    .locator('button, div, span')
-    .filter({ hasText: /(Freemium|Startup|Premium\+|Premium)/i })
-    .first();
+  if (!foundPlan) {
+    const headerPlanBadge = page.locator('header, nav, [role="banner"]')
+      .locator('button, div, span')
+      .filter({ hasText: /(Freemium|Startup|Premium\+|Premium)/i })
+      .first();
 
-  if (await headerPlanBadge.isVisible().catch(() => false)) {
-    const text = await headerPlanBadge.innerText().catch(() => '');
-    const match = text.match(/Freemium|Startup|Premium\+|Premium/i);
-    if (match) {
-      console.log(`📋 [LICENSE] Mevcut aktif plan (header badge): "${match[0]}"`);
-      return match[0];
+    if (await headerPlanBadge.isVisible().catch(() => false)) {
+      const text = await headerPlanBadge.innerText().catch(() => '');
+      const match = text.match(/Freemium|Startup|Premium\+|Premium/i);
+      if (match) {
+        foundPlan = match[0] as SupportedPlan;
+      }
     }
   }
 
-  console.log('📋 [LICENSE] Mevcut aktif plan tespit edilemedi, varsayılan "Freemium" kabul ediliyor.');
-  return 'Freemium';
+  const resolvedPlan = foundPlan || 'Freemium';
+
+  if (resolvedPlan === 'Freemium') {
+    console.log(`📋 [LICENSE] Mevcut aktif plan tespit edildi: "${resolvedPlan}"`);
+    return resolvedPlan;
+  }
+
+  // Ücretli planlar için periyodu (MONTHLY veya YEARLY) tespit et
+  let detectedInterval: 'MONTHLY' | 'YEARLY' | null = null;
+
+  if (activeCard) {
+    const cardText = await activeCard.innerText().catch(() => '');
+    if (/\/(yr|year)|per year|yıllık|billed annually|billed yearly/i.test(cardText)) {
+      detectedInterval = 'YEARLY';
+    } else if (/\/(mo|month)|per month|aylık|billed monthly/i.test(cardText)) {
+      detectedInterval = 'MONTHLY';
+    }
+  }
+
+  if (!detectedInterval) {
+    const yearlyToggleBtn = page.locator('button')
+      .filter({ hasText: /Yearly/i })
+      .filter({ hasText: /Save/i })
+      .or(page.locator('button').filter({ hasText: /^Yearly/i }))
+      .first();
+
+    const monthlyToggleBtn = page.locator('button')
+      .filter({ hasText: /^Monthly$/i })
+      .or(page.locator('button').filter({ hasText: /Monthly/i }))
+      .first();
+
+    const isYearlySelected = await yearlyToggleBtn.isVisible().catch(() => false) && (
+      (await yearlyToggleBtn.getAttribute('data-state')) === 'active' ||
+      (await yearlyToggleBtn.getAttribute('data-state')) === 'on' ||
+      (await yearlyToggleBtn.getAttribute('aria-pressed')) === 'true' ||
+      ((await yearlyToggleBtn.getAttribute('class'))?.includes('active') ?? false)
+    );
+
+    const isMonthlySelected = await monthlyToggleBtn.isVisible().catch(() => false) && (
+      (await monthlyToggleBtn.getAttribute('data-state')) === 'active' ||
+      (await monthlyToggleBtn.getAttribute('data-state')) === 'on' ||
+      (await monthlyToggleBtn.getAttribute('aria-pressed')) === 'true' ||
+      ((await monthlyToggleBtn.getAttribute('class'))?.includes('active') ?? false)
+    );
+
+    if (isYearlySelected) {
+      detectedInterval = 'YEARLY';
+    } else if (isMonthlySelected) {
+      detectedInterval = 'MONTHLY';
+    }
+  }
+
+  if (!detectedInterval) {
+    const pageText = await page.locator('main').innerText().catch(() => '');
+    if (/billing cycle:?\s*yearly|billed yearly|billed annually/i.test(pageText)) {
+      detectedInterval = 'YEARLY';
+    } else if (/billing cycle:?\s*monthly|billed monthly/i.test(pageText)) {
+      detectedInterval = 'MONTHLY';
+    }
+  }
+
+  const finalInterval = detectedInterval || 'MONTHLY';
+  const fullPlanName = `${resolvedPlan} (${finalInterval})`;
+  console.log(`📋 [LICENSE] Mevcut aktif plan tespit edildi: "${fullPlanName}"`);
+  return fullPlanName;
 }
 
 /**

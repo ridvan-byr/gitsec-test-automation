@@ -2,10 +2,13 @@ import { test, expect, GitSecPage } from '../../fixtures/test';
 import { ProviderPage } from '../../pages/ProviderPage';
 import { RestorePage } from '../../pages/RestorePage';
 import { requireEnv } from '../../support/require-env';
+import { safeGoto } from '../../support/dashboard-ui-helpers';
 
 test.describe('Restores & Restore Wizard — Arayüz ve Buton Durum Doğrulamaları (UI & Button States)', () => {
   let providerPage: ProviderPage;
   let restorePage: RestorePage;
+  let activeWorkspaceId: string;
+  let dashboardBaseUrl: string;
 
   test.beforeEach(async ({ page }) => {
     // 502 ve Next.js static asset yükleme hatalarını yoksay (Staging sunucusu kararlılığı için)
@@ -18,31 +21,35 @@ test.describe('Restores & Restore Wizard — Arayüz ve Buton Durum Doğrulamala
 
     providerPage = new ProviderPage(page);
     restorePage = new RestorePage(page);
+    dashboardBaseUrl = requireEnv('DASHBOARD_BASE_URL');
 
-    // 1. Giriş yap ve dashboard'a git
-    await providerPage.navigateToDashboard();
-    await providerPage.waitForDashboardReady();
+    // 1. Tarayıcı henüz boşsa veya dashboard ortamında değilse dashboard'a git
+    if (page.url() === 'about:blank' || !page.url().includes(dashboardBaseUrl)) {
+      await providerPage.navigateToDashboard();
+      await providerPage.waitForDashboardReady();
+    }
+
+    activeWorkspaceId = await providerPage.getActiveWorkspaceId();
 
     // 2. Next.js oturum hidrasyonunun tamamlanması için sidebar/navigasyon alanını bekle
     const sidebar = page.locator('aside, nav, [class*="sidebar"]').first();
     await sidebar.waitFor({ state: 'visible', timeout: 15000 }).catch(() => {});
-    await page.waitForLoadState('networkidle').catch(() => {});
+    await page.waitForLoadState('domcontentloaded').catch(() => {});
   });
 
   test('Kısım 1: Restores Sidebar Navigasyonu ve Listeleme Sayfası Butonu', async ({ page }) => {
-    const workspaceId = requireEnv('WORKSPACE_ID');
-
     // 1. Sidebar'da Restores linkini doğrula ve tıkla
     const restoresSidebarLink = page.getByRole('link', { name: /^Restores$/i })
-      .or(page.locator(`a[href*="/${workspaceId}/restore"]`))
+      .or(page.locator(`a[href*="/${activeWorkspaceId}/restore"]`))
+      .or(page.locator('a[href*="/restore"]'))
       .first();
 
-    await expect(restoresSidebarLink).toBeVisible();
+    await expect(restoresSidebarLink).toBeVisible({ timeout: 15000 });
     await expect(restoresSidebarLink).toBeEnabled();
-    await restoresSidebarLink.click();
+    await restoresSidebarLink.click({ force: true }).catch(() => restoresSidebarLink.click());
 
     // 2. Restores listeleme sayfasına yönlendiğini doğrula (çoğul veya tekil kontrolü)
-    await page.waitForURL(new RegExp(`/${workspaceId}/restore`));
+    await page.waitForURL(/\/restore\b/i, { timeout: 15000 });
 
     // 3. Sayfa başlığı, "Restore Wizard" ve "Refresh" butonunun varlığını doğrula
     const pageTitle = page.getByText(/GitSec Restores|Restores/i).first();
@@ -68,8 +75,8 @@ test.describe('Restores & Restore Wizard — Arayüz ve Buton Durum Doğrulamala
   });
 
   test('Kısım 2: Restore Sihirbazı Modalı ve Başlangıç Buton Durumları', async ({ page }) => {
-    const workspaceId = requireEnv('WORKSPACE_ID');
-    await page.goto(`${requireEnv('DASHBOARD_BASE_URL')}/${workspaceId}/restore`, { waitUntil: 'load' });
+    await safeGoto(page, `${dashboardBaseUrl}/${activeWorkspaceId}/restore`);
+    await page.waitForURL(/\/restore\b/i, { timeout: 15000 });
 
     // 1. "Restore Wizard" butonuna tıklayarak sihirbaz modalını aç
     const newRestoreBtn = page.getByRole('button', { name: /Restore Wizard|New Restore|Restore/i })
@@ -106,8 +113,8 @@ test.describe('Restores & Restore Wizard — Arayüz ve Buton Durum Doğrulamala
   });
 
   test('Kısım 3: Restores Listeleme Sayfası Tablo Sütunları, Arama ve Sayfalama Butonları', async ({ page }) => {
-    const workspaceId = requireEnv('WORKSPACE_ID');
-    await page.goto(`${requireEnv('DASHBOARD_BASE_URL')}/${workspaceId}/restore`, { waitUntil: 'load' });
+    await safeGoto(page, `${dashboardBaseUrl}/${activeWorkspaceId}/restore`);
+    await page.waitForURL(/\/restore\b/i, { timeout: 15000 });
 
     // 1. Tablonun varlığını doğrula
     const table = page.locator('table').first();

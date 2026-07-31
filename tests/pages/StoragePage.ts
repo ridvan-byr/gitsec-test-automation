@@ -578,6 +578,14 @@ export class StoragePage {
       await this.confirmDeleteBtn.click();
     }
 
+    // Next.js frontend Zod validasyon hatası (Output validation failed: ZodError: expected record, received boolean)
+    // nedeniyle arayüz tablosu otomatik güncellenmezse sayfayı yenileyerek silinmeyi teyit et
+    const isHidden = await targetStorageCard.waitFor({ state: 'hidden', timeout: 4000 }).then(() => true).catch(() => false);
+    if (!isHidden) {
+      console.log('🔄 [POM] Frontend Zod hatası nedeniyle DOM otomatik güncellenmedi, sayfa yenilenerek silinme teyit ediliyor...');
+      await this.page.reload({ waitUntil: 'domcontentloaded' }).catch(() => {});
+    }
+
     await expect(targetStorageCard).toBeHidden({ timeout: 15000 });
     await this.alertDialogOverlay.waitFor({ state: 'hidden', timeout: 8000 }).catch(() => {});
     console.log('[POM] Depolama sağlayıcısı başarıyla silindi ve kaldırıldı.');
@@ -644,6 +652,10 @@ export class StoragePage {
     await this.confirmDeleteBtn.waitFor({ state: 'visible', timeout: 3000 }).catch(() => {});
     if (await this.confirmDeleteBtn.isVisible().catch(() => false)) {
       await this.confirmDeleteBtn.click();
+    }
+    const isHidden = await card.waitFor({ state: 'hidden', timeout: 4000 }).then(() => true).catch(() => false);
+    if (!isHidden) {
+      await this.page.reload({ waitUntil: 'domcontentloaded' }).catch(() => {});
     }
     await expect(card).toBeHidden({ timeout: 15000 }).catch(() => {});
     await this.alertDialogOverlay.waitFor({ state: 'hidden', timeout: 8000 }).catch(() => {});

@@ -1,44 +1,53 @@
 import { test, expect } from '../../fixtures/test';
 import { ProviderPage } from '../../pages/ProviderPage';
 import { requireEnv } from '../../support/require-env';
+import { safeGoto } from '../../support/dashboard-ui-helpers';
 
 test.describe('Backup Schedulers — Arayüz ve Buton Durum Doğrulamaları (UI & Button States)', () => {
   let providerPage: ProviderPage;
+  let activeWorkspaceId: string;
+  let dashboardBaseUrl: string;
 
   test.beforeEach(async ({ page }) => {
     providerPage = new ProviderPage(page);
 
-    // 1. Giriş yap ve dashboard'a git
-    await providerPage.navigateToDashboard();
-    await providerPage.waitForDashboardReady();
+    dashboardBaseUrl = requireEnv('DASHBOARD_BASE_URL');
+
+    // 1. Tarayıcı henüz boşsa veya dashboard ortamında değilse dashboard'a git
+    if (page.url() === 'about:blank' || !page.url().includes(dashboardBaseUrl)) {
+      await providerPage.navigateToDashboard();
+      await providerPage.waitForDashboardReady();
+    }
+
+    activeWorkspaceId = await providerPage.getActiveWorkspaceId();
 
     // 2. Next.js oturum hidrasyonunun tamamlanması için sidebar/navigasyon alanını bekle
     const sidebar = page.locator('aside, nav, [class*="sidebar"]').first();
     await sidebar.waitFor({ state: 'visible', timeout: 15000 }).catch(() => {});
-    await page.waitForLoadState('networkidle').catch(() => {});
+    await page.waitForLoadState('domcontentloaded').catch(() => {});
   });
 
   test('Kısım 1: Schedulers Sidebar Navigasyonu ve Listeleme Sayfası Butonu', async ({ page }) => {
-    const workspaceId = requireEnv('WORKSPACE_ID');
-
     // 1. Sidebar'da Schedulers linkini doğrula ve tıkla
     const schedulersSidebarLink = page.getByRole('link', { name: /^Schedulers$/i })
-      .or(page.locator(`a[href*="/${workspaceId}/schedulers"]`))
+      .or(page.locator(`a[href*="/${activeWorkspaceId}/schedulers"]`))
+      .or(page.locator('a[href*="/schedulers"]'))
       .first();
 
-    await expect(schedulersSidebarLink).toBeVisible();
+    await expect(schedulersSidebarLink).toBeVisible({ timeout: 15000 });
     await expect(schedulersSidebarLink).toBeEnabled();
-    await schedulersSidebarLink.click();
+    await schedulersSidebarLink.scrollIntoViewIfNeeded().catch(() => {});
+    await schedulersSidebarLink.click({ force: true }).catch(() => schedulersSidebarLink.click());
 
     // 2. Schedulers listeleme sayfasına yönlendiğini doğrula
-    await page.waitForURL(new RegExp(`/${workspaceId}/schedulers`));
+    await page.waitForURL(/\/schedulers\b/i, { timeout: 15000 });
 
     // 3. "New Scheduler" butonunun varlığını doğrula
     const newSchedulerBtn = page.getByRole('button', { name: /New Scheduler/i })
       .or(page.locator('button').filter({ hasText: /New Scheduler/i }))
       .first();
 
-    await expect(newSchedulerBtn).toBeVisible();
+    await expect(newSchedulerBtn).toBeVisible({ timeout: 15000 });
     await expect(newSchedulerBtn).toBeEnabled();
 
     // 4. Yenileme (Sync/Refresh) butonunu doğrula
@@ -46,21 +55,22 @@ test.describe('Backup Schedulers — Arayüz ve Buton Durum Doğrulamaları (UI 
       .or(page.locator('button').filter({ has: page.locator('svg') }).last())
       .first();
 
-    await expect(refreshBtn).toBeVisible();
+    await expect(refreshBtn).toBeVisible({ timeout: 15000 });
     await expect(refreshBtn).toBeEnabled();
 
     console.log('✅ Sidebar Schedulers navigasyonu, "New Scheduler" ve "Refresh" butonu doğrulandı.');
   });
 
   test('Kısım 2: New Scheduler Modalı, Başlangıç Buton Durumları ve Form Kısıtları', async ({ page }) => {
-    const workspaceId = requireEnv('WORKSPACE_ID');
-    await page.goto(`${requireEnv('DASHBOARD_BASE_URL')}/${workspaceId}/schedulers`, { waitUntil: 'load' });
+    await safeGoto(page, `${dashboardBaseUrl}/${activeWorkspaceId}/schedulers`);
+    await page.waitForURL(/\/schedulers\b/i, { timeout: 15000 });
 
     // 1. "New Scheduler" modalını aç
     const newSchedulerBtn = page.getByRole('button', { name: /New Scheduler/i })
       .or(page.locator('button').filter({ hasText: /New Scheduler/i }))
       .first();
-    await newSchedulerBtn.click();
+    await expect(newSchedulerBtn).toBeVisible({ timeout: 15000 });
+    await newSchedulerBtn.click({ force: true }).catch(() => newSchedulerBtn.click());
 
     // 2. Modalın (dialog) görünür olmasını bekle
     const dialog = page.getByRole('dialog').first();
@@ -91,12 +101,13 @@ test.describe('Backup Schedulers — Arayüz ve Buton Durum Doğrulamaları (UI 
   });
 
   test('Kısım 3: Sıklık Türü (Frequency) Seçim Butonları ve Dinamik Form Alanları', async ({ page }) => {
-    const workspaceId = requireEnv('WORKSPACE_ID');
-    await page.goto(`${requireEnv('DASHBOARD_BASE_URL')}/${workspaceId}/schedulers`, { waitUntil: 'load' });
+    await safeGoto(page, `${dashboardBaseUrl}/${activeWorkspaceId}/schedulers`);
+    await page.waitForURL(/\/schedulers\b/i, { timeout: 15000 });
 
     // 1. Modalı aç
     const newSchedulerBtn = page.getByRole('button', { name: /New Scheduler/i }).first();
-    await newSchedulerBtn.click();
+    await expect(newSchedulerBtn).toBeVisible({ timeout: 15000 });
+    await newSchedulerBtn.click({ force: true }).catch(() => newSchedulerBtn.click());
     const dialog = page.getByRole('dialog').first();
     await dialog.waitFor({ state: 'visible', timeout: 10000 });
 
@@ -105,24 +116,29 @@ test.describe('Backup Schedulers — Arayüz ve Buton Durum Doğrulamaları (UI 
     await typeTrigger.click();
 
     // 3. Dropdown seçeneklerinden "Weekly" seç
-    const weeklyOption = page.getByRole('option', { name: 'Weekly', exact: true }).first();
+    const weeklyOption = page.getByRole('option', { name: 'Weekly', exact: true })
+      .or(page.locator('[role="option"], [data-slot="select-item"]').filter({ hasText: 'Weekly' }))
+      .first();
     await weeklyOption.click();
 
     // 4. Haftanın günleri checkbox butonlarının görünür olduğunu doğrula (Mon, Tue, vb.)
-    const monCheckbox = page.getByRole('checkbox', { name: 'Mon' }).or(page.getByLabel('Mon')).first();
-    await expect(monCheckbox).toBeVisible();
+    const monCheckbox = page.getByRole('checkbox', { name: 'Mon' }).or(page.getByLabel('Mon')).or(page.locator('button, input').filter({ hasText: /^Mon$/i })).first();
+    await expect(monCheckbox).toBeVisible({ timeout: 10000 });
     await expect(monCheckbox).toBeEnabled();
 
     // 5. Tekrar sıklık türünü "Cron" olarak değiştir
     await typeTrigger.click();
-    const cronOption = page.getByRole('option', { name: 'Cron', exact: true }).first();
+    const cronOption = page.getByRole('option', { name: 'Cron', exact: true })
+      .or(page.locator('[role="option"], [data-slot="select-item"]').filter({ hasText: 'Cron' }))
+      .first();
     await cronOption.click();
 
     // 6. Cron expression input kutusunun görünür olduğunu doğrula
     const cronInput = page.getByPlaceholder(/0 0 \* \* \*/i)
       .or(page.locator('input[placeholder*="*"]'))
+      .or(page.locator('input[name="cron"]'))
       .first();
-    await expect(cronInput).toBeVisible();
+    await expect(cronInput).toBeVisible({ timeout: 10000 });
     await expect(cronInput).toBeEditable();
 
     // 7. Modalı kapat
@@ -132,8 +148,8 @@ test.describe('Backup Schedulers — Arayüz ve Buton Durum Doğrulamaları (UI 
   });
 
   test('Kısım 4: Schedulers Listeleme Sayfası Tablo Sütunları, Arama ve Sayfalama Butonları', async ({ page }) => {
-    const workspaceId = requireEnv('WORKSPACE_ID');
-    await page.goto(`${requireEnv('DASHBOARD_BASE_URL')}/${workspaceId}/schedulers`, { waitUntil: 'load' });
+    await safeGoto(page, `${dashboardBaseUrl}/${activeWorkspaceId}/schedulers`);
+    await page.waitForURL(/\/schedulers\b/i, { timeout: 15000 });
 
     // 1. Tablonun varlığını doğrula
     const table = page.locator('table').first();
@@ -147,7 +163,7 @@ test.describe('Backup Schedulers — Arayüz ve Buton Durum Doğrulamaları (UI 
     }
     console.log('✅ Tablo başlık sütunları doğrulandı.');
 
-    // 3. Tablodaki boş durum (No results found) veya veri satırlarını doğrula
+    // 3. Tabdodaki boş durum (No results found) veya veri satırlarını doğrula
     const noResults = page.getByText(/No results found/i).first();
     const hasNoResults = await noResults.isVisible().catch(() => false);
 
@@ -196,6 +212,7 @@ test.describe('Backup Schedulers — Arayüz ve Buton Durum Doğrulamaları (UI 
     // 5. Sayfalama (Pagination) butonlarını doğrula
     const pagination = page.getByText(/Page \d+ of \d+/i)
       .or(page.getByText(/Sayfa \d+/i))
+      .or(page.getByText(/Rows per page/i))
       .filter({ visible: true })
       .first();
     

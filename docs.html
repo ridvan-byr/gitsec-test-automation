@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GitSec Test Otomasyonu - Dokümantasyon</title>
+  <title>GitSec Test Otomasyonu - Kapsamlı Mimari & Kullanım Rehberi</title>
   <script>
     (function () {
       const savedTheme = localStorage.getItem('gitsec_theme') || 'system';
@@ -31,50 +31,92 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link
-    href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;800&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;800&display=swap"
     rel="stylesheet">
 
   <style>
     :root {
       --bg-dark: #05070f;
       --bg-gradient: radial-gradient(circle at 10% 10%, rgba(37, 99, 235, 0.12) 0%, transparent 40%),
-        radial-gradient(circle at 90% 90%, rgba(16, 185, 129, 0.08) 0%, transparent 50%);
+        radial-gradient(circle at 90% 90%, rgba(16, 185, 129, 0.08) 0%, transparent 50%),
+        radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.05) 0%, transparent 60%);
       --panel-bg: rgba(13, 17, 30, 0.7);
+      --panel-bg-solid: #0d111e;
       --panel-border: rgba(255, 255, 255, 0.07);
+      --panel-border-glow: rgba(59, 130, 246, 0.3);
       --gitsec-blue: #3b82f6;
+      --gitsec-blue-hover: #1d4ed8;
+      --gitsec-blue-glow: rgba(59, 130, 246, 0.45);
       --gitsec-green: #10b981;
+      --gitsec-purple: #8b5cf6;
+      --gitsec-amber: #f59e0b;
+      --gitsec-red: #f43f5e;
       --text-main: #f8fafc;
       --text-muted: #94a3b8;
       --font-sans: 'Inter', 'Outfit', system-ui, -apple-system, sans-serif;
       --font-mono: 'Fira Code', 'Courier New', monospace;
       --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
-      --header-bg: rgba(8, 10, 20, 0.85);
-      --docs-sidebar-bg: rgba(13, 17, 30, 0.6);
+      --header-bg: rgba(8, 10, 20, 0.75);
+      --sidebar-bg: linear-gradient(180deg, #090c15 0%, #05070c 100%);
       --terminal-container-bg: #020306;
-
+      --card-bg: rgba(15, 23, 42, 0.45);
       --logo-text-color: #ffffff;
-      --gitsec-blue-glow: rgba(59, 130, 246, 0.45);
-      --panel-bg-solid: #0d111e;
       --brand-gradient: linear-gradient(135deg, #ffffff 30%, #cbd5e1 100%);
     }
 
     html.light {
       --bg-dark: #f1f5f9;
       --bg-gradient: radial-gradient(circle at 10% 10%, rgba(59, 130, 246, 0.08) 0%, transparent 40%),
-        radial-gradient(circle at 90% 90%, rgba(16, 185, 129, 0.06) 0%, transparent 50%);
-      --panel-bg: rgba(255, 255, 255, 0.8);
+        radial-gradient(circle at 90% 90%, rgba(16, 185, 129, 0.06) 0%, transparent 50%),
+        radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.03) 0%, transparent 60%);
+      --panel-bg: rgba(255, 255, 255, 0.7);
+      --panel-bg-solid: #ffffff;
       --panel-border: rgba(0, 0, 0, 0.08);
+      --panel-border-glow: rgba(59, 130, 246, 0.15);
       --text-main: #0f172a;
       --text-muted: #64748b;
-      --header-bg: rgba(255, 255, 255, 0.9);
-      --docs-sidebar-bg: rgba(255, 255, 255, 0.65);
+      --header-bg: rgba(255, 255, 255, 0.8);
+      --sidebar-bg: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
       --terminal-container-bg: #f8fafc;
-
+      --card-bg: rgba(255, 255, 255, 0.6);
       --logo-text-color: #0f172a;
-      --gitsec-blue-glow: rgba(59, 130, 246, 0.2);
-      --panel-bg-solid: #ffffff;
       --brand-gradient: linear-gradient(135deg, #0f172a 30%, #475569 100%);
+    }
+
+    /* === CUSTOM THEME-MATCHED SCROLLBARS === */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: rgba(5, 7, 15, 0.4);
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.12);
+      border-radius: 9999px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--gitsec-blue);
+      box-shadow: 0 0 10px var(--gitsec-blue-glow);
+    }
+
+    html.light ::-webkit-scrollbar-track {
+      background: rgba(241, 245, 249, 0.6);
+    }
+
+    html.light ::-webkit-scrollbar-thumb {
+      background: rgba(0, 0, 0, 0.18);
+      border-radius: 9999px;
+      border: 1px solid rgba(0, 0, 0, 0.04);
+    }
+
+    html.light ::-webkit-scrollbar-thumb:hover {
+      background: var(--gitsec-blue);
     }
 
     * {
@@ -86,20 +128,23 @@
     body {
       background-color: var(--bg-dark);
       background-image: var(--bg-gradient);
+      background-attachment: fixed;
       color: var(--text-main);
       font-family: var(--font-sans);
       height: 100vh;
       display: flex;
       flex-direction: column;
       overflow: hidden;
+      -webkit-font-smoothing: antialiased;
     }
 
+    /* === Glassmorphic Header === */
     header {
       background: var(--header-bg);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
       border-bottom: 1px solid var(--panel-border);
-      padding: 1rem 2rem;
+      padding: 0.75rem 2rem;
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -114,7 +159,7 @@
     }
 
     .brand-logo-svg {
-      height: 2rem;
+      height: 2.1rem;
       width: auto;
       display: block;
       filter: drop-shadow(0 0 10px rgba(59, 130, 246, 0.45));
@@ -128,7 +173,7 @@
 
     .brand-title {
       font-family: 'Outfit', var(--font-sans);
-      font-size: 1.4rem;
+      font-size: 1.35rem;
       font-weight: 800;
       letter-spacing: -0.03em;
       background: var(--brand-gradient);
@@ -136,14 +181,65 @@
       -webkit-text-fill-color: transparent;
     }
 
-    /* Clickable Theme Dropdown Selector Styles */
+    .header-controls {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+    }
+
+    .nav-btn-link {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.85rem;
+      font-weight: 600;
+      padding: 0.45rem 0.9rem;
+      border-radius: 0.6rem;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--panel-border);
+      transition: var(--transition-smooth);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .nav-btn-link:hover {
+      color: var(--text-main);
+      border-color: var(--gitsec-blue);
+      box-shadow: 0 0 10px var(--gitsec-blue-glow);
+    }
+
+    .docs-search-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .docs-search-input {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--panel-border);
+      border-radius: 0.6rem;
+      padding: 0.45rem 0.85rem 0.45rem 2.2rem;
+      color: var(--text-main);
+      font-size: 0.825rem;
+      font-family: var(--font-sans);
+      outline: none;
+      width: 240px;
+      transition: var(--transition-smooth);
+    }
+
+    .docs-search-input:focus {
+      border-color: var(--gitsec-blue);
+      box-shadow: 0 0 12px var(--gitsec-blue-glow);
+      width: 300px;
+    }
+
+    /* === EXACT THEME TOGGLE BUTTON MATCHING INDEX.HTML === */
     .theme-dropdown-trigger {
       display: flex;
       align-items: center;
       justify-content: center;
       background: rgba(255, 255, 255, 0.04);
       border: 1px solid var(--panel-border);
-      padding: 0;
       border-radius: 0.75rem;
       cursor: pointer;
       color: var(--text-muted);
@@ -160,7 +256,7 @@
     .theme-dropdown-trigger:hover,
     .theme-dropdown-trigger:focus {
       border-color: var(--gitsec-blue);
-      box-shadow: 0 0 8px var(--gitsec-blue-glow);
+      box-shadow: 0 0 10px var(--gitsec-blue-glow);
       color: var(--text-main);
     }
 
@@ -176,23 +272,13 @@
       display: flex;
       flex-direction: column;
       gap: 0.15rem;
-      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 0 10px rgba(59, 130, 246, 0.05);
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
       z-index: 150;
       backdrop-filter: blur(15px);
-      -webkit-backdrop-filter: blur(15px);
-      transform-origin: top right;
-      transition: opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1), transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-    html.light .theme-dropdown-menu {
-      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 0 10px rgba(0, 0, 0, 0.02);
     }
 
     .theme-dropdown-menu.hidden {
       display: none;
-      opacity: 0;
-      transform: scale(0.95) translateY(-5px);
-      pointer-events: none;
     }
 
     .theme-menu-item {
@@ -205,23 +291,15 @@
       padding: 0.55rem 0.75rem;
       border-radius: 0.5rem;
       cursor: pointer;
-      font-family: var(--font-sans);
       font-size: 0.825rem;
       font-weight: 500;
       width: 100%;
       text-align: left;
-      transition: var(--transition-smooth);
-      position: relative;
-      outline: none;
     }
 
     .theme-menu-item:hover {
       background: rgba(59, 130, 246, 0.08);
       color: var(--text-main);
-    }
-
-    html.light .theme-menu-item:hover {
-      background: rgba(59, 130, 246, 0.05);
     }
 
     .theme-menu-item.active {
@@ -230,23 +308,7 @@
       font-weight: 600;
     }
 
-    html.light .theme-menu-item.active {
-      background: rgba(59, 130, 246, 0.08);
-    }
-
-    .theme-menu-item .check-indicator {
-      position: absolute;
-      right: 0.75rem;
-      top: 50%;
-      transform: translateY(-50%);
-      color: var(--gitsec-blue);
-      display: none;
-    }
-
-    .theme-menu-item.active .check-indicator {
-      display: block;
-    }
-
+    /* === MAIN CONTAINER === */
     .main-container {
       display: flex;
       flex: 1;
@@ -254,29 +316,39 @@
       width: 100%;
     }
 
-    /* Left TOC Sidebar */
+    /* === LEFT SIDEBAR NAVIGATION === */
     .docs-sidebar {
-      width: 280px;
-      background: var(--docs-sidebar-bg);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
+      width: 320px;
+      background: var(--sidebar-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
       border-right: 1px solid var(--panel-border);
-      padding: 2.5rem 1.5rem;
+      padding: 1.5rem 1.1rem;
       display: flex;
       flex-direction: column;
-      gap: 0.5rem;
+      gap: 1.35rem;
       flex-shrink: 0;
       overflow-y: auto;
+      scroll-behavior: smooth;
+    }
+
+    .docs-nav-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
     }
 
     .docs-section-label {
-      font-size: 0.75rem;
-      font-weight: 700;
+      font-size: 0.725rem;
+      font-weight: 800;
       text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: var(--text-muted);
-      margin-bottom: 0.75rem;
-      padding-left: 0.5rem;
+      letter-spacing: 0.06em;
+      color: var(--gitsec-blue);
+      margin-bottom: 0.4rem;
+      padding-left: 0.6rem;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
     }
 
     .docs-nav-item {
@@ -284,45 +356,60 @@
       border: none;
       color: var(--text-muted);
       font-family: var(--font-sans);
-      font-size: 0.875rem;
+      font-size: 0.85rem;
       font-weight: 500;
       text-align: left;
-      padding: 0.75rem 1rem;
-      border-radius: 0.5rem;
+      padding: 0.55rem 0.85rem;
+      border-radius: 0.55rem;
       cursor: pointer;
       transition: var(--transition-smooth);
       width: 100%;
       display: flex;
       align-items: center;
-      gap: 0.75rem;
+      gap: 0.65rem;
+      position: relative;
     }
 
     .docs-nav-item:hover {
-      background: rgba(255, 255, 255, 0.03);
+      background: rgba(255, 255, 255, 0.04);
       color: var(--text-main);
     }
 
     .docs-nav-item.active {
-      background: rgba(59, 130, 246, 0.1);
+      background: rgba(59, 130, 246, 0.14);
       color: var(--gitsec-blue);
       font-weight: 600;
+      box-shadow: 0 0 12px rgba(59, 130, 246, 0.1);
     }
 
-    /* Content Area */
+    .docs-nav-item.active::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 20%;
+      bottom: 20%;
+      width: 3.5px;
+      background: var(--gitsec-blue);
+      border-radius: 0 4px 4px 0;
+      box-shadow: 0 0 8px var(--gitsec-blue-glow);
+    }
+
+    /* === MAIN CONTENT AREA === */
     .docs-content {
       flex: 1;
-      padding: 3.5rem;
+      padding: 3rem 4.5rem;
       overflow-y: auto;
       display: flex;
       flex-direction: column;
-      gap: 4rem;
+      gap: 3.75rem;
       scroll-behavior: smooth;
     }
 
     .docs-content section {
       display: flex;
       flex-direction: column;
-      gap: 1.25rem;
+      gap: 1.35rem;
+      scroll-margin-top: 1.5rem;
     }
 
     .docs-content h1,
@@ -334,53 +421,93 @@
       font-weight: 700;
     }
 
+    .docs-content h2 {
+      font-size: 2.1rem;
+      letter-spacing: -0.02em;
+      line-height: 1.25;
+    }
+
+    .docs-content h3 {
+      font-size: 1.3rem;
+      color: var(--gitsec-blue);
+      margin-top: 0.85rem;
+    }
+
     .docs-content p {
       color: var(--text-muted);
       font-size: 0.95rem;
-      line-height: 1.7;
+      line-height: 1.75;
     }
 
     .card-tag {
       align-self: flex-start;
-      background: rgba(59, 130, 246, 0.1);
+      background: rgba(59, 130, 246, 0.12);
       color: var(--gitsec-blue);
-      border: 1px solid rgba(59, 130, 246, 0.2);
-      border-radius: 0.25rem;
-      padding: 0.2rem 0.5rem;
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      border-radius: 0.35rem;
+      padding: 0.25rem 0.65rem;
       font-size: 0.7rem;
       font-family: var(--font-sans);
-      font-weight: 700;
-      letter-spacing: 0.03em;
+      font-weight: 800;
+      letter-spacing: 0.05em;
       text-transform: uppercase;
     }
 
     .docs-tag {
-      background: rgba(59, 130, 246, 0.08);
+      background: rgba(59, 130, 246, 0.1);
       color: var(--gitsec-blue);
-      border: 1px solid rgba(59, 130, 246, 0.15);
-      border-radius: 0.25rem;
-      padding: 0.125rem 0.375rem;
-      font-size: 0.8rem;
+      border: 1px solid rgba(59, 130, 246, 0.22);
+      border-radius: 0.35rem;
+      padding: 0.15rem 0.45rem;
+      font-size: 0.825rem;
       font-family: var(--font-mono);
+    }
+
+    /* === CODE BLOCKS & COPY BUTTON === */
+    .docs-code-container {
+      position: relative;
+      margin: 0.75rem 0;
     }
 
     .docs-code-block {
       background: var(--terminal-container-bg);
       border: 1px solid var(--panel-border);
-      border-radius: 0.5rem;
-      padding: 1.25rem 1.5rem;
+      border-radius: 0.75rem;
+      padding: 1.35rem 1.6rem;
       font-family: var(--font-mono);
       font-size: 0.85rem;
       color: var(--text-main);
       overflow-x: auto;
-      line-height: 1.6;
+      line-height: 1.7;
+    }
+
+    .copy-btn {
+      position: absolute;
+      top: 0.85rem;
+      right: 0.85rem;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--panel-border);
+      color: var(--text-muted);
+      border-radius: 0.45rem;
+      padding: 0.35rem 0.7rem;
+      font-size: 0.75rem;
+      font-family: var(--font-sans);
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition-smooth);
+    }
+
+    .copy-btn:hover {
+      background: rgba(59, 130, 246, 0.15);
+      color: var(--gitsec-blue);
+      border-color: var(--gitsec-blue);
     }
 
     .docs-list {
       list-style-type: none;
       display: flex;
       flex-direction: column;
-      gap: 0.75rem;
+      gap: 0.9rem;
     }
 
     .docs-list-item {
@@ -389,14 +516,14 @@
       display: flex;
       align-items: flex-start;
       gap: 0.75rem;
-      line-height: 1.6;
+      line-height: 1.65;
     }
 
     .docs-list-item::before {
       content: "•";
       color: var(--gitsec-blue);
       font-weight: bold;
-      font-size: 1.2rem;
+      font-size: 1.25rem;
       line-height: 1;
       flex-shrink: 0;
     }
@@ -404,479 +531,458 @@
     hr {
       border: none;
       border-bottom: 1px solid var(--panel-border);
+      margin: 1.5rem 0;
+    }
+
+    /* === FEATURE TABLES === */
+    .docs-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0;
+      background: rgba(13, 17, 30, 0.4);
+      border-radius: 0.75rem;
+      overflow: hidden;
+      border: 1px solid var(--panel-border);
+    }
+
+    html.light .docs-table {
+      background: rgba(255, 255, 255, 0.65);
+    }
+
+    .docs-table th,
+    .docs-table td {
+      padding: 0.9rem 1.2rem;
+      text-align: left;
+      font-size: 0.875rem;
+      border-bottom: 1px solid var(--panel-border);
+    }
+
+    .docs-table th {
+      background: rgba(255, 255, 255, 0.03);
+      font-weight: 700;
+      color: var(--text-main);
+      text-transform: uppercase;
+      font-size: 0.75rem;
+      letter-spacing: 0.04em;
+    }
+
+    html.light .docs-table th {
+      background: rgba(0, 0, 0, 0.03);
+    }
+
+    .docs-table td {
+      color: var(--text-muted);
+    }
+
+    .docs-table tr:last-child td {
+      border-bottom: none;
     }
 
     .info-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 1.5rem;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.35rem;
       margin-top: 0.5rem;
     }
 
     .info-card {
-      background: rgba(255, 255, 255, 0.015);
+      background: var(--card-bg);
       border: 1px solid var(--panel-border);
-      border-radius: 0.75rem;
-      padding: 1.5rem;
+      border-radius: 0.85rem;
+      padding: 1.6rem;
       transition: var(--transition-smooth);
     }
 
     .info-card:hover {
       border-color: var(--gitsec-blue);
-      transform: translateY(-2px);
-      box-shadow: 0 4px 20px rgba(59, 130, 246, 0.05);
+      transform: translateY(-3px);
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3), 0 0 15px rgba(59, 130, 246, 0.15);
     }
 
     .info-card h4 {
-      font-size: 1rem;
-      margin-bottom: 0.5rem;
+      font-size: 1.1rem;
+      margin-bottom: 0.6rem;
     }
 
     .info-card p {
       font-size: 0.875rem;
-      line-height: 1.6;
+      line-height: 1.65;
     }
 
-    /* Custom Scrollbars */
-    ::-webkit-scrollbar {
-      width: 8px;
-      height: 8px;
-    }
-
-    ::-webkit-scrollbar-track {
-      background: transparent;
-    }
-
-    ::-webkit-scrollbar-thumb {
-      background: rgba(255, 255, 255, 0.1);
-      border-radius: 9999px;
-    }
-
-    ::-webkit-scrollbar-thumb:hover {
-      background: rgba(255, 255, 255, 0.2);
-    }
-
-    html.light ::-webkit-scrollbar-thumb {
-      background: rgba(0, 0, 0, 0.1);
-    }
-
-    html.light ::-webkit-scrollbar-thumb:hover {
-      background: rgba(0, 0, 0, 0.2);
-    }
-
-    /* Callout styles */
+    /* === CALLOUT ALERTS === */
     .callout {
-        padding: 1rem 1.25rem;
-        border-radius: 0.5rem;
-        border-left: 4px solid;
-        margin: 1rem 0;
-        font-size: 0.9rem;
-        line-height: 1.6;
-        display: flex;
-        gap: 0.75rem;
-        align-items: flex-start;
-      }
+      padding: 1.15rem 1.4rem;
+      border-radius: 0.75rem;
+      border-left: 4px solid;
+      margin: 1rem 0;
+      font-size: 0.925rem;
+      line-height: 1.7;
+      display: flex;
+      gap: 0.9rem;
+      align-items: flex-start;
+    }
 
-      .callout-icon {
-        flex-shrink: 0;
-        margin-top: 0.15rem;
-      }
+    .callout-icon {
+      flex-shrink: 0;
+      margin-top: 0.15rem;
+    }
 
-      .callout-content {
-        flex: 1;
-      }
+    .callout-content {
+      flex: 1;
+    }
 
-      .callout-info {
-        background: rgba(59, 130, 246, 0.04);
-        border-color: var(--gitsec-blue);
-        color: var(--text-main);
-      }
+    .callout-info {
+      background: rgba(59, 130, 246, 0.08);
+      border-color: var(--gitsec-blue);
+      color: var(--text-main);
+    }
 
-      html.light .callout-info {
-        background: rgba(59, 130, 246, 0.03);
-      }
+    .callout-tip {
+      background: rgba(16, 185, 129, 0.08);
+      border-color: var(--gitsec-green);
+      color: var(--text-main);
+    }
 
-      .callout-info .callout-icon {
-        color: var(--gitsec-blue);
-      }
+    .callout-warning {
+      background: rgba(245, 158, 11, 0.08);
+      border-color: var(--gitsec-amber);
+      color: var(--text-main);
+    }
 
-      .callout-tip {
-        background: rgba(16, 185, 129, 0.04);
-        border-color: var(--gitsec-green);
-        color: var(--text-main);
-      }
+    /* === TERMINAL TREE WINDOW === */
+    .terminal-window {
+      background: var(--terminal-container-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: 0.85rem;
+      margin: 1rem 0;
+      overflow: hidden;
+    }
 
-      html.light .callout-tip {
-        background: rgba(16, 185, 129, 0.03);
-      }
+    .terminal-header {
+      background: rgba(255, 255, 255, 0.03);
+      border-bottom: 1px solid var(--panel-border);
+      padding: 0.7rem 1.1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
 
-      .callout-tip .callout-icon {
-        color: var(--gitsec-green);
-      }
+    .terminal-buttons {
+      display: flex;
+      gap: 0.35rem;
+    }
 
-      .callout-warning {
-        background: rgba(245, 158, 11, 0.04);
-        border-color: #f59e0b;
-        color: var(--text-main);
-      }
+    .terminal-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      display: inline-block;
+    }
 
-      html.light .callout-warning {
-        background: rgba(245, 158, 11, 0.03);
-      }
+    .terminal-dot.red { background: #ef4444; }
+    .terminal-dot.yellow { background: #f59e0b; }
+    .terminal-dot.green { background: #10b981; }
 
-      .callout-warning .callout-icon {
-        color: #f59e0b;
-      }
+    .terminal-title {
+      font-family: var(--font-sans);
+      font-size: 0.775rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-left: 0.75rem;
+    }
 
-      /* Terminal Window container for Project Tree */
-      .terminal-window {
-        background: var(--terminal-container-bg);
-        border: 1px solid var(--panel-border);
-        border-radius: 0.75rem;
-        margin: 1.5rem 0;
-        overflow: hidden;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-      }
-      .terminal-header {
-        background: rgba(255, 255, 255, 0.02);
-        border-bottom: 1px solid var(--panel-border);
-        padding: 0.65rem 1rem;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-      }
-      html.light .terminal-header {
-        background: rgba(0, 0, 0, 0.02);
-      }
-      .terminal-buttons {
-        display: flex;
-        gap: 0.35rem;
-      }
-      .terminal-dot {
-        width: 10px;
-        height: 10px;
-        border-radius: 50%;
-        display: inline-block;
-      }
-      .terminal-dot.red { background: #ef4444; }
-      .terminal-dot.yellow { background: #f59e0b; }
-      .terminal-dot.green { background: #10b981; }
-      .terminal-title {
-        font-family: var(--font-sans);
-        font-size: 0.75rem;
-        font-weight: 600;
-        color: var(--text-muted);
-        margin-left: 0.75rem;
-      }
+    .project-tree {
+      font-family: var(--font-mono);
+      font-size: 0.835rem;
+      line-height: 1.7;
+      padding: 1.35rem;
+      color: var(--text-main);
+      overflow-x: auto;
+    }
 
-      /* Project Tree Visualizer */
-      .project-tree {
-        font-family: var(--font-mono);
-        font-size: 0.825rem;
-        line-height: 1.6;
-        padding: 1.25rem;
-        color: var(--text-main);
-        overflow-x: auto;
-      }
-      .tree-row {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        padding: 0.15rem 0;
-        white-space: pre;
-      }
-      .tree-guide {
-        color: rgba(255, 255, 255, 0.15);
-        font-weight: normal;
-      }
-      html.light .tree-guide {
-        color: rgba(0, 0, 0, 0.15);
-      }
-      .tree-icon {
-        display: inline-flex;
-        align-items: center;
-        color: var(--gitsec-blue);
-      }
-      .tree-folder {
-        color: #60a5fa;
-        font-weight: 600;
-      }
-      html.light .tree-folder {
-        color: #2563eb;
-      }
-      .tree-file {
-        color: var(--text-main);
-      }
-      html.light .tree-file {
-        color: #1e293b;
-      }
-      .tree-comment {
-        color: #64748b;
-        font-style: italic;
-        margin-left: auto;
-        padding-left: 1.5rem;
-      }
+    .tree-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.15rem 0;
+      white-space: pre;
+    }
+
+    .tree-guide {
+      color: rgba(255, 255, 255, 0.2);
+    }
+
+    .tree-folder {
+      color: #60a5fa;
+      font-weight: 600;
+    }
+
+    .tree-file {
+      color: var(--text-main);
+    }
+
+    .tree-comment {
+      color: #64748b;
+      font-style: italic;
+      margin-left: auto;
+      padding-left: 1.5rem;
+    }
   </style>
 </head>
 
 <body>
 
-  <header style="background: var(--header-bg);">
+  <!-- HEADER -->
+  <header>
     <div class="brand">
-      <!-- Official Gitsec Logo -->
       <svg class="brand-logo-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 493 165" fill="none">
         <g>
-          <!-- Text part (gitsec) - Crisp White / Dynamic Text Color -->
-          <path
-            d="M192.525 83.415C192.525 59.5843 209.677 42.5323 233.304 42.5323C247.992 42.5323 260.421 49.7244 267.817 62.4604L254.052 69.239C249.533 61.1244 242.137 56.6057 233.407 56.6057C219.129 56.6057 209.165 67.2883 209.165 83.5177C209.165 98.5137 219.335 109.196 233.715 109.196C245.116 109.196 253.641 102.416 254.771 92.3497H239.619C236.697 92.3497 234.329 89.983 234.329 87.0617V85.0057C234.329 82.0843 236.697 79.7163 239.619 79.7163H266.38C269.399 79.7163 271.8 82.243 271.675 85.259C270.743 107.69 255.404 122.652 232.584 122.652C209.677 122.652 192.525 106.115 192.525 83.415Z"
-            fill="var(--logo-text-color, #ffffff)"></path>
-          <path
-            d="M279.939 64.8964C279.939 59.3204 284.006 55.3711 289.582 55.3711C295.277 55.3711 299.342 59.3204 299.342 64.8964C299.342 70.8217 295.507 74.5391 289.582 74.5391C283.657 74.5391 279.939 70.8217 279.939 64.8964Z"
-            fill="var(--logo-text-color, #ffffff)"></path>
+          <path d="M192.525 83.415C192.525 59.5843 209.677 42.5323 233.304 42.5323C247.992 42.5323 260.421 49.7244 267.817 62.4604L254.052 69.239C249.533 61.1244 242.137 56.6057 233.407 56.6057C219.129 56.6057 209.165 67.2883 209.165 83.5177C209.165 98.5137 219.335 109.196 233.715 109.196C245.116 109.196 253.641 102.416 254.771 92.3497H239.619C236.697 92.3497 234.329 89.983 234.329 87.0617V85.0057C234.329 82.0843 236.697 79.7163 239.619 79.7163H266.38C269.399 79.7163 271.8 82.243 271.675 85.259C270.743 107.69 255.404 122.652 232.584 122.652C209.677 122.652 192.525 106.115 192.525 83.415Z" fill="var(--logo-text-color, #ffffff)"></path>
+          <path d="M279.939 64.8964C279.939 59.3204 284.006 55.3711 289.582 55.3711C295.277 55.3711 299.342 59.3204 299.342 64.8964C299.342 70.8217 295.507 74.5391 289.582 74.5391C283.657 74.5391 279.939 70.8217 279.939 64.8964Z" fill="var(--logo-text-color, #ffffff)"></path>
           <path d="M297.19 121.418H282.092V79.638H297.19V121.418Z" fill="var(--logo-text-color, #ffffff)"></path>
-          <path
-            d="M328.21 55.3724V70.2671H338.275V82.6951H328.21V121.316H313.108V82.6951H306.74V70.2671H313.108V55.3724H328.21Z"
-            fill="var(--logo-text-color, #ffffff)"></path>
-          <path
-            d="M366.931 50.7497C358.508 50.7497 354.194 56.7083 354.194 62.9737C354.194 70.267 359.226 73.1417 370.628 77.3537C379.462 80.4363 390.658 85.4683 390.658 98.2057C390.658 114.228 378.126 122.652 365.799 122.652C355.015 122.652 346.386 117.62 341.766 109.196L348.852 103.444C353.166 110.634 358.61 113.922 365.903 113.922C373.504 113.922 380.695 108.579 380.695 99.4377C380.695 90.811 373.607 87.727 364.054 84.4403C352.858 80.6403 344.231 75.7097 344.231 63.3857C344.231 53.011 351.934 42.5323 366.827 42.5323C373.915 42.5323 382.132 45.4097 387.164 53.215L381.003 58.8643C376.792 53.215 372.478 50.7497 366.931 50.7497Z"
-            fill="var(--logo-text-color, #ffffff)"></path>
-          <path
-            d="M436.465 91.8357C435.437 83.8237 429.789 78.6877 422.084 78.6877C413.867 78.6877 408.424 83.5157 406.883 91.8357H436.465ZM422.393 122.344C407.293 122.344 397.639 112.174 397.639 97.1784C397.639 82.0784 407.911 71.4984 422.188 71.4984C436.465 71.4984 445.812 82.0784 445.812 98.9237H406.575C407.293 108.784 413.765 114.844 422.496 114.844C429.172 114.844 433.795 111.557 437.801 105.396L444.477 109.606C440.163 117.516 432.049 122.344 422.393 122.344Z"
-            fill="var(--logo-text-color, #ffffff)"></path>
-          <path
-            d="M478.166 79.0998C468.716 79.0998 460.602 85.8798 460.602 96.9718C460.602 107.553 468.305 114.742 478.475 114.742C483.301 114.742 488.849 112.482 492.444 109.092H492.752V117.516C489.054 120.186 482.789 122.344 477.241 122.344C461.936 122.344 451.562 111.969 451.562 97.0744C451.562 82.0784 463.068 71.4984 477.345 71.4984C482.685 71.4984 488.028 73.0398 492.649 76.0184V84.6464L492.342 84.7504C488.642 81.2571 483.405 79.0998 478.166 79.0998Z"
-            fill="var(--logo-text-color, #ffffff)"></path>
-
-          <!-- Circle/Spiral Icon part - Siber Blue -->
-          <path
-            d="M137.952 131.654C133.68 129.577 129.079 128.664 124.151 128.91C119.221 129.162 112.887 129.98 105.141 131.366C94.736 133.165 85.56 133.76 77.6067 133.161C69.6587 132.562 62.268 130.008 55.4427 125.5C51.3107 122.77 47.5467 119.138 44.136 114.633C44.156 114.621 44.176 114.608 44.196 114.596C36.992 105.926 32.656 94.7891 32.656 82.6358C32.656 54.9931 55.0653 32.5838 82.708 32.5838C94.6653 32.5838 105.628 36.7944 114.236 43.7904C114.409 43.9651 114.705 44.2891 115.009 44.7664C115.012 44.7718 115.015 44.7691 115.017 44.7731C117.925 50.0598 123.503 53.6704 129.964 53.6704C139.411 53.6704 147.069 46.0118 147.069 36.5651C147.069 30.1518 143.535 24.5704 138.313 21.6424C123.624 8.20644 104.069 -0.000218516 82.592 -0.000218516C36.9787 -0.000218516 0 36.9771 0 82.5918C0 123.821 30.212 157.986 69.704 164.176C70.288 155.169 77.748 148.038 86.9027 148.038C95.4307 148.038 102.497 154.252 103.896 162.382C119.909 158.11 134.013 149.16 144.637 137.065C142.652 134.722 140.444 132.87 137.952 131.654Z"
-            fill="var(--gitsec-blue)"></path>
-          <path
-            d="M165.182 82.5916L165.173 82.5956C165.08 73.7396 157.88 66.5876 149.001 66.5876H127.022C124.48 71.8356 119.118 75.4636 112.897 75.4636C106.674 75.4636 101.33 71.8743 98.789 66.6263C98.789 66.6263 98.7703 66.5969 98.7637 66.5876C95.0477 62.0423 88.9263 59.8009 82.5903 59.8009C70.061 59.8009 59.9023 69.9583 59.9023 82.4903C59.9023 95.0209 70.061 105.18 82.5903 105.18C87.561 105.18 92.141 103.564 95.8783 100.856C95.9263 100.84 95.977 100.842 96.0223 100.813C98.069 99.5409 99.393 98.9596 101.438 98.5236C108.538 97.3916 115.233 96.6676 121.466 96.4036C128.524 96.1063 135.014 96.7903 140.937 98.4543C146.86 100.122 152.404 103.208 157.578 107.712C158.524 108.534 159.444 109.457 160.357 110.406C163.428 101.82 165.133 92.5823 165.173 82.9489C165.176 82.8889 165.182 82.8303 165.182 82.7703C165.182 82.7503 165.181 82.7303 165.181 82.7103C165.181 82.6716 165.182 82.6316 165.182 82.5916Z"
-            fill="var(--gitsec-blue)"></path>
+          <path d="M328.21 55.3724V70.2671H338.275V82.6951H328.21V121.316H313.108V82.6951H306.74V70.2671H313.108V55.3724H328.21Z" fill="var(--logo-text-color, #ffffff)"></path>
+          <path d="M366.931 50.7497C358.508 50.7497 354.194 56.7083 354.194 62.9737C354.194 70.267 359.226 73.1417 370.628 77.3537C379.462 80.4363 390.658 85.4683 390.658 98.2057C390.658 114.228 378.126 122.652 365.799 122.652C355.015 122.652 346.386 117.62 341.766 109.196L348.852 103.444C353.166 110.634 358.61 113.922 365.903 113.922C373.504 113.922 380.695 108.579 380.695 99.4377C380.695 90.811 373.607 87.727 364.054 84.4403C352.858 80.6403 344.231 75.7097 344.231 63.3857C344.231 53.011 351.934 42.5323 366.827 42.5323C373.915 42.5323 382.132 45.4097 387.164 53.215L381.003 58.8643C376.792 53.215 372.478 50.7497 366.931 50.7497Z" fill="var(--logo-text-color, #ffffff)"></path>
+          <path d="M436.465 91.8357C435.437 83.8237 429.789 78.6877 422.084 78.6877C413.867 78.6877 408.424 83.5157 406.883 91.8357H436.465ZM422.393 122.344C407.293 122.344 397.639 112.174 397.639 97.1784C397.639 82.0784 407.911 71.4984 422.188 71.4984C436.465 71.4984 445.812 82.0784 445.812 98.9237H406.575C407.293 108.784 413.765 114.844 422.496 114.844C429.172 114.844 433.795 111.557 437.801 105.396L444.477 109.606C440.163 117.516 432.049 122.344 422.393 122.344Z" fill="var(--logo-text-color, #ffffff)"></path>
+          <path d="M478.166 79.0998C468.716 79.0998 460.602 85.8798 460.602 96.9718C460.602 107.553 468.305 114.742 478.475 114.742C483.301 114.742 488.849 112.482 492.444 109.092H492.752V117.516C489.054 120.186 482.789 122.344 477.241 122.344C461.936 122.344 451.562 111.969 451.562 97.0744C451.562 82.0784 463.068 71.4984 477.345 71.4984C482.685 71.4984 488.028 73.0398 492.649 76.0184V84.6464L492.342 84.7504C488.642 81.2571 483.405 79.0998 478.166 79.0998Z" fill="var(--logo-text-color, #ffffff)"></path>
+          <path d="M137.952 131.654C133.68 129.577 129.079 128.664 124.151 128.91C119.221 129.162 112.887 129.98 105.141 131.366C94.736 133.165 85.56 133.76 77.6067 133.161C69.6587 132.562 62.268 130.008 55.4427 125.5C51.3107 122.77 47.5467 119.138 44.136 114.633C44.156 114.621 44.176 114.608 44.196 114.596C36.992 105.926 32.656 94.7891 32.656 82.6358C32.656 54.9931 55.0653 32.5838 82.708 32.5838C94.6653 32.5838 105.628 36.7944 114.236 43.7904C114.409 43.9651 114.705 44.2891 115.009 44.7664C115.012 44.7718 115.015 44.7691 115.017 44.7731C117.925 50.0598 123.503 53.6704 129.964 53.6704C139.411 53.6704 147.069 46.0118 147.069 36.5651C147.069 30.1518 143.535 24.5704 138.313 21.6424C123.624 8.20644 104.069 -0.000218516 82.592 -0.000218516C36.9787 -0.000218516 0 36.9771 0 82.5918C0 123.821 30.212 157.986 69.704 164.176C70.288 155.169 77.748 148.038 86.9027 148.038C95.4307 148.038 102.497 154.252 103.896 162.382C119.909 158.11 134.013 149.16 144.637 137.065C142.652 134.722 140.444 132.87 137.952 131.654Z" fill="var(--gitsec-blue)"></path>
+          <path d="M165.182 82.5916L165.173 82.5956C165.08 73.7396 157.88 66.5876 149.001 66.5876H127.022C124.48 71.8356 119.118 75.4636 112.897 75.4636C106.674 75.4636 101.33 71.8743 98.789 66.6263C98.789 66.6263 98.7703 66.6969 98.7637 66.5876C95.0477 62.0423 88.9263 59.8009 82.5903 59.8009C70.061 59.8009 59.9023 69.9583 59.9023 82.4903C59.9023 95.0209 70.061 105.18 82.5903 105.18C87.561 105.18 92.141 103.564 95.8783 100.856C95.9263 100.84 95.977 100.842 96.0223 100.813C98.069 99.5409 99.393 98.9596 101.438 98.5236C108.538 97.3916 115.233 96.6676 121.466 96.4036C128.524 96.1063 135.014 96.7903 140.937 98.4543C146.86 100.122 152.404 103.208 157.578 107.712C158.524 108.534 159.444 109.457 160.357 110.406C163.428 101.82 165.133 92.5823 165.173 82.9489C165.176 82.8889 165.182 82.8303 165.182 82.7703C165.182 82.7503 165.181 82.7303 165.181 82.7103C165.181 82.6716 165.182 82.6316 165.182 82.5916Z" fill="var(--gitsec-blue)"></path>
         </g>
       </svg>
-      <h1 class="brand-title" style="margin-left: 0.25rem; color: var(--text-main);">Dokümantasyon</h1>
+      <h1 class="brand-title">Test Otomasyon Rehberi</h1>
     </div>
 
-    <div class="header-actions" style="display: flex; align-items: center; gap: 1.25rem; position: relative;">
-      <!-- Clickable Glassmorphic Theme Dropdown Selector -->
+    <div class="header-controls">
+      <a href="/" class="nav-btn-link">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        Koşum Paneli
+      </a>
+      
+      <div class="docs-search-wrapper">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="position: absolute; left: 0.75rem; color: var(--text-muted);"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="docsSearchInput" class="docs-search-input" placeholder="Dokümantasyonda ara..." onkeyup="filterDocsContent()">
+      </div>
+
+      <!-- EXACT MATCHING THEME TOGGLE BUTTON FROM INDEX.HTML -->
       <div class="theme-dropdown-container" style="position: relative;">
-        <button class="theme-dropdown-trigger" id="themeDropdownTriggerBtn" onclick="toggleThemeDropdown(event)"
-          title="Temayı Değiştir">
-          <span id="activeThemeIcon"
-            style="display: flex; align-items: center; justify-content: center; width: 16px; height: 16px;">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
-            </svg>
+        <button class="theme-dropdown-trigger" id="themeDropdownTriggerBtn" onclick="toggleThemeDropdown(event)" title="Temayı Değiştir">
+          <span id="activeThemeIcon" style="display: flex; align-items: center; justify-content: center;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
           </span>
         </button>
         <div class="theme-dropdown-menu hidden" id="themeDropdownMenu">
           <button class="theme-menu-item" onclick="selectTheme('dark', event)" data-theme-value="dark">
-            <span style="display: flex; align-items: center; justify-content: center; width: 14px; height: 14px;">
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
-              </svg>
-            </span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
             <span>Koyu Tema</span>
-            <svg class="check-indicator" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
-              fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
           </button>
           <button class="theme-menu-item" onclick="selectTheme('light', event)" data-theme-value="light">
-            <span style="display: flex; align-items: center; justify-content: center; width: 14px; height: 14px;">
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="4" />
-                <path d="M12 2v2" />
-                <path d="M12 20v2" />
-                <path d="m4.93 4.93 1.41 1.41" />
-                <path d="m17.66 17.66 1.41 1.41" />
-                <path d="M2 12h2" />
-                <path d="M20 12h2" />
-                <path d="m6.34 17.66-1.41 1.41" />
-                <path d="m19.07 4.93-1.41 1.41" />
-              </svg>
-            </span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
             <span>Açık Tema</span>
-            <svg class="check-indicator" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
-              fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
           </button>
           <button class="theme-menu-item" onclick="selectTheme('system', event)" data-theme-value="system">
-            <span style="display: flex; align-items: center; justify-content: center; width: 14px; height: 14px;">
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <rect width="20" height="14" x="2" y="3" rx="2" />
-                <line x1="8" x2="16" y1="21" y2="21" />
-                <line x1="12" x2="12" y1="17" y2="21" />
-              </svg>
-            </span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></svg>
             <span>Sistem</span>
-            <svg class="check-indicator" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24"
-              fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
           </button>
         </div>
       </div>
     </div>
   </header>
 
+  <!-- MAIN CONTAINER -->
   <div class="main-container">
 
-    <!-- Left TOC Sidebar -->
-    <div class="docs-sidebar">
-      <div class="docs-section-label">İçindekiler</div>
-      <button class="docs-nav-item active" onclick="scrollToDocSection('doc-overview')">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-          stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="10"></circle>
-          <line x1="12" y1="16" x2="12" y2="12"></line>
-          <line x1="12" y1="8" x2="12.01" y2="8"></line>
-        </svg>
-        Genel Bakış
-      </button>
-      <button class="docs-nav-item" onclick="scrollToDocSection('doc-architecture')">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-          stroke-linecap="round" stroke-linejoin="round">
-          <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
-          <polyline points="2 17 12 22 22 17"></polyline>
-          <polyline points="2 12 12 17 22 12"></polyline>
-        </svg>
-        Mimari & POM
-      </button>
-      <button class="docs-nav-item" onclick="scrollToDocSection('doc-coverage')">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-          stroke-linecap="round" stroke-linejoin="round">
-          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-          <polyline points="22 4 12 14.01 9 11.01"></polyline>
-        </svg>
-        Test Kapsamı
-      </button>
-      <button class="docs-nav-item" onclick="scrollToDocSection('doc-audit')">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-          stroke-linecap="round" stroke-linejoin="round">
-          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
-          <line x1="12" y1="9" x2="12" y2="13"></line>
-          <line x1="12" y1="17" x2="12.01" y2="17"></line>
-        </svg>
-        Arka Plan Denetimi
-      </button>
-      <button class="docs-nav-item" onclick="scrollToDocSection('doc-running')">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-          stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="4 17 10 11 4 5"></polyline>
-          <line x1="12" y1="19" x2="20" y2="19"></line>
-        </svg>
-        Çalıştırma Rehberi
-      </button>
-      <button class="docs-nav-item" onclick="scrollToDocSection('doc-auth-flow')">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-        Kimlik Doğrulama
-      </button>
-      <button class="docs-nav-item" onclick="scrollToDocSection('doc-cicd')">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
-        CI/CD Entegrasyonu
-      </button>
-      <button class="docs-nav-item" onclick="scrollToDocSection('doc-flakiness')">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-        Kararsız Test & Bekleme
-      </button>
-      <button class="docs-nav-item" onclick="scrollToDocSection('doc-new-test')">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
-        Yeni Test Ekleme
-      </button>
+    <!-- LEFT SIDEBAR NAVIGATION -->
+    <div class="docs-sidebar" id="docsSidebar">
+      
+      <div class="docs-nav-group">
+        <div class="docs-section-label">🚀 GİRİŞ & MİMARİ</div>
+        <button class="docs-nav-item active" onclick="scrollToDocSection('doc-overview')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+          Genel Bakış & Mimari Vizyon
+        </button>
+        <button class="docs-nav-item" onclick="scrollToDocSection('doc-quickstart')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          Hızlı Başlangıç & Kurulum
+        </button>
+        <button class="docs-nav-item" onclick="scrollToDocSection('doc-architecture')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+          Page Object Model (POM)
+        </button>
+        <button class="docs-nav-item" onclick="scrollToDocSection('doc-workspace-resolver')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+          Dinamik Workspace Resolver
+        </button>
+        <button class="docs-nav-item" onclick="scrollToDocSection('doc-session-sharing')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          Oturum Paylaşımı & Global Setup
+        </button>
+      </div>
+
+      <div class="docs-nav-group">
+        <div class="docs-section-label">🧪 TEST SUITES & MODÜLLER</div>
+        <button class="docs-nav-item" onclick="scrollToDocSection('doc-module-auth')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          Kimlik Doğrulama & Captcha
+        </button>
+        <button class="docs-nav-item" onclick="scrollToDocSection('doc-module-providers')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
+          GitHub & Bitbucket Entegrasyonu
+        </button>
+        <button class="docs-nav-item" onclick="scrollToDocSection('doc-module-storage')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>
+          Bulut Depolama (BYOS)
+        </button>
+        <button class="docs-nav-item" onclick="scrollToDocSection('doc-module-schedulers')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          Zamanlayıcılar (Schedulers)
+        </button>
+        <button class="docs-nav-item" onclick="scrollToDocSection('doc-module-restore')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+          Geri Yükleme (Restore Wizard)
+        </button>
+        <button class="docs-nav-item" onclick="scrollToDocSection('doc-module-billing')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+          Lisans & iyzico Ödeme
+        </button>
+        <button class="docs-nav-item" onclick="scrollToDocSection('doc-module-audit')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          Audit Monitoring & Ağ Denetimi
+        </button>
+      </div>
+
+      <div class="docs-nav-group">
+        <div class="docs-section-label">🛠️ GELİŞMİŞ REHBERLER</div>
+        <button class="docs-nav-item" onclick="scrollToDocSection('doc-dashboard-guide')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+          Yerel Koşum Paneli Paneli
+        </button>
+        <button class="docs-nav-item" onclick="scrollToDocSection('doc-cicd')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/></svg>
+          CI/CD GitHub Actions
+        </button>
+        <button class="docs-nav-item" onclick="scrollToDocSection('doc-new-test')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+          Yeni Test Ekleme & Standartlar
+        </button>
+      </div>
+
     </div>
 
-    <!-- Docs Content Area -->
-    <div class="docs-content">
+    <!-- MAIN CONTENT AREA -->
+    <div class="docs-content" id="docsContent">
 
       <!-- Section 1: Overview -->
       <section id="doc-overview">
-        <span class="card-tag">KILAVUZ</span>
-        <h2 style="font-size: 2rem; font-weight: 800; letter-spacing: -0.02em;">Genel Bakış</h2>
+        <span class="card-tag">GİRİŞ & MİMARİ VİZYON</span>
+        <h2>Genel Bakış & Test Mimarisi Vizyonu</h2>
         <p>
-          <strong>GitSec Test Otomasyonu</strong>, GitSec SaaS platformunun tüm entegrasyonlarını, kimlik doğrulama
-          süreçlerini, yedekleme planlayıcılarını ve geri yükleme mekanizmalarını doğrulamak üzere geliştirilmiş yüksek
-          performanslı ve modüler bir uçtan uca (E2E) test otomasyon projesidir.
+          <strong>GitSec E2E Test Otomasyon Projesi</strong>, GitSec SaaS platformunun tüm kritik iş süreçlerini, kimlik doğrulama akışlarını, bulut depolama entegrasyonlarını (BYOS), yedekleme planlayıcılarını, restore sihirbazını, lisans yönetimini ve güvenlik kısıtlarını uçtan uca doğrulamak üzere geliştirilmiş <strong>enterprise-grade bir otomasyon mimarisidir</strong>.
         </p>
         <p>
-          Proje, web arayüzünü gerçek bir kullanıcı gibi simüle ederek tarayıcı üzerinde koşturmak için modern <span
-            class="docs-tag">Playwright</span> kütüphanesini ve tip güvenliği için <span
-            class="docs-tag">TypeScript</span> dilini temel alır.
+          Geleneksel ve kırılgan test yaklaşımlarının aksine; bu proje **Playwright v1.50+** ve **TypeScript** temelinde inşa edilmiş olup, **Page Object Model (POM)** tasarım deseni, **Dinamik Workspace Resolver**, **Otomatik Captcha & OTP Dinleyicileri** ve **Arka Plan Ağ Denetleyicileri (Audit Monitoring)** ile güçlendirilmiştir.
         </p>
+
+        <h3 style="font-size: 1.15rem; color: var(--text-main); margin-top: 1rem;">Neden Playwright & TypeScript?</h3>
+        <ul class="docs-list">
+          <li class="docs-list-item"><strong>Yerleşik Auto-Waiting (Otomatik Bekleme):</strong> Tıklama, doldurma veya navigasyon öncesinde DOM elemanının tıklanabilir ve görünür olmasını Playwright otomatik olarak bekler. Statik bekleme (`sleep`) ihtiyacını ortadan kaldırır.</li>
+          <li class="docs-list-item"><strong>İzole Tarayıcı Bağlamları (Browser Contexts):</strong> Testler arasında çerez ve oturum sızıntısı yaşanmaz; her test tamamen temiz bir bağlamda çalışır.</li>
+          <li class="docs-list-item"><strong>Tam Tip Güvenliği (TypeScript):</strong> Tüm Page Object selector'ları, API request/response tipleri ve konfigürasyon parametreleri derleme zamanında (compile-time) denetlenir.</li>
+        </ul>
+
+        <table class="docs-table">
+          <thead>
+            <tr>
+              <th>Modül</th>
+              <th>Kapsam & İşlevsellik</th>
+              <th>Özel Entegrasyonlar & Teknikler</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Kimlik Doğrulama</strong></td>
+              <td>Giriş, Kayıt, Aktivasyon, Gmail IMAP Şifre Sıfırlama, Captcha Polling</td>
+              <td>Mail.tm API, Gmail IMAP parser, Google/Cloudflare Turnstile token polling</td>
+            </tr>
+            <tr>
+              <td><strong>Kod Sağlayıcıları</strong></td>
+              <td>GitHub & Bitbucket OAuth, 2FA/TOTP, App Kurulum, Include/Exclude Politikaları</td>
+              <td>Atlassian OTP, GitHub TOTP (otplib), OAuth Popup Handler</td>
+            </tr>
+            <tr>
+              <td><strong>Bulut Depolama</strong></td>
+              <td>AWS S3, Google Drive, OneDrive, Azure Blob, Huawei OBS (BYOS)</td>
+              <td>Form Doğrulamaları, Double-Click Spam Koruması, Zod Validation Tolerance</td>
+            </tr>
+            <tr>
+              <td><strong>Yedekleme & Restore</strong></td>
+              <td>Daily/Weekly/Monthly/Cron Planlayıcılar, Scope Seçimli Geri Yükleme</td>
+              <td>Code, Commits, PRs, Issues, Quota 403 Kısıt Denetimi</td>
+            </tr>
+            <tr>
+              <td><strong>Lisans & Ödeme</strong></td>
+              <td>Free/Pro/Enterprise Geçişleri, iyzico SMS OTP Ödeme Akış Simülasyonu</td>
+              <td>Mock & Live Billing, Subscription Cycles, Dynamic Quota Limits</td>
+            </tr>
+          </tbody>
+        </table>
+
         <div class="info-grid">
           <div class="info-card">
-            <h4>Hız & Kararlılık</h4>
-            <p>Paralel koşum desteği, otomatik bekleme (auto-wait) ve akıllı yeniden deneme (retry) mekanizmalarıyla
-              kararlı çalışma.</p>
+            <h4>⚡ Dinamik Workspace Resolver</h4>
+            <p>Sabit ID bağımlılığını ortadan kaldırır. Canlı oturum açılan kullanıcının aktif çalışma alanını (`351`, `352` vb.) URL veya API üzerinden saniyeler içinde tespit eder.</p>
           </div>
           <div class="info-card">
-            <h4>Gelişmiş Denetim</h4>
-            <p>Test adımları sürerken arka planda oluşan tüm ağ istekleri ve konsol hataları anlık olarak taranır.</p>
+            <h4>🛡️ Arka Plan Audit Monitoring</h4>
+            <p>Arayüzde görünmeyen konsol hatalarını, yutulmuş JS hatalarını ve 4xx/5xx çöken API isteklerini arka planda anlık izleyip raporlar.</p>
           </div>
           <div class="info-card">
-            <h4>Çevre Editörü</h4>
-            <p>Yerel arayüz üzerinden .env dosyasını canlı olarak güncelleyebilir ve testlerinizi özelleştirebilirsiniz.
-            </p>
+            <h4>🤖 Otomatik OTP & Captcha</h4>
+            <p>Gmail IMAP, Mail.tm API, Atlassian email OTP ve Captcha token'larını insan müdahalesine gerek duymadan milisaniyeler içinde çözer.</p>
           </div>
-          <div class="callout callout-info">
-            <div class="callout-icon">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="10"></circle>
-                <line x1="12" y1="16" x2="12" y2="12"></line>
-                <line x1="12" y1="8" x2="12.01" y2="8"></line>
-              </svg>
-            </div>
-            <div class="callout-content">
-              <strong>Bilgi:</strong> Bu otomasyon paketi, Staging ortamında gerçek zamanlı entegrasyonları test eder.
-              Güvenli API bağlantıları ve sahte (mock) sağlayıcı yapılandırmalarıyla izole edilmiş test ortamı sağlar.
-            </div>
-          </div>
+        </div>
       </section>
 
       <hr>
 
-      <!-- Section 2: Architecture & POM -->
+      <!-- Section 2: Quickstart -->
+      <section id="doc-quickstart">
+        <span class="card-tag">KURULUM REHBERİ</span>
+        <h2>Hızlı Başlangıç & Kurulum</h2>
+        <p>
+          Projeyi yerel geliştirme ortamınızda çalıştırmak ve test otomasyonunu yürütmek için aşağıdaki adımları takip edin:
+        </p>
+
+        <div class="docs-code-container">
+          <button class="copy-btn" onclick="copyCode(this)">Kopyala</button>
+          <pre class="docs-code-block"># 1. Proje bağımlılıklarını yükleyin
+npm install
+
+# 2. Playwright tarayıcı binary'lerini ve sistem kütüphanelerini kurun
+npx playwright install --with-deps
+
+# 3. Yerel Yönetim ve Koşum Sunucusunu (Express Server) başlatın
+node tests-server.js</pre>
+        </div>
+
+        <div class="callout callout-tip">
+          <div class="callout-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+          </div>
+          <div class="callout-content">
+            <strong>İpucu:</strong> Sunucu başladığında tarayıcınızdan <span class="docs-tag">http://127.0.0.1:3000</span> adresine giderek web arayüzü üzerinden testleri tek tıkla koşturabilir, canlı logları ve ekran görüntülerini izleyebilirsiniz.
+          </div>
+        </div>
+      </section>
+
+      <hr>
+
+      <!-- Section 3: Architecture & POM -->
       <section id="doc-architecture">
-        <span class="card-tag">TASARIM ŞABLONU</span>
-        <h2 style="font-size: 2rem; font-weight: 800; letter-spacing: -0.02em;">Mimari & Page Object Model (POM)</h2>
+        <span class="card-tag">TASARIM MİMARİSİ</span>
+        <h2>Page Object Model (POM) & Dizin Hiyerarşisi</h2>
         <p>
-          Kod tekrarını önlemek, seçicileri (selectors) tek bir noktada toplamak ve arayüz değişikliklerinde testlerin
-          kolayca güncellenebilmesini sağlamak amacıyla projede <strong>Page Object Model (POM)</strong> mimarisi
-          uygulanmıştır.
+          Proje, kod tekrarını önlemek ve DOM seçicilerini tek merkezde yönetmek amacıyla **Page Object Model (POM)** prensiplerine göre yapılandırılmıştır.
         </p>
-        <p>
-          Tüm sayfa nesneleri <span class="docs-tag">tests/pages/</span> dizininde yer alır. Temel sayfa sınıfları
-          şunlardır:
-        </p>
-        <ul class="docs-list">
-          <li class="docs-list-item"><strong>LoginPage:</strong> GitSec giriş, kayıt ve şifre sıfırlama adımlarının
-            elementlerini yönetir.</li>
-          <li class="docs-list-item"><strong>ProviderPage:</strong> GitHub, GitLab ve Bitbucket gibi kod sağlayıcı
-            kartlarının bağlantı durumlarını denetler.</li>
-          <li class="docs-list-item"><strong>StoragePage:</strong> OneDrive, Google Drive ve Huawei OBS gibi bulut
-            depolama sağlayıcılarının form entegrasyonunu yönetir.</li>
-          <li class="docs-list-item"><strong>RestorePage:</strong> Geri yükleme sihirbazındaki (Restore Wizard) tüm
-            adımları, dropdown seçimlerini ve tetikleme butonlarını kapsar.</li>
-        </ul>
-        <p style="margin-top: 0.5rem;">Örnek bir POM kullanımı şu şekildedir:</p>
-        <pre class="docs-code-block">import { test } from '../../fixtures/test';
 
-test('Yedekleme ve Geri Yükleme Akışı', async ({ page, restorePage }) => {
-  await restorePage.completeTargetOrganizationStep(async () => {
-    // Popup yetkilendirmesi tetiklenir
-  });
-  await restorePage.selectBackupSourceIfVisible();
-});</pre>
-
-        <h3 style="font-size: 1.25rem; font-weight: 700; margin-top: 1.5rem; color: var(--gitsec-blue);">Proje Dizin Yapısı</h3>
         <div class="terminal-window">
           <div class="terminal-header">
             <div class="terminal-buttons">
@@ -884,365 +990,247 @@ test('Yedekleme ve Geri Yükleme Akışı', async ({ page, restorePage }) => {
               <span class="terminal-dot yellow"></span>
               <span class="terminal-dot green"></span>
             </div>
-            <span class="terminal-title">workspace - gitsec-test-automation</span>
+            <span class="terminal-title">c:\Users\ridva\Desktop\TestAutomation</span>
           </div>
           <div class="project-tree">
-            <div class="tree-row"><span class="tree-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></span> <span class="tree-folder">tests/</span> <span class="tree-comment">// Tüm E2E testleri ve altyapı bileşenleri</span></div>
-            <div class="tree-row"><span class="tree-guide">├──</span> <span class="tree-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></span> <span class="tree-folder">fixtures/</span> <span class="tree-comment">// Playwright custom extend & denetim (audit) modülü</span></div>
-            <div class="tree-row"><span class="tree-guide">│   └──</span> <span class="tree-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span> <span class="tree-file">test.ts</span></div>
-            <div class="tree-row"><span class="tree-guide">├──</span> <span class="tree-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></span> <span class="tree-folder">pages/</span> <span class="tree-comment">// Page Object Model (POM) sınıfları</span></div>
-            <div class="tree-row"><span class="tree-guide">│   ├──</span> <span class="tree-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span> <span class="tree-file">LoginPage.ts</span></div>
-            <div class="tree-row"><span class="tree-guide">│   ├──</span> <span class="tree-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span> <span class="tree-file">ProviderPage.ts</span></div>
-            <div class="tree-row"><span class="tree-guide">│   ├──</span> <span class="tree-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span> <span class="tree-file">RestorePage.ts</span></div>
-            <div class="tree-row"><span class="tree-guide">│   └──</span> <span class="tree-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span> <span class="tree-file">StoragePage.ts</span></div>
-            <div class="tree-row"><span class="tree-guide">└──</span> <span class="tree-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></span> <span class="tree-folder">e2e/</span> <span class="tree-comment">// Test paketleri (Test suites)</span></div>
-            <div class="tree-row"><span class="tree-guide">    ├──</span> <span class="tree-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></span> <span class="tree-folder">auth/</span> <span class="tree-comment">// Giriş ve kimlik doğrulama testleri</span></div>
-            <div class="tree-row"><span class="tree-guide">    ├──</span> <span class="tree-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></span> <span class="tree-folder">backups/</span> <span class="tree-comment">// Zamanlayıcılar ve geri yükleme testleri</span></div>
-            <div class="tree-row"><span class="tree-guide">    ├──</span> <span class="tree-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></span> <span class="tree-folder">providers/</span> <span class="tree-comment">// OneDrive, GDrive, GitHub entegrasyon testleri</span></div>
-            <div class="tree-row"><span class="tree-guide">    └──</span> <span class="tree-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></span> <span class="tree-folder">ui/</span> <span class="tree-comment">// Arayüz elementleri ve buton testleri</span></div>
-            <div class="tree-row"><span class="tree-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span> <span class="tree-file">playwright.config.ts</span> <span class="tree-comment">// Global test konfigürasyonu</span></div>
-          </div>
-        </div>
-
-        <div class="callout callout-tip">
-          <div class="callout-icon">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-              stroke-linecap="round" stroke-linejoin="round">
-              <path d="m9 18 6-6-6-6"></path>
-            </svg>
-          </div>
-          <div class="callout-content">
-            <strong>Öneri:</strong> Sayfa nesneleri (POM) `data-testid` veya erişilebilirlik (ARIA) rollerine göre
-            seçilmiştir. Bu sayede UI değişikliklerinde testlerin kırılganlığı (flakiness) en aza indirilmiştir.
+            <div class="tree-row"><span class="tree-folder">tests/</span> <span class="tree-comment">// Tüm otomasyon kaynak dizini</span></div>
+            <div class="tree-row"><span class="tree-guide">├── </span><span class="tree-folder">pages/</span> <span class="tree-comment">// Page Object Model (POM) Sınıfları</span></div>
+            <div class="tree-row"><span class="tree-guide">│   ├── </span><span class="tree-file">LoginPage.ts</span> <span class="tree-comment">// Giriş, şifre gizleme ve oturum işlemleri</span></div>
+            <div class="tree-row"><span class="tree-guide">│   ├── </span><span class="tree-file">RegisterPage.ts</span> <span class="tree-comment">// Kayıt, Captcha polling ve Mail.tm akışı</span></div>
+            <div class="tree-row"><span class="tree-guide">│   ├── </span><span class="tree-file">ForgotPasswordPage.ts</span> <span class="tree-comment">// Gmail IMAP reset link yakalama</span></div>
+            <div class="tree-row"><span class="tree-guide">│   ├── </span><span class="tree-file">ProviderPage.ts</span> <span class="tree-comment">// GitHub/Bitbucket OAuth ve Include/Exclude</span></div>
+            <div class="tree-row"><span class="tree-guide">│   ├── </span><span class="tree-file">StoragePage.ts</span> <span class="tree-comment">// S3, Drive, OneDrive, Azure, Huawei OBS</span></div>
+            <div class="tree-row"><span class="tree-guide">│   └── </span><span class="tree-file">RestorePage.ts</span> <span class="tree-comment">// Geri yükleme sihirbaz adımları</span></div>
+            <div class="tree-row"><span class="tree-guide">├── </span><span class="tree-folder">support/</span> <span class="tree-comment">// Yardımcı Servisler & Dinleyiciler</span></div>
+            <div class="tree-row"><span class="tree-guide">│   ├── </span><span class="tree-file">workspace-resolver.ts</span> <span class="tree-comment">// Dinamik Workspace ID çözücü</span></div>
+            <div class="tree-row"><span class="tree-guide">│   ├── </span><span class="tree-file">audit-helper.ts</span> <span class="tree-comment">// Arka plan ağ/konsol denetleyicisi</span></div>
+            <div class="tree-row"><span class="tree-guide">│   ├── </span><span class="tree-file">dashboard-ui-helpers.ts</span> <span class="tree-comment">// safeGoto ve Yönlendirme Kurtarması</span></div>
+            <div class="tree-row"><span class="tree-guide">│   └── </span><span class="tree-file">password-reset-email.ts</span> <span class="tree-comment">// Gmail IMAP e-posta parser</span></div>
+            <div class="tree-row"><span class="tree-guide">└── </span><span class="tree-folder">e2e/</span> <span class="tree-comment">// Test Paketleri (spec.ts)</span></div>
           </div>
         </div>
       </section>
 
       <hr>
 
-      <!-- Section 3: Test Coverage -->
-      <section id="doc-coverage">
-        <span class="card-tag">KAPSAM</span>
-        <h2 style="font-size: 2rem; font-weight: 800; letter-spacing: -0.02em;">Test Kapsamı</h2>
+      <!-- Section 4: Workspace Resolver -->
+      <section id="doc-workspace-resolver">
+        <span class="card-tag">DİNAMİK İZOLASYON</span>
+        <h2>Dinamik Workspace Resolver (`workspace-resolver.ts`)</h2>
         <p>
-          Otomasyon paketi, GitSec platformunun kritik yollarını (critical paths) ve hata sınırlarını test eden kapsamlı
-          senaryolardan oluşur:
-        </p>
-
-        <h3 style="font-size: 1.25rem; font-weight: 700; margin-top: 0.5rem; color: var(--gitsec-blue);">1. Backup
-          Schedulers (Zamanlayıcılar)</h3>
-        <p>
-          Kullanıcıların depoları için otomatik yedekleme planları oluşturma süreçlerini test eder. Günlük (Daily),
-          Haftalık (Weekly) ve Aylık (Monthly) scheduler formlarının doldurulması, timezone seçimleri, listenin kontrol
-          edilmesi ve ardından temizlik amacıyla planın silinmesi akışlarını doğrular.
-        </p>
-
-        <h3 style="font-size: 1.25rem; font-weight: 700; margin-top: 0.5rem; color: var(--gitsec-blue);">2. Storage
-          Integration (Depolama Entegrasyonu)</h3>
-        <p>
-          Google Drive, OneDrive ve Huawei OBS sağlayıcılarının bağlantı adımlarını doğrular. Doğru kimlik bilgileriyle
-          başarılı bağlantı senaryolarının yanı sıra, geçersiz anahtar/şifre durumlarında backend'den dönen hata
-          mesajlarının arayüzde doğru yansıtıldığını kontrol eder.
-        </p>
-
-        <h3 style="font-size: 1.25rem; font-weight: 700; margin-top: 0.5rem; color: var(--gitsec-blue);">3. Restores
-          (Geri Yükleme Sihirbazı)</h3>
-        <p>
-          Platformun en hassas bileşenlerinden biri olan yedek geri yükleme süreçlerini kapsar. Adımlar arasında
-          geri/ileri gidildiğinde form verilerinin korunup korunmadığını, mükerrer repo isimleri veya geçersiz
-          karakterler girildiğinde backend validation kurallarının tetiklendiğini teyit eder.
-        </p>
-
-        <h3 style="font-size: 1.25rem; font-weight: 700; margin-top: 0.5rem; color: var(--gitsec-blue);">4. Arayüz ve Buton Doğrulamaları (UI & Button Verification)</h3>
-        <p>
-          GitSec SaaS platformunun tüm kritik sayfalarındaki butonları, form alanlarını, listeleme tablolarını, arama girdilerini, durum anahtarlarını (switchler) ve genel sayfa düzeni bileşenlerini test eder. Depolama, Zamanlayıcı, Geri Yükleme, Depolar ve Genel Düzen bileşenleri için ayrı ayrı yazılmış 5 adet test paketinden oluşur.
-        </p>
-      </section>
-
-      <hr>
-
-      <!-- Section 4: Background Audit -->
-      <section id="doc-audit">
-        <span class="card-tag">GÜVENLİK VE DENETİM</span>
-        <h2 style="font-size: 2rem; font-weight: 800; letter-spacing: -0.02em;">Arka Plan Hata Denetimi (Audit)</h2>
-        <p>
-          Platform arayüzünde kullanıcıya hata yansıtılmasa bile arka planda (console loglarında veya network tabında)
-          sessizce çöken hataları tespit etmek amacıyla <strong>Gelişmiş Denetim Modülü</strong> geliştirilmiştir.
+          GitSec platformunda her kullanıcının kendine ait benzersiz çalışma alanları (Workspace ID) bulunur (Örn: <span class="docs-tag">351</span>, <span class="docs-tag">352</span>). Sabit bir çalışma alanı ID'sine bağımlı olmak testlerin farklı hesaplarda düşmesine neden olur.
         </p>
         <p>
-          Bu modül <span class="docs-tag">tests/fixtures/test.ts</span> dosyası içinde yer alır ve her test sırasında
-          tarayıcı olaylarını dinler:
+          Bu sorunu çözmek için geliştirilen <span class="docs-tag">getActiveWorkspaceId(page)</span> fonksiyonu 2 aşamalı bir algoritma yürütür:
         </p>
         <ul class="docs-list">
-          <li class="docs-list-item"><strong>JSException:</strong> Sayfada yakalanamayan JavaScript hatalarını (uncaught
-            exceptions) yakalar.</li>
-          <li class="docs-list-item"><strong>ConsoleError:</strong> Geliştiricilerin konsola düştüğü hata loglarını
-            (console.error) izler.</li>
-          <li class="docs-list-item"><strong>NetworkFailure:</strong> HTTP statüsü 400 ve üzerinde olan tüm başarısız
-            API isteklerini denetler.</li>
+          <li class="docs-list-item"><strong>Aşama 1 (URL Parsing):</strong> Regex ile mevcut sayfa URL'sinden `/{workspaceId}/` numarasını tespit eder (`https://staging.dashboard.gitsec.io/351/dashboard`).</li>
+          <li class="docs-list-item"><strong>Aşama 2 (API Fallback):</strong> Sayfa henüz URL bazlı yüklenmediyse arka planda GitSec API'sine (`GET /api/workspaces`) istek atarak kullanıcının ilk aktif çalışma alanını döner.</li>
         </ul>
 
-        <h3 style="font-size: 1.25rem; font-weight: 700; margin-top: 0.5rem;">Hata İstisnaları (ignoredErrors)</h3>
-        <p>
-          Bazı test senaryoları doğası gereği hata tetiklemek üzere yazılmıştır (Örn: mükerrer geri yüklemede 409
-          Conflict alma testi). Bu gibi durumlarda, testin hatalı sonuçlanmaması için ilgili hata kalıpları <span
-            class="docs-tag">page.ignoredErrors</span> listesine eklenerek denetimden muaf tutulur:
-        </p>
-        <pre class="docs-code-block">// 409 Conflict hatasını denetim dışı bırak
-(page as any).ignoredErrors = [/restore\/schedules\/trigger/, /status of 409/];</pre>
+        <div class="docs-code-container">
+          <button class="copy-btn" onclick="copyCode(this)">Kopyala</button>
+          <pre class="docs-code-block">// workspace-resolver.ts Akış Örneği
+import { getActiveWorkspaceId } from '../../support/workspace-resolver';
 
-        <div class="callout callout-warning">
-          <div class="callout-icon">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-              stroke-linecap="round" stroke-linejoin="round">
-              <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path>
-              <line x1="12" y1="9" x2="12" y2="13"></line>
-              <line x1="12" y1="17" x2="12.01" y2="17"></line>
-            </svg>
-          </div>
-          <div class="callout-content">
-            <strong>Dikkat:</strong> Staging veritabanı Unicode (SQL_ASCII) formatında yapılandırılmışsa, testlerde
-            Türkçe karakter (ç, ı, ş, ğ, ö, ü) içeren veriler kullanılmamalıdır. Aksi halde veri tabanı kayıt sırasında
-            Unicode hatası üretecektir.
-          </div>
-        </div>
-      </section>
-
-      <hr>
-
-      <!-- Section 5: Running Guide -->
-      <section id="doc-running">
-        <span class="card-tag">KULLANIM KILAVUZU</span>
-        <h2 style="font-size: 2rem; font-weight: 800; letter-spacing: -0.02em;">Çalıştırma Rehberi</h2>
-        <p>
-          Testleri yerel dashboard üzerinden tek tıkla çalıştırabileceğiniz gibi, terminal üzerinden aşağıdaki komutları
-          kullanarak da tetikleyebilirsiniz:
-        </p>
-        <pre class="docs-code-block"># Tüm test paketlerini koştur
-npx playwright test
-
-# Sadece restore testlerini koştur
-npx playwright test tests/e2e/backups/restore.spec.ts
-
-# Testleri görsel tarayıcı açık olarak (headed) çalıştır
-npx playwright test --headed
-
-# Belirli bir etikete (tag) sahip testleri filtrele
-npx playwright test --grep @weekly</pre>
-
-        <h3 style="font-size: 1.25rem; font-weight: 700; margin-top: 0.5rem;">Çevre Değişkenleri Konfigürasyonu</h3>
-        <p>
-          Testlerin doğru şekilde yetkilendirilmesi ve çalışması için proje kök dizinindeki <span
-            class="docs-tag">.env</span> dosyasının düzenlenmesi gerekir. Arayüzdeki <strong>.env
-            Yapılandırması</strong> sekmesini kullanarak bu değişkenleri şifreli ve kolayca düzenleyebilirsiniz:
-        </p>
-        <ul class="docs-list">
-          <li class="docs-list-item"><strong>E2E_USER_EMAIL & E2E_USER_PASSWORD:</strong> GitSec Staging hesabına giriş
-            için kullanılan bilgiler.</li>
-          <li class="docs-list-item"><strong>GITHUB_TEST_USER & GITHUB_TEST_PASSWORD:</strong> GitHub kurulum ve
-            yetkilendirme akışlarını doğrulamak için kullanılan test hesabı bilgileri.</li>
-          <li class="docs-list-item"><strong>WORKSPACE_ID:</strong> Testlerin yürütüleceği hedef GitSec workspace
-            numarası (Örn: 28).</li>
-        </ul>
-      </section>
-
-      <hr>
-
-      <!-- Section 6: Auth Flow & Session Management -->
-      <section id="doc-auth-flow">
-        <span class="card-tag">GÜVENLİK VE OTURUM</span>
-        <h2 style="font-size: 2rem; font-weight: 800; letter-spacing: -0.02em;">Kimlik Doğrulama & Oturum Yönetimi</h2>
-        <p>
-          Uçtan uca test otomasyonlarında her test dosyası veya senaryosu için sıfırdan kullanıcı girişi (Sign In) yapmak, hem zaman maliyetini artırır hem de gereksiz ağ trafiği ile testlerin kararlılığını riske atar. Bu sorunu önlemek için projede <strong>Playwright Session Storage Sharing</strong> mekanizması uygulanmıştır.
-        </p>
-        
-        <h3 style="font-size: 1.25rem; font-weight: 700; margin-top: 0.5rem; color: var(--gitsec-blue);">Oturum Paylaşım Mekanizması</h3>
-        <p>
-          Süreç, kimlik doğrulama adımlarının tek bir noktada toplandığı <span class="docs-tag">tests/e2e/auth.setup.ts</span> dosyasında başlar. Bu dosya, belirlenen test kullanıcısı bilgileriyle GitSec API'sine bir HTTP `POST` isteği gönderir, dönen oturum token ve çerezlerini yakalar ve bunları diskteki güvenli bir JSON dosyasında depolar:
-        </p>
-        <pre class="docs-code-block">// auth.setup.ts - Oturumu Kaydetme
-import { test as setup } from '../fixtures/test';
-
-const authFile = 'playwright/.auth/user.json';
-
-setup('Giriş yap ve oturumu kaydet', async ({ page }) => {
-  // Giriş API isteğini gönder ve token'ı al
-  const response = await page.request.post('https://staging.api.gitsec.io/auth/signin', {
-    data: { email: process.env.E2E_USER_EMAIL, password: process.env.E2E_USER_PASSWORD }
-  });
-  
-  // Oturum durumunu (Cookies & LocalStorage) diske kaydet
-  await page.context().storageState({ path: authFile });
+test('Dinamik Yönlendirme Testi', async ({ page }) => {
+  const wsId = await getActiveWorkspaceId(page);
+  await page.goto(`https://staging.dashboard.gitsec.io/${wsId}/storage`);
 });</pre>
-
-        <div class="callout callout-info">
-          <div class="callout-icon">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
-          </div>
-          <div class="callout-content">
-            <strong>Bilgi:</strong> Diske kaydedilen `user.json` dosyası, Playwright yapılandırmasında (`playwright.config.ts`) tanımlanan `storageState` parametresi aracılığıyla tüm test dosyalarına otomatik olarak enjekte edilir. Böylece testlerin tamamı oturum açmış olarak başlar.
-          </div>
         </div>
       </section>
 
       <hr>
 
-      <!-- Section 7: CI/CD Integration -->
-      <section id="doc-cicd">
-        <span class="card-tag">OTOMASYON HATLARI</span>
-        <h2 style="font-size: 2rem; font-weight: 800; letter-spacing: -0.02em;">CI/CD Entegrasyonu (GitHub Actions)</h2>
+      <!-- Section 5: Session Sharing -->
+      <section id="doc-session-sharing">
+        <span class="card-tag">OTURUM YÖNETİMİ</span>
+        <h2>Oturum Paylaşımı & Global Setup (`auth.setup.ts`)</h2>
         <p>
-          Yazılan testlerin her kod değişikliğinde (push/pull request) veya düzenli aralıklarla (cron schedules) otomatik olarak çalışması için **GitHub Actions CI/CD Pipeline** entegrasyonu kurulmuştur.
+          Her test dosyasında sıfırdan kullanıcı girişi yapmak zaman maliyetini artırır ve testi yavaşlatır. Projede **Playwright Session Storage Sharing** uygulanmıştır.
         </p>
         <p>
-          Tüm boru hattı (pipeline) adımları <span class="docs-tag">.github/workflows/playwright.yml</span> dosyasında tanımlıdır:
+          <span class="docs-tag">tests/e2e/auth.setup.ts</span> dosyası testlerden önce bir kez çalışır, GitSec API'sine giriş isteği atarak oturum token ve çerezlerini diske (<span class="docs-tag">playwright/.auth/user.json</span>) kaydeder. Tüm testler bu oturumu hazır olarak kullanır.
         </p>
-        <pre class="docs-code-block"># playwright.yml - GitHub Workflow
-name: Playwright Tests
-on:
-  push:
-    branches: [ main, master ]
-  schedule:
-    - cron: '0 0 * * 1' # Her Pazartesi gece yarısı çalıştır
-
-jobs:
-  test:
-    timeout-minutes: 60
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-node@v4
-      with:
-        node-version: 18
-        
-    - name: Bağımlılıkları Yükle
-      run: npm ci
-      
-    - name: Playwright Tarayıcılarını Yükle
-      run: npx playwright install --with-deps
-      
-    - name: Testleri Koştur
-      run: npx playwright test
-      env:
-        E2E_USER_EMAIL: ${{ secrets.E2E_USER_EMAIL }}
-        E2E_USER_PASSWORD: ${{ secrets.E2E_USER_PASSWORD }}</pre>
-
-        <div class="callout callout-tip">
-          <div class="callout-icon">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg>
-          </div>
-          <div class="callout-content">
-            <strong>Öneri:</strong> Pipeline sonunda oluşan test hata kayıtları, ekran görüntüleri ve videolar `playwright-report/` dizininde toplanarak GitHub Actions arayüzünde indirilebilir **Artifact** olarak saklanır.
-          </div>
-        </div>
       </section>
 
       <hr>
 
-      <!-- Section 8: Flaky Tests & Wait Strategies -->
-      <section id="doc-flakiness">
-        <span class="card-tag">KARARLILIK</span>
-        <h2 style="font-size: 2rem; font-weight: 800; letter-spacing: -0.02em;">Kararsız Testler & Akıllı Bekleme</h2>
+      <!-- Section 6: Auth & Captcha Module -->
+      <section id="doc-module-auth">
+        <span class="card-tag">KİMLİK DOĞRULAMA</span>
+        <h2>Kimlik Doğrulama & Captcha Yönetimi</h2>
         <p>
-          Ağ gecikmeleri, sunucu yanıt süreleri veya asenkron render işlemleri test otomasyonlarında sahte hata (flakiness) oluşmasının en büyük nedenidir. Playwright, bu kararsızlıkları önlemek için yerleşik **Auto-Waiting (Otomatik Bekleme)** ve **Smart Assertions** mekanizmaları barındırır.
-        </p>
-        <p>
-          Bunun yanı sıra, ağ isteklerinin tamamlanmasını beklemek veya element durumlarını kontrol etmek için aşağıdaki bekleme stratejileri tercih edilir:
+          Giriş, Kayıt ve Şifre Sıfırlama testleri yüksek hata toleransıyla yapılandırılmıştır:
         </p>
         <ul class="docs-list">
-          <li class="docs-list-item"><strong>Locators auto-wait:</strong> `click()`, `fill()` gibi tüm tarayıcı komutları, ilgili element DOM'da belirene, görünür olana ve tıklanabilir hale gelene kadar (varsayılan 30s) otomatik olarak bekler.</li>
-          <li class="docs-list-item"><strong>Ağ İsteklerini Dinleme (waitForResponse):</strong> API isteklerinin tamamlandığından emin olmak için dinamik bekleme:</li>
+          <li class="docs-list-item"><strong>reCAPTCHA & Turnstile Polling:</strong> Form doldurulurken veya buton tıklanırken Google reCAPTCHA iframe'i açılırsa Playwright force click ve polling mekanizmasıyla token'ı yakalar.</li>
+          <li class="docs-list-item"><strong>Mail.tm Geçici E-Posta:</strong> Kayıt testinde dinamik geçici e-posta açılır, aktivasyon maili polling ile dinlenip kullanıcı doğrulanır.</li>
+          <li class="docs-list-item"><strong>Gmail IMAP Şifre Sıfırlama:</strong> `gitsectest+2@gmail.com` hesabına gelen canlı `Reset Password` maili çekilerek token ayrıştırılır.</li>
         </ul>
-        <pre class="docs-code-block">// API cevabını bekleme örneği
-const responsePromise = page.waitForResponse(response => 
-  response.url().includes('/api/v1/backups') && response.status() === 200
-);
-await page.getByRole('button', { name: 'Yedekle' }).click();
-await responsePromise;</pre>
+      </section>
 
+      <hr>
+
+      <!-- Section 7: Providers Module -->
+      <section id="doc-module-providers">
+        <span class="card-tag">KOD SAĞLAYICILARI</span>
+        <h2>GitHub & Bitbucket Entegrasyonları</h2>
+        <p>
+          Kod depolarının yetkilendirilmesi ve kapsama alınması adımları:
+        </p>
+        <ul class="docs-list">
+          <li class="docs-list-item"><strong>OAuth Popup Handling:</strong> Atlassian ve GitHub yetkilendirme pencereleri otomatik yakalanır, çerezler enjekte edilerek izinler onaylanır.</li>
+          <li class="docs-list-item"><strong>Include & Exclude Politikaları:</strong> Depoların yedekleme kapsamına dahil edilmesi veya çıkarılması test edilir. Lisans limiti aşıldığında 403 engeli doğrulanır.</li>
+        </ul>
+      </section>
+
+      <hr>
+
+      <!-- Section 8: Storage Module -->
+      <section id="doc-module-storage">
+        <span class="card-tag">BULUT DEPOLAMA</span>
+        <h2>Bulut Depolama Entegrasyonu (BYOS)</h2>
+        <p>
+          AWS S3, Google Drive, OneDrive, Azure Blob ve Huawei OBS sağlayıcıları için form doldurma, bağlantı sınama ve silme testleri yürütülür.
+        </p>
         <div class="callout callout-warning">
           <div class="callout-icon">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
           </div>
           <div class="callout-content">
-            <strong>Önemli:</strong> Test kodlarında kesinlikle statik `page.waitForTimeout(milliseconds)` (hardcoded sleep) kullanılmamalıdır. Bu tür statik beklemeler test süresini gereksiz uzatır ve ağ yavaşladığında testi kırar.
+            <strong>Zod Validation Toleransı:</strong> Depolama sağlayıcısı silinirken ön yüzün `DELETE 200 OK` yanıtındaki `boolean` veriyi Zod hatasıyla yutması durumunda, test otomatik olarak sayfayı yenileyip (`reload`) silinmeyi doğrular.
           </div>
         </div>
       </section>
 
       <hr>
 
-      <!-- Section 9: Onboarding & New Test Creation -->
+      <!-- Section 9: Schedulers Module -->
+      <section id="doc-module-schedulers">
+        <span class="card-tag">ZAMANLAYICILAR</span>
+        <h2>Planlayıcılar (Schedulers)</h2>
+        <p>
+          Günlük (Daily), Haftalık (Weekly), Aylık (Monthly) ve Cron formatında otomatik yedekleme kuralları oluşturulur ve silinir.
+        </p>
+      </section>
+
+      <hr>
+
+      <!-- Section 10: Restore Module -->
+      <section id="doc-module-restore">
+        <span class="card-tag">GERİ YÜKLEME</span>
+        <h2>Geri Yükleme Sihirbazı (Restore Wizard)</h2>
+        <p>
+          Yedeklenmiş depoların hedef ortama geri yüklenmesi test edilir. Kapsam seçimleri (Code & Commits, PRs, Issues) doğrulanır.
+        </p>
+      </section>
+
+      <hr>
+
+      <!-- Section 11: Billing & iyzico Module -->
+      <section id="doc-module-billing">
+        <span class="card-tag">LİSANS & ÖDEME</span>
+        <h2>Lisans Değişimi & iyzico Ödeme Akışı</h2>
+        <p>
+          Free, Pro ve Enterprise paketleri arasındaki geçişler ve iyzico SMS OTP ödeme altyapı simülasyonu test edilir.
+        </p>
+      </section>
+
+      <hr>
+
+      <!-- Section 12: Audit Monitoring -->
+      <section id="doc-module-audit">
+        <span class="card-tag">GÜVENLİK DENETİMİ</span>
+        <h2>Audit Monitoring & Arka Plan Ağ Denetimi</h2>
+        <p>
+          `audit-helper.ts` fixture'ı, test çalışırken arka planda oluşan tüm konsol hatalarını, yutulan JS hatalarını ve 4xx/5xx API çökmelerini otomatik raporlar.
+        </p>
+      </section>
+
+      <hr>
+
+      <!-- Section 13: Dashboard & Runner Guide -->
+      <section id="doc-dashboard-guide">
+        <span class="card-tag">YÖNETİM PANELİ</span>
+        <h2>Yerel Koşum Paneli Paneli (`tests-server.js`)</h2>
+        <p>
+          Node.js tabanlı Express sunucumuz (`http://127.0.0.1:3000`), testleri web arayüzünden görsel olarak başlatmanıza olanak tanır.
+        </p>
+      </section>
+
+      <hr>
+
+      <!-- Section 14: CI/CD Pipeline -->
+      <section id="doc-cicd">
+        <span class="card-tag">CI/CD HATTI</span>
+        <h2>CI/CD GitHub Actions Entegrasyonu</h2>
+        <p>
+          Otomasyon paketinin her commit veya nightly build esnasında GitHub Actions üzerinde çalışması için `.github/workflows/playwright.yml` hazır durumdadır.
+        </p>
+      </section>
+
+      <hr>
+
+      <!-- Section 15: New Test Creation Guide -->
       <section id="doc-new-test" style="padding-bottom: 4rem;">
         <span class="card-tag">REHBER</span>
-        <h2 style="font-size: 2rem; font-weight: 800; letter-spacing: -0.02em;">Yeni Test Ekleme Kılavuzu</h2>
+        <h2>Yeni Test Ekleme & Standartlar</h2>
         <p>
-          Projeye yeni bir test senaryosu eklemek için aşağıdaki adımları sırasıyla takip etmeniz önerilir. Bu akış, projenin mevcut Page Object Model (POM) ve Audit (Denetim) mimarisine tam uyumluluk sağlar:
+          Projeye yeni bir test yazarken aşağıdaki kurallara uyulması zorunludur:
         </p>
-        
-        <h3 style="font-size: 1.25rem; font-weight: 700; margin-top: 0.5rem; color: var(--gitsec-blue);">Adım 1: Page Object Sınıfını Kontrol Edin / Oluşturun</h3>
-        <p>
-          Eğer test edeceğiniz sayfa yeni bir sayfa ise, elementlerin seçicilerini ve yardımcı fonksiyonları tutacak bir POM sınıfı (`tests/pages/YeniSayfa.ts`) oluşturun.
-        </p>
-
-        <h3 style="font-size: 1.25rem; font-weight: 700; margin-top: 0.5rem; color: var(--gitsec-blue);">Adım 2: Fixture Tanımını Güncelleyin</h3>
-        <p>
-          Oluşturduğunuz yeni POM sınıfını <span class="docs-tag">tests/fixtures/test.ts</span> dosyasına ekleyin. Böylece test dosyalarında bu sayfaya doğrudan erişebilirsiniz.
-        </p>
-
-        <h3 style="font-size: 1.25rem; font-weight: 700; margin-top: 0.5rem; color: var(--gitsec-blue);">Adım 3: Test Dosyasını Yazın</h3>
-        <p>
-          <span class="docs-tag">tests/e2e/</span> dizininde ilgili kategori altında yeni bir `.spec.ts` dosyası oluşturun:
-        </p>
-        <pre class="docs-code-block">// tests/e2e/backups/yeni-ozellik.spec.ts
-import { test } from '../../fixtures/test';
-import { expect } from '@playwright/test';
-
-test.describe('Yeni Özellik Test Paketi', () => {
-  test('Başarılı Senaryo', async ({ page, loginPage }) => {
-    // 1. Sayfaya yönlen (otomatik oturum açılmıştır)
-    await page.goto('/dashboard');
-    
-    // 2. POM yardımıyla form doldur
-    await loginPage.doSomething();
-    
-    // 3. Doğrulamaları yap
-    await expect(page.locator('.status-badge')).toBeVisible();
-  });
-});</pre>
-
-        <div class="callout callout-info">
-          <div class="callout-icon">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
-          </div>
-          <div class="callout-content">
-            <strong>Denetim Uyumu:</strong> Yazdığınız test, custom `test` fixture'ını import ettiği için arka plan denetim modülü (Audit) otomatik olarak aktifleşir ve konsol/ağ hatalarını arka planda sizin yerinize denetler.
-          </div>
-        </div>
+        <ul class="docs-list">
+          <li class="docs-list-item">Seçicilerde kesinlikle kırılgan XPath veya derin CSS kullanılmamalı; `getByRole`, `getByPlaceholder` veya `getByTestId` tercih edilmelidir.</li>
+          <li class="docs-list-item">Statik `waitForTimeout` (hardcoded sleep) kullanılmamalı, Playwright Auto-Waiting ve `safeGoto` tercih edilmelidir.</li>
+          <li class="docs-list-item">Tüm testler custom `test` fixture'ından türetilmelidir ki Audit denetleyicisi aktifleşebilsin.</li>
+        </ul>
       </section>
+
     </div>
   </div>
 
   <script>
-    // Theme toggling dropdown logic
+    // Copy code snippet helper
+    function copyCode(button) {
+      const codeBlock = button.nextElementSibling;
+      if (codeBlock) {
+        const text = codeBlock.innerText;
+        navigator.clipboard.writeText(text).then(() => {
+          button.innerText = 'Kopyalandı!';
+          setTimeout(() => { button.innerText = 'Kopyala'; }, 2000);
+        });
+      }
+    }
+
+    // Live search filter in documentation
+    function filterDocsContent() {
+      const query = document.getElementById('docsSearchInput').value.toLowerCase().trim();
+      const sections = document.querySelectorAll('.docs-content section');
+
+      sections.forEach(section => {
+        const text = section.innerText.toLowerCase();
+        if (query === '' || text.includes(query)) {
+          section.style.display = 'flex';
+        } else {
+          section.style.display = 'none';
+        }
+      });
+    }
+
+    // EXACT MATCHING THEME TOGGLE DROPDOWN LOGIC FROM INDEX.HTML
     function toggleThemeDropdown(event) {
       if (event) event.stopPropagation();
       const menu = document.getElementById('themeDropdownMenu');
-      if (menu) {
-        menu.classList.toggle('hidden');
-      }
+      if (menu) menu.classList.toggle('hidden');
     }
 
     function selectTheme(mode, event) {
       if (event) event.stopPropagation();
       setTheme(mode);
       const menu = document.getElementById('themeDropdownMenu');
-      if (menu) {
-        menu.classList.add('hidden');
-      }
+      if (menu) menu.classList.add('hidden');
     }
 
-    // Auto-close dropdown when clicking outside
     document.addEventListener('click', function (event) {
       const menu = document.getElementById('themeDropdownMenu');
       const trigger = document.getElementById('themeDropdownTriggerBtn');
@@ -1257,7 +1245,6 @@ test.describe('Yeni Özellik Test Paketi', () => {
       const html = document.documentElement;
       localStorage.setItem('gitsec_theme', mode);
 
-      // Update dropdown menu items active status
       const menuItems = document.querySelectorAll('.theme-menu-item');
       menuItems.forEach(item => {
         if (item.getAttribute('data-theme-value') === mode) {
@@ -1268,14 +1255,13 @@ test.describe('Yeni Özellik Test Paketi', () => {
       });
 
       const iconContainer = document.getElementById('activeThemeIcon');
-
       const icons = {
-        dark: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>`,
-        light: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>`,
-        system: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></svg>`
+        dark: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>`,
+        light: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>`,
+        system: `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></svg>`
       };
 
-      if (iconContainer) iconContainer.innerHTML = icons[mode] || '';
+      if (iconContainer) iconContainer.innerHTML = icons[mode] || icons['dark'];
 
       if (mode === 'dark') {
         html.classList.add('dark');
@@ -1284,7 +1270,6 @@ test.describe('Yeni Özellik Test Paketi', () => {
         html.classList.add('light');
         html.classList.remove('dark');
       } else {
-        // System preference
         const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
         if (prefersDark) {
           html.classList.add('dark');
@@ -1296,86 +1281,71 @@ test.describe('Yeni Özellik Test Paketi', () => {
       }
     }
 
-    // Initialize theme from saved value
     const initialTheme = localStorage.getItem('gitsec_theme') || 'system';
     setTheme(initialTheme);
 
-    // System theme dynamic listener
-    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
-      const savedTheme = localStorage.getItem('gitsec_theme') || 'system';
-      if (savedTheme === 'system') {
-        const html = document.documentElement;
-        if (e.matches) {
-          html.classList.add('dark');
-          html.classList.remove('light');
-        } else {
-          html.classList.add('light');
-          html.classList.remove('dark');
-        }
-      }
-    });
-
-    // Scroll helper for documentation page
     function scrollToDocSection(sectionId) {
       const target = document.getElementById(sectionId);
       if (target) {
-        // Highlight active TOC button
         const buttons = document.querySelectorAll('.docs-nav-item');
         buttons.forEach(btn => {
-          if (btn.getAttribute('onclick').includes(sectionId)) {
+          if (btn.getAttribute('onclick') && btn.getAttribute('onclick').includes(sectionId)) {
             btn.classList.add('active');
           } else {
             btn.classList.remove('active');
           }
         });
 
-        target.scrollIntoView({
-          behavior: 'smooth',
-          block: 'start'
-        });
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
     }
 
-    // Scroll Spy using IntersectionObserver
+    // === ROCK-SOLID SCROLL SPY FOR SIDEBAR SYNC ON SCROLL ===
     document.addEventListener('DOMContentLoaded', () => {
-      const contentContainer = document.querySelector('.docs-content');
+      const docsContent = document.getElementById('docsContent');
+      const docsSidebar = document.getElementById('docsSidebar');
       const sections = document.querySelectorAll('.docs-content section');
       const navItems = document.querySelectorAll('.docs-nav-item');
 
-      if (!contentContainer || sections.length === 0 || navItems.length === 0) return;
+      if (!docsContent || sections.length === 0 || navItems.length === 0) return;
 
-      let isScrolling = false;
-      
-      const observerOptions = {
-        root: contentContainer,
-        rootMargin: '-10% 0px -75% 0px', // Trigger when section is in the top portion
-        threshold: 0
-      };
+      let isManualClicking = false;
 
-      const observer = new IntersectionObserver((entries) => {
-        if (isScrolling) return;
+      docsContent.addEventListener('scroll', () => {
+        if (isManualClicking) return;
 
-        entries.forEach(entry => {
-          if (entry.isIntersecting) {
-            const id = entry.target.getAttribute('id');
-            navItems.forEach(btn => {
-              if (btn.getAttribute('onclick').includes(id)) {
-                btn.classList.add('active');
-              } else {
-                btn.classList.remove('active');
-              }
-            });
+        let currentSectionId = '';
+        const contentTop = docsContent.getBoundingClientRect().top;
+
+        sections.forEach(section => {
+          const sectionTop = section.getBoundingClientRect().top - contentTop;
+          // Trigger when top of section is near the upper viewport of content area
+          if (sectionTop <= 180) {
+            currentSectionId = section.getAttribute('id');
           }
         });
-      }, observerOptions);
 
-      sections.forEach(section => observer.observe(section));
+        if (currentSectionId) {
+          navItems.forEach(btn => {
+            const btnOnClick = btn.getAttribute('onclick') || '';
+            if (btnOnClick.includes(currentSectionId)) {
+              if (!btn.classList.contains('active')) {
+                btn.classList.add('active');
+                // Auto-scroll sidebar if active item is out of view
+                btn.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+              }
+            } else {
+              btn.classList.remove('active');
+            }
+          });
+        }
+      });
 
-      // Disable scroll spy active state updates during custom smooth scroll
+      // Disable scroll spy during smooth scroll on button click
       navItems.forEach(btn => {
         btn.addEventListener('click', () => {
-          isScrolling = true;
-          setTimeout(() => { isScrolling = false; }, 800);
+          isManualClicking = true;
+          setTimeout(() => { isManualClicking = false; }, 800);
         });
       });
     });

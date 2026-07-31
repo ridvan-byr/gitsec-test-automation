@@ -173,6 +173,31 @@ test.describe(`Repositories - ${providerName} Yedekleme`, () => {
     const triggerResult = await triggerResponse!.json().catch(() => null);
     let scheduleId = triggerResult?.data?.scheduleId || triggerResult?.data?.id || triggerResult?.scheduleId || triggerResult?.id || null;
     
+    // 1. Get gs_token from the active browser context cookies
+    let token = '';
+    const cookies = await page.context().cookies().catch(() => []);
+    const tokenCookie = cookies.find(c => c.name === 'gs_token');
+    if (tokenCookie) {
+      token = tokenCookie.value;
+    } else {
+      // Fallback: Read from storageState file
+      try {
+        const authPath = require('path').join(process.cwd(), 'playwright/.auth/user-with-provider.json');
+        if (require('fs').existsSync(authPath)) {
+          const authData = JSON.parse(require('fs').readFileSync(authPath, 'utf8'));
+          const fileCookie = authData.cookies?.find((c: any) => c.name === 'gs_token');
+          if (fileCookie) {
+            token = fileCookie.value;
+          }
+        }
+      } catch (err: any) {
+        console.warn(`[API Audit] Failed to read auth file: ${err.message}`);
+      }
+    }
+
+    const apiBaseUrl = requireEnv('API_BASE_URL');
+    const workspaceId = requireEnv('WORKSPACE_ID');
+
     if (!scheduleId) {
       try {
         const latestResp = await fetch(`${apiBaseUrl}/api/backup/executions?limit=1`, {
@@ -201,31 +226,6 @@ test.describe(`Repositories - ${providerName} Yedekleme`, () => {
       timeoutMs: 30000
     });
     console.log('🎉 [BAŞARILI] [API DOĞRULAMA] Yedekleme başlatılma aktivite kaydı başarıyla doğrulandı.');
-
-    // 1. Get gs_token from the active browser context cookies
-    let token = '';
-    const cookies = await page.context().cookies().catch(() => []);
-    const tokenCookie = cookies.find(c => c.name === 'gs_token');
-    if (tokenCookie) {
-      token = tokenCookie.value;
-    } else {
-      // Fallback: Read from storageState file
-      try {
-        const authPath = require('path').join(process.cwd(), 'playwright/.auth/user-with-provider.json');
-        if (require('fs').existsSync(authPath)) {
-          const authData = JSON.parse(require('fs').readFileSync(authPath, 'utf8'));
-          const fileCookie = authData.cookies?.find((c: any) => c.name === 'gs_token');
-          if (fileCookie) {
-            token = fileCookie.value;
-          }
-        }
-      } catch (err: any) {
-        console.warn(`[API Audit] Failed to read auth file: ${err.message}`);
-      }
-    }
-
-    const apiBaseUrl = requireEnv('API_BASE_URL');
-    const workspaceId = requireEnv('WORKSPACE_ID');
 
     console.log('⏳ [BEKLEME] [API DOĞRULAMA] Yedeklemenin tamamlanması bekleniyor (Executions API Polling)...');
     await expect(async () => {

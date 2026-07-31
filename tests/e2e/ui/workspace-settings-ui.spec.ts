@@ -1,6 +1,7 @@
-import { test, expect, Page } from '../../fixtures/test';
+import type { Page } from '@playwright/test';
+import { test, expect } from '../../fixtures/test';
 import { requireEnv } from '../../support/require-env';
-import { openDashboard, pauseIfHeaded } from '../../support/dashboard-ui-helpers';
+import { openDashboard, pauseIfHeaded, getActiveWorkspaceId } from '../../support/dashboard-ui-helpers';
 import {
   fetchWorkspaceInfo,
   openWorkspaceSwitcher,
@@ -19,6 +20,8 @@ test.describe('Workspace Settings & Member Yönetimi — Arayüz ve Buton Durum 
   });
 
   async function ensureWorkspaceSession(page: Page) {
+    const activeWsId = await getActiveWorkspaceId(page, workspaceId);
+    workspaceId = activeWsId;
     await openDashboard(page, dashboardBaseUrl, workspaceId);
     workspaceInfo = await fetchWorkspaceInfo(page);
 

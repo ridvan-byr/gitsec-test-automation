@@ -628,9 +628,10 @@ test.describe('Backup Schedulers - Form Yapılandırma', () => {
     // Rate Limit (HTTP 429) koruması: Testler arasında sunucuya 400ms nefes alma es'i ver
     await page.waitForTimeout(400);
 
-    workspaceId = requireEnv('WORKSPACE_ID');
-    dashboardBaseUrl = requireEnv('DASHBOARD_BASE_URL');
     const providerPage = new ProviderPage(page);
+    const activeWs = await providerPage.getActiveWorkspaceId();
+    workspaceId = activeWs;
+    dashboardBaseUrl = requireEnv('DASHBOARD_BASE_URL');
 
     // 404 Veya Sayfa Bozukluğu Kontrolü
     const is404 = await page.getByText(/Page Not Found|404/i).first().isVisible().catch(() => false);

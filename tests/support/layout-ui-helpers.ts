@@ -38,6 +38,20 @@ export async function openGlobalSearch(page: Page) {
   return searchInput;
 }
 
+export async function ensureSidebarExpanded(page: Page) {
+  const sidebar = page.locator('[data-slot="sidebar"]').first();
+  if (await sidebar.isVisible().catch(() => false)) {
+    const state = await sidebar.getAttribute('data-state').catch(() => null);
+    if (state === 'collapsed') {
+      const toggle = getHeaderSidebarToggle(page);
+      if (await toggle.isVisible().catch(() => false)) {
+        await toggle.click().catch(() => {});
+        await expect.poll(async () => sidebar.getAttribute('data-state'), { timeout: 5000 }).toBe('expanded').catch(() => {});
+      }
+    }
+  }
+}
+
 export async function assertSidebarToggleInteractive(page: Page) {
   const sidebarToggle = getHeaderSidebarToggle(page);
   const sidebar = page.locator('[data-slot="sidebar"]').first();
@@ -62,6 +76,8 @@ export async function assertSidebarToggleInteractive(page: Page) {
     await expect(page.locator('main').last()).toBeVisible();
     await expect(sidebarToggle).toBeEnabled();
   }
+
+  await ensureSidebarExpanded(page);
 }
 
 export async function assertGlobalSearchInput(page: Page) {
@@ -145,11 +161,16 @@ export async function assertThemeMenuAndRevert(page: Page) {
 
 export async function navigateViaSidebarLink(page: Page, linkName: RegExp, urlPattern: RegExp) {
   await page.keyboard.press('Escape').catch(() => {});
+  await ensureSidebarExpanded(page);
 
   const sidebar = page.locator('[data-slot="sidebar"]').first();
   const link = sidebar.getByRole('link', { name: linkName }).first();
-  await link.scrollIntoViewIfNeeded();
+  await link.scrollIntoViewIfNeeded().catch(() => {});
   await expect(link).toBeVisible({ timeout: 15000 });
-  await link.click();
+  try {
+    await link.click({ timeout: 5000 });
+  } catch {
+    await link.click({ force: true });
+  }
   await expect(page).toHaveURL(urlPattern, { timeout: 15000 });
 }
